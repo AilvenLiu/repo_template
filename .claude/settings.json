@@ -1,0 +1,11 @@
+{
+  "allow": [
+    "Read(**)",
+    "Bash(*)",
+    "LS(**)",
+    "Grep(**)",
+    "Glob(**)",
+    "WebFetch",
+    "MCP"
+  ]
+}
