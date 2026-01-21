@@ -1,0 +1,133 @@
+# C++/CUDA Project .gitignore
+
+# Build directories
+build/
+cmake-build-*/
+out/
+bin/
+lib/
+
+# Compiled Object files
+*.o
+*.obj
+*.ko
+*.elf
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.so.*
+*.dylib
+*.dll
+
+# Compiled Static libraries
+*.a
+*.lib
+*.la
+*.lo
+
+# Executables
+*.exe
+*.out
+*.app
+*.i*86
+*.x86_64
+*.hex
+
+# CUDA compiled files
+*.cubin
+*.fatbin
+*.ptx
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+CMakeScripts/
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+_deps/
+
+# Ninja
+.ninja_deps
+.ninja_log
+
+# Testing
+Testing/
+CTestTestfile.cmake
+*.gcov
+*.gcda
+*.gcno
+
+# Coverage
+coverage/
+coverage.info
+*.profdata
+*.profraw
+
+# Profiling
+*.nvprof
+*.nvvp
+*.qdrep
+*.qdstrm
+
+# IDE - VSCode
+.vscode/
+*.code-workspace
+
+# IDE - CLion
+.idea/
+cmake-build-*/
+
+# IDE - Visual Studio
+.vs/
+*.sln
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.VC.db
+*.VC.opendb
+
+# IDE - Xcode
+*.xcodeproj/
+*.xcworkspace/
+
+# Debugger
+*.dSYM/
+*.su
+*.idb
+*.pdb
+
+# OS
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# Package managers
+vcpkg_installed/
+conan.lock
+conanbuildinfo.*
+conaninfo.txt
+
+# Documentation
+docs/_build/
+docs/html/
+docs/latex/
+Doxyfile.bak
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+*.bak
+*.orig
