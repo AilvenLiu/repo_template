@@ -566,3 +566,104 @@ Claude Code MUST NEVER:
 - Use C-style casts (use `static_cast`, `dynamic_cast`, etc.)
 - Modify global state without synchronization
 - Launch CUDA kernels without error checking
+
+## 12. Character Encoding and Language Requirements
+
+### 12.1 ASCII-Only Requirement
+
+**STRICTLY FORBIDDEN**: Use of ANY Non-ASCII characters in:
+- Source code files (`.cpp`, `.hpp`, `.cu`, `.cuh`, `.h`)
+- Comments (inline, block, or documentation comments)
+- Commit messages
+- Pull request titles and descriptions
+- Documentation files
+- Configuration files
+- Any text content in the repository
+
+This includes but is not limited to:
+- Non-English characters (Chinese, Japanese, Arabic, Cyrillic, etc.)
+- Special marks and symbols (checkmark, crossmark, bullet points, arrows)
+- Emoji and emoticons
+- Accented characters (e, a, o, etc.)
+- Mathematical symbols beyond basic ASCII
+- Currency symbols beyond $ (dollar sign)
+- Typographic quotes (" " ' ') - use straight quotes (" ')
+
+**Allowed**: Only ASCII characters (0x00-0x7F)
+
+**Enforcement**:
+- Claude Code MUST verify all generated content is ASCII-only
+- Use `iconv -f UTF-8 -t ASCII//TRANSLIT` or similar tools to verify
+- Configure git hooks to reject Non-ASCII content
+- CI/CD pipelines MUST include ASCII validation
+
+Example violations:
+```cpp
+// FORBIDDEN: Non-ASCII characters
+// TODO: Fix this bug  (contains special dash)
+int result = 42;  // checkmark emoji
+
+// FORBIDDEN: Non-English comments
+// Zhe shi yi ge han shu (This is a function in Chinese)
+void function() {}
+
+// ALLOWED: ASCII only
+// TODO: Fix this bug
+int result = 42;  // Correct implementation
+
+// ALLOWED: ASCII comments
+// This is a function
+void function() {}
+```
+
+### 12.2 British English Requirement
+
+**MANDATORY**: All English text MUST use British English spelling and conventions:
+
+**Spelling differences** (British vs American):
+- colour (not color)
+- behaviour (not behavior)
+- optimise (not optimize)
+- initialise (not initialize)
+- analyse (not analyze)
+- centre (not center)
+- metre (not meter) - for measurement
+- licence (noun), license (verb)
+- practise (verb), practice (noun)
+- defence (not defense)
+- organise (not organize)
+
+**Applies to**:
+- Code comments and documentation
+- Variable and function names where words are spelled out
+- Commit messages
+- Pull request descriptions
+- README and documentation files
+- Error messages and user-facing strings
+
+**Examples**:
+```cpp
+// CORRECT: British English
+void initialiseColourBuffer() {
+    // Initialise the colour buffer with default values
+    // This optimises memory usage
+}
+
+// INCORRECT: American English
+void initializeColorBuffer() {
+    // Initialize the color buffer with default values
+    // This optimizes memory usage
+}
+
+// CORRECT: British English in commit message
+// feat(renderer): optimise colour buffer initialisation
+
+// INCORRECT: American English in commit message
+// feat(renderer): optimize color buffer initialization
+```
+
+**Enforcement**:
+- Claude Code MUST use British English in all generated text
+- Code review MUST check for British English compliance
+- Use spell-checkers configured for British English (en_GB)
+- Document any exceptions (e.g., third-party API names that use American spelling)

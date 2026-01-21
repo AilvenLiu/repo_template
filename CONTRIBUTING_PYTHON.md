@@ -103,10 +103,14 @@ chore(deps): update pandas to 2.0.2
     - Imperative mood ("add", not "added" or "adds")
     - No period at the end
     - Lowercase after type prefix
+    - **ASCII-only characters** (no emoji, special symbols, or non-English characters)
+    - **British English spelling** (e.g., "optimise" not "optimize", "colour" not "color")
 - **Body** (if present):
     - Explains **why**, not just what
     - Wrap at 72 characters
     - Separate from summary with blank line
+    - **ASCII-only characters**
+    - **British English spelling**
 - **One logical change per commit**
 - **Atomic commits**: Each commit should pass tests
 
@@ -1061,6 +1065,22 @@ jobs:
 - **NEVER** include tool names, AI assistant names, or generation metadata
 - Commit messages and PR descriptions must contain ONLY technical content
 - This is a STRICT requirement with NO exceptions
+
+**STRICTLY FORBIDDEN: Non-ASCII Characters**
+- **NEVER** use Non-ASCII characters in any files, code, comments, or commit/PR messages
+- **NEVER** use emoji, special symbols (checkmark, crossmark, arrows, etc.)
+- **NEVER** use non-English characters (Chinese, Japanese, Arabic, Cyrillic, etc.)
+- **NEVER** use accented characters (e, a, o, etc.)
+- **NEVER** use typographic quotes (" " ' ') - use straight quotes (" ')
+- **ONLY** ASCII characters (0x00-0x7F) are allowed
+- Configure pre-commit hooks and CI/CD to reject Non-ASCII content
+
+**STRICTLY REQUIRED: British English**
+- **ALWAYS** use British English spelling in all text
+- Examples: colour (not color), optimise (not optimize), initialise (not initialize)
+- Applies to: code, comments, docstrings, commit messages, PR descriptions, documentation
+- Configure spell-checkers to use British English (en_GB)
+- Document exceptions for third-party library names
 
 ## 14. Working With Roadmaps and AI Agents
 

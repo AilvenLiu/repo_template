@@ -976,3 +976,120 @@ Claude Code MUST NEVER:
 - Use deprecated APIs without justification
 - Commit code with failing tests
 - Skip updating requirements.txt after installing packages
+
+## 12. Character Encoding and Language Requirements
+
+### 12.1 ASCII-Only Requirement
+
+**STRICTLY FORBIDDEN**: Use of ANY Non-ASCII characters in:
+- Source code files (`.py`, `.pyi`)
+- Comments (inline, block, or docstring comments)
+- Commit messages
+- Pull request titles and descriptions
+- Documentation files
+- Configuration files (`.toml`, `.yaml`, `.ini`, `.cfg`)
+- Any text content in the repository
+
+This includes but is not limited to:
+- Non-English characters (Chinese, Japanese, Arabic, Cyrillic, etc.)
+- Special marks and symbols (checkmark, crossmark, bullet points, arrows)
+- Emoji and emoticons
+- Accented characters (e, a, o, etc.)
+- Mathematical symbols beyond basic ASCII
+- Currency symbols beyond $ (dollar sign)
+- Typographic quotes (" " ' ') - use straight quotes (" ')
+
+**Allowed**: Only ASCII characters (0x00-0x7F)
+
+**Enforcement**:
+- Claude Code MUST verify all generated content is ASCII-only
+- Use `python -c "import sys; sys.exit(0 if all(ord(c) < 128 for c in open('file.py').read()) else 1)"` to verify
+- Configure pre-commit hooks to reject Non-ASCII content
+- CI/CD pipelines MUST include ASCII validation
+
+Example violations:
+```python
+# FORBIDDEN: Non-ASCII characters
+# TODO: Fix this bug  (contains special dash)
+result = 42  # checkmark emoji
+
+# FORBIDDEN: Non-English comments
+# Zhe shi yi ge han shu (This is a function in Chinese)
+def function():
+    pass
+
+# ALLOWED: ASCII only
+# TODO: Fix this bug
+result = 42  # Correct implementation
+
+# ALLOWED: ASCII comments
+# This is a function
+def function():
+    pass
+```
+
+### 12.2 British English Requirement
+
+**MANDATORY**: All English text MUST use British English spelling and conventions:
+
+**Spelling differences** (British vs American):
+- colour (not color)
+- behaviour (not behavior)
+- optimise (not optimize)
+- initialise (not initialize)
+- analyse (not analyze)
+- centre (not center)
+- metre (not meter) - for measurement
+- licence (noun), license (verb)
+- practise (verb), practice (noun)
+- defence (not defense)
+- organise (not organize)
+- serialise (not serialize)
+- finalise (not finalize)
+
+**Applies to**:
+- Code comments and docstrings
+- Variable and function names where words are spelled out
+- Commit messages
+- Pull request descriptions
+- README and documentation files
+- Error messages and user-facing strings
+- Log messages
+
+**Examples**:
+```python
+# CORRECT: British English
+def initialise_colour_buffer() -> None:
+    """Initialise the colour buffer with default values.
+
+    This optimises memory usage by pre-allocating the buffer.
+    """
+    pass
+
+# INCORRECT: American English
+def initialize_color_buffer() -> None:
+    """Initialize the color buffer with default values.
+
+    This optimizes memory usage by pre-allocating the buffer.
+    """
+    pass
+
+# CORRECT: British English in commit message
+# feat(renderer): optimise colour buffer initialisation
+
+# INCORRECT: American English in commit message
+# feat(renderer): optimize color buffer initialization
+
+# CORRECT: British English in error messages
+raise ValueError("Failed to initialise colour buffer")
+
+# INCORRECT: American English in error messages
+raise ValueError("Failed to initialize color buffer")
+```
+
+**Enforcement**:
+- Claude Code MUST use British English in all generated text
+- Code review MUST check for British English compliance
+- Use spell-checkers configured for British English (en_GB)
+- Configure IDE spell-checkers to use British English dictionary
+- Document any exceptions (e.g., third-party library names that use American spelling)
