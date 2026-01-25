@@ -1,6 +1,6 @@
 # Agent Operating Constraints for C++/CUDA Projects
 
-> **This document defines mandatory operating constraints for Claude Code and all AI agents working in C++/CUDA repositories.**
+> **This document defines mandatory operating constraints for Claude Code and all AI agents working in C++/CUDA repositories.**   
 > These rules are not suggestions. Violations are considered critical failures.
 
 ## 1. Absolute Authority and Precedence
@@ -79,6 +79,7 @@ This includes (but is not limited to):
 - CMake configuration patterns and best practices
 - Build system setup and toolchain configuration
 - Compiler-specific features and extensions
+- **Conan package manager** documentation and configuration (primary dependency manager)
 
 Claude Code MUST automatically invoke Context7 MCP tools without requiring explicit user instruction.
 
@@ -217,17 +218,18 @@ project_root/
 └── third_party/
 ```
 
+
 ### 6.4 Build System Requirements
 
 #### 6.4.1 CMake Standards
-- **Minimum Version**: CMake 3.18 (required for CUDA language support)
-- **Preferred Version**: CMake 3.20+ (for better CUDA integration)
+- **Minimum Version**: CMake 3.20 (required for cross-compilation and CUDA support)
+- **Preferred Version**: CMake 3.25+ (for improved CUDA cross-compilation)
 - **Modern CMake**: Use target-based approach, avoid global commands
 - **CUDA Support**: Enable with `enable_language(CUDA)` or `project(... LANGUAGES CXX CUDA)`
 
 #### 6.4.2 CMakeLists.txt Structure
 ```cmake
-cmake_minimum_required(VERSION 3.18)
+cmake_minimum_required(VERSION 3.20)
 project(ProjectName VERSION 1.0.0 LANGUAGES CXX CUDA)
 
 # Set C++ standard
@@ -238,7 +240,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # Set CUDA standard and architectures
 set(CMAKE_CUDA_STANDARD 17)
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
-set(CMAKE_CUDA_ARCHITECTURES 70 75 80 86)  # Volta, Turing, Ampere, Ada
+set(CMAKE_CUDA_ARCHITECTURES 87)  # Jetson Orin (adjust for multi-target: 70 75 80 86 87)
 
 # Compiler warnings
 if(MSVC)
@@ -260,11 +262,12 @@ target_link_libraries(mylib PUBLIC CUDA::cudart)
 ```
 
 #### 6.4.3 Dependency Management
-- **Preferred Methods**:
+- **Preferred Methods** (in priority order):
     1. `find_package()` for system-installed libraries
     2. `FetchContent` for header-only or small libraries
     3. Git submodules for vendored dependencies
-    4. vcpkg or Conan for complex dependency graphs
+    4. **Conan** (primary choice) for complex dependency graphs
+    5. vcpkg (alternative) for complex dependency graphs when Conan is not suitable
 - **Version Pinning**: Always specify version requirements
 - **Documentation**: List all dependencies in root `README.md` with versions
 
@@ -481,6 +484,45 @@ When adding ANY dependency, Claude Code MUST:
 3. Update CI/CD configuration if needed
 
 #### 6.10.2 Dependency Manifest
+
+**PRIMARY: Conan** (mandatory unless specific library unavailable)
+
+For Conan, maintain `conanfile.txt`:
+```ini
+[requires]
+boost/1.82.0
+eigen/3.4.0
+opencv/4.5.0
+
+[generators]
+CMakeDeps
+CMakeToolchain
+
+[options]
+opencv:shared=True
+```
+
+Or use `conanfile.py` for more complex configurations:
+```python
+from conan import ConanFile
+from conan.tools.cmake import cmake_layout
+
+class AegisRTConan(ConanFile):
+    name = "aegisrt"
+    version = "1.0.0"
+    settings = "os", "compiler", "build_type", "arch"
+
+    def requirements(self):
+        self.requires("boost/1.82.0")
+        self.requires("eigen/3.4.0")
+        self.requires("opencv/4.5.0")
+
+    def layout(self):
+        cmake_layout(self)
+```
+
+**ALTERNATIVE: vcpkg** (only if Conan is not suitable)
+
 For vcpkg, maintain `vcpkg.json`:
 ```json
 {
@@ -496,8 +538,6 @@ For vcpkg, maintain `vcpkg.json`:
   ]
 }
 ```
-
-For Conan, maintain `conanfile.txt` or `conanfile.py`.
 
 ## 7. Session Continuity and State Discipline
 
@@ -531,7 +571,122 @@ Claude Code MUST:
 
 Silent reinterpretation is forbidden.
 
-## 9. Safety Rule: When in Doubt, Stop
+## 9. Git Workflow Constraints
+
+### 9.1 Protected Branch Policy
+
+**CRITICAL REQUIREMENT**: Claude Code MUST NEVER commit directly to protected branches.
+
+**Protected branches include:**
+- `master`
+- `main`
+- `develop`
+- Any branch matching `release/*` or `hotfix/*`
+
+**This prohibition is absolute and applies to:**
+- All code changes (features, fixes, refactors, documentation)
+- Configuration file updates
+- Dependency updates
+- Emergency fixes
+- Trivial changes (typos, formatting)
+- ANY modification whatsoever
+
+### 9.2 Mandatory Branch-Based Workflow
+
+**REQUIRED WORKFLOW**: All changes MUST follow this process:
+
+1. **Check current branch**:
+   ```bash
+   git branch --show-current
+   ```
+   If on a protected branch, STOP immediately and create a feature branch.
+
+2. **Create a feature branch**:
+   ```bash
+   git checkout -b <type>/<description>
+   ```
+   Branch naming convention:
+   - `feat/<description>` — new features
+   - `fix/<description>` — bug fixes
+   - `refactor/<description>` — code restructuring
+   - `perf/<description>` — performance improvements
+   - `docs/<description>` — documentation only
+   - `chore/<description>` — tooling, dependencies, non-code changes
+
+3. **Make changes on the feature branch**
+
+4. **Commit changes**:
+   ```bash
+   git add <files>
+   git commit -m "type(scope): description"
+   ```
+
+5. **Push feature branch**:
+   ```bash
+   git push -u origin <branch-name>
+   ```
+
+6. **Create pull request** (if user requests):
+   ```bash
+   gh pr create --title "..." --body "..."
+   ```
+
+### 9.3 Pre-Commit Verification
+
+Before EVERY commit operation, Claude Code MUST:
+
+1. Verify current branch is NOT a protected branch
+2. If on protected branch:
+   - STOP immediately
+   - Inform user of the violation
+   - Ask user to confirm creation of feature branch
+   - Create feature branch and switch to it
+   - ONLY THEN proceed with changes
+
+**Example verification**:
+```bash
+CURRENT_BRANCH=$(git branch --show-current)
+if [[ "$CURRENT_BRANCH" == "master" ]] || \
+   [[ "$CURRENT_BRANCH" == "main" ]] || \
+   [[ "$CURRENT_BRANCH" == "develop" ]]; then
+    echo "ERROR: Cannot commit directly to protected branch: $CURRENT_BRANCH"
+    exit 1
+fi
+```
+
+### 9.4 Enforcement and Violations
+
+**If Claude Code detects it is on a protected branch:**
+- MUST refuse to make any commits
+- MUST inform the user immediately
+- MUST offer to create a feature branch
+- MUST NOT proceed until on a valid feature branch
+
+**Violation consequences:**
+- Session should be terminated
+- All changes should be reverted
+- User should be notified of the policy violation
+
+**The ONLY exception:**
+- Merge commits created by pull request merges (handled by GitHub/GitLab, not by Claude Code)
+
+### 9.5 Branch Lifecycle
+
+**Feature branches MUST be:**
+- Short-lived (ideally < 1 week)
+- Scoped to a single logical change
+- Deleted after merge (Claude Code should suggest this)
+
+**After PR merge, Claude Code should:**
+1. Switch back to master/main
+2. Pull latest changes
+3. Suggest deleting the merged feature branch:
+   ```bash
+   git branch -d <feature-branch>
+   git push origin --delete <feature-branch>
+   ```
+
+## 10. Safety Rule: When in Doubt, Stop
 
 > **If Claude Code is unsure whether an action is allowed,**
 > **it MUST stop and ask the user.**
@@ -545,16 +700,17 @@ This applies especially to:
 - Dependency updates
 - API changes
 
-## 10. Enforcement Statement
+## 11. Enforcement Statement
 
 Failure to follow this document indicates that:
 - The agent is operating outside its mandate
 - Output should not be trusted
 - The session may need to be restarted
 
-## 11. C++/CUDA Specific Forbidden Practices
+## 12. C++/CUDA Specific Forbidden Practices
 
 Claude Code MUST NEVER:
+- **Commit directly to protected branches** (master, main, develop) - see Section 9
 - Use raw pointers for ownership (use smart pointers)
 - Ignore CUDA error codes
 - Use `using namespace std;` in headers
@@ -567,9 +723,9 @@ Claude Code MUST NEVER:
 - Modify global state without synchronization
 - Launch CUDA kernels without error checking
 
-## 12. Character Encoding and Language Requirements
+## 13. Character Encoding and Language Requirements
 
-### 12.1 ASCII-Only Requirement
+### 13.1 ASCII-Only Requirement
 
 **STRICTLY FORBIDDEN**: Use of ANY Non-ASCII characters in:
 - Source code files (`.cpp`, `.hpp`, `.cu`, `.cuh`, `.h`)
@@ -616,7 +772,7 @@ int result = 42;  // Correct implementation
 void function() {}
 ```
 
-### 12.2 British English Requirement
+### 13.2 British English Requirement
 
 **MANDATORY**: All English text MUST use British English spelling and conventions:
 

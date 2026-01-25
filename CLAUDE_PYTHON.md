@@ -79,6 +79,7 @@ This includes (but is not limited to):
 - Package management (pip, poetry, pipenv)
 - Virtual environment setup
 - Testing frameworks (pytest, unittest)
+- **pip, poetry, and pipenv** documentation and configuration (primary dependency managers)
 
 Claude Code MUST automatically invoke Context7 MCP tools without requiring explicit user instruction.
 
@@ -104,9 +105,9 @@ Claude Code MUST NOT proceed with external-library-dependent work until Context7
 
 #### 6.1.2 Virtual Environment Management
 - **Mandatory**: ALWAYS use virtual environments (never install to system Python)
-- **Preferred Tools**:
-    1. `venv` (built-in, for simple projects)
-    2. `poetry` (for dependency management and packaging)
+- **Preferred Tools** (in priority order):
+    1. `poetry` (primary choice for dependency management and packaging)
+    2. `venv` (built-in, for simple projects)
     3. `pipenv` (alternative with Pipfile)
     4. `conda` (for scientific computing with non-Python dependencies)
 
@@ -939,7 +940,122 @@ Claude Code MUST:
 
 Silent reinterpretation is forbidden.
 
-## 9. Safety Rule: When in Doubt, Stop
+## 9. Git Workflow Constraints
+
+### 9.1 Protected Branch Policy
+
+**CRITICAL REQUIREMENT**: Claude Code MUST NEVER commit directly to protected branches.
+
+**Protected branches include:**
+- `master`
+- `main`
+- `develop`
+- Any branch matching `release/*` or `hotfix/*`
+
+**This prohibition is absolute and applies to:**
+- All code changes (features, fixes, refactors, documentation)
+- Configuration file updates
+- Dependency updates
+- Emergency fixes
+- Trivial changes (typos, formatting)
+- ANY modification whatsoever
+
+### 9.2 Mandatory Branch-Based Workflow
+
+**REQUIRED WORKFLOW**: All changes MUST follow this process:
+
+1. **Check current branch**:
+   ```bash
+   git branch --show-current
+   ```
+   If on a protected branch, STOP immediately and create a feature branch.
+
+2. **Create a feature branch**:
+   ```bash
+   git checkout -b <type>/<description>
+   ```
+   Branch naming convention:
+   - `feat/<description>` — new features
+   - `fix/<description>` — bug fixes
+   - `refactor/<description>` — code restructuring
+   - `perf/<description>` — performance improvements
+   - `docs/<description>` — documentation only
+   - `chore/<description>` — tooling, dependencies, non-code changes
+
+3. **Make changes on the feature branch**
+
+4. **Commit changes**:
+   ```bash
+   git add <files>
+   git commit -m "type(scope): description"
+   ```
+
+5. **Push feature branch**:
+   ```bash
+   git push -u origin <branch-name>
+   ```
+
+6. **Create pull request** (if user requests):
+   ```bash
+   gh pr create --title "..." --body "..."
+   ```
+
+### 9.3 Pre-Commit Verification
+
+Before EVERY commit operation, Claude Code MUST:
+
+1. Verify current branch is NOT a protected branch
+2. If on protected branch:
+   - STOP immediately
+   - Inform user of the violation
+   - Ask user to confirm creation of feature branch
+   - Create feature branch and switch to it
+   - ONLY THEN proceed with changes
+
+**Example verification**:
+```bash
+CURRENT_BRANCH=$(git branch --show-current)
+if [[ "$CURRENT_BRANCH" == "master" ]] || \
+   [[ "$CURRENT_BRANCH" == "main" ]] || \
+   [[ "$CURRENT_BRANCH" == "develop" ]]; then
+    echo "ERROR: Cannot commit directly to protected branch: $CURRENT_BRANCH"
+    exit 1
+fi
+```
+
+### 9.4 Enforcement and Violations
+
+**If Claude Code detects it is on a protected branch:**
+- MUST refuse to make any commits
+- MUST inform the user immediately
+- MUST offer to create a feature branch
+- MUST NOT proceed until on a valid feature branch
+
+**Violation consequences:**
+- Session should be terminated
+- All changes should be reverted
+- User should be notified of the policy violation
+
+**The ONLY exception:**
+- Merge commits created by pull request merges (handled by GitHub/GitLab, not by Claude Code)
+
+### 9.5 Branch Lifecycle
+
+**Feature branches MUST be:**
+- Short-lived (ideally < 1 week)
+- Scoped to a single logical change
+- Deleted after merge (Claude Code should suggest this)
+
+**After PR merge, Claude Code should:**
+1. Switch back to master/main
+2. Pull latest changes
+3. Suggest deleting the merged feature branch:
+   ```bash
+   git branch -d <feature-branch>
+   git push origin --delete <feature-branch>
+   ```
+
+## 10. Safety Rule: When in Doubt, Stop
 
 > **If Claude Code is unsure whether an action is allowed,**
 > **it MUST stop and ask the user.**
@@ -953,16 +1069,17 @@ This applies especially to:
 - Configuration changes
 - Security-related code
 
-## 10. Enforcement Statement
+## 11. Enforcement Statement
 
 Failure to follow this document indicates that:
 - The agent is operating outside its mandate
 - Output should not be trusted
 - The session may need to be restarted
 
-## 11. Python Specific Forbidden Practices
+## 12. Python Specific Forbidden Practices
 
 Claude Code MUST NEVER:
+- **Commit directly to protected branches** (master, main, develop) - see Section 9
 - Install packages to system Python (always use virtual environments)
 - Use `import *` (except in `__init__.py` for re-exports)
 - Use mutable default arguments (`def func(arg=[]):`)
@@ -977,9 +1094,9 @@ Claude Code MUST NEVER:
 - Commit code with failing tests
 - Skip updating requirements.txt after installing packages
 
-## 12. Character Encoding and Language Requirements
+## 13. Character Encoding and Language Requirements
 
-### 12.1 ASCII-Only Requirement
+### 13.1 ASCII-Only Requirement
 
 **STRICTLY FORBIDDEN**: Use of ANY Non-ASCII characters in:
 - Source code files (`.py`, `.pyi`)
@@ -1028,7 +1145,7 @@ def function():
     pass
 ```
 
-### 12.2 British English Requirement
+### 13.2 British English Requirement
 
 **MANDATORY**: All English text MUST use British English spelling and conventions:
 
