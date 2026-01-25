@@ -56,6 +56,29 @@ This template contains language-specific documentation and configuration files t
   - Testing/coverage outputs, Jupyter checkpoints
   - IDE configurations (VSCode, PyCharm)
 
+### Claude Code Skills
+
+- **.claude/skills/roadmap/** - Agent Roadmaps skill for managing multi-session workflows
+  - Automatic session-start checks for active roadmaps
+  - Structured commands for roadmap creation and management
+  - State validation and transition enforcement
+  - Session handoff generation for continuity
+  - See [.claude/skills/roadmap/README.md](.claude/skills/roadmap/README.md) for details
+
+- **.claude/skills/pre-commit/** - Pre-Commit Validation skill for automated code quality checks
+  - Automatic project type detection (Python vs C++/CUDA)
+  - Comprehensive validation (formatters, linters, type checkers, tests)
+  - Auto-fix support for formatting issues
+  - Consolidated error reporting
+  - See [.claude/skills/pre-commit/README.md](.claude/skills/pre-commit/README.md) for details
+
+- **.claude/skills/dependency/** - Dependency Management skill for adding dependencies
+  - Automatic manifest file updates (requirements.txt, CMakeLists.txt, conanfile.txt)
+  - Package installation automation (pip3, conan)
+  - Documentation reminders for README.md updates
+  - Version constraint management
+  - See [.claude/skills/dependency/README.md](.claude/skills/dependency/README.md) for details
+
 ### General Files
 
 - **LICENSE** - Creative Commons BY-NC-SA 4.0
@@ -82,12 +105,21 @@ cp /path/to/repo_template/CONTRIBUTING_CPP.md ./CONTRIBUTING.md
 cp /path/to/repo_template/.gitignore_cpp ./.gitignore
 cp /path/to/repo_template/LICENSE ./LICENSE
 
+# Copy Claude Code configuration and skills
+cp -r /path/to/repo_template/.claude ./.claude
+
+# Install skill dependencies
+pip3 install -r .claude/skills/roadmap/requirements.txt
+
+# Copy agent_roadmaps system
+cp -r /path/to/repo_template/agent_roadmaps ./agent_roadmaps
+
 # Initialize project structure
 mkdir -p include/project_name src cuda tests docs
 
 # Create initial commit
 git add .
-git commit -m "chore: initialize project from template"
+git commit -m "chore: initialise project from template"
 ```
 
 ### Creating a New Python Project
@@ -103,6 +135,12 @@ cp /path/to/repo_template/CONTRIBUTING_PYTHON.md ./CONTRIBUTING.md
 cp /path/to/repo_template/.gitignore_python ./.gitignore
 cp /path/to/repo_template/LICENSE ./LICENSE
 
+# Copy Claude Code configuration and skills
+cp -r /path/to/repo_template/.claude ./.claude
+
+# Copy agent_roadmaps system
+cp -r /path/to/repo_template/agent_roadmaps ./agent_roadmaps
+
 # Initialize project structure
 mkdir -p src/package_name tests docs
 
@@ -110,9 +148,12 @@ mkdir -p src/package_name tests docs
 python3.9 -m venv .venv
 source .venv/bin/activate
 
+# Install skill dependencies
+pip3 install -r .claude/skills/roadmap/requirements.txt
+
 # Create initial commit
 git add .
-git commit -m "chore: initialize project from template"
+git commit -m "chore: initialise project from template"
 ```
 
 ## Key Features
@@ -143,11 +184,102 @@ git commit -m "chore: initialize project from template"
 
 ## Roadmap System
 
-Both templates include support for the `agents_roadmaps/` system for managing complex, multi-session development tasks. This system provides:
-- Structured task breakdown
+Both templates include support for the `agent_roadmaps/` system for managing complex, multi-session development tasks. This system provides:
+- Structured task breakdown with phases and tasks
 - Session continuity across AI agent interactions
 - Invariant tracking for critical constraints
 - Progress tracking and handoff documentation
+- Authority hierarchy (INVARIANTS.md > ROADMAP.md > roadmap.yml)
+
+### Roadmap Skill
+
+The template includes a Claude Code skill ([.claude/skills/roadmap/](.claude/skills/roadmap/)) that provides structured commands for roadmap management:
+
+**Available Commands:**
+- `/roadmap check` - Check for active roadmaps (mandatory at session start)
+- `/roadmap create <name>` - Create new roadmap directory structure
+- `/roadmap status` - Display detailed roadmap status with progress
+- `/roadmap update <action>` - Update state (complete-task, block-task, etc.)
+- `/roadmap handoff` - Generate session handoff files
+- `/roadmap complete` - Mark roadmap as completed and deactivate
+
+**Key Features:**
+- Automatic session-start checks for active roadmaps
+- Single active roadmap rule enforcement
+- State machine validation for transitions
+- YAML-based state management
+- Session handoff generation for continuity
+
+See [.claude/skills/roadmap/README.md](.claude/skills/roadmap/README.md) for comprehensive documentation.
+
+### When to Use Roadmaps
+
+Create a roadmap when a task meets ANY of these criteria:
+- Cannot be completed within 1-2 Claude Code sessions
+- Involves system-wide refactor or architectural change
+- Requires long-lived constraints that must survive context resets
+- Has multiple dependent phases or non-trivial rollback risk
+
+### Pre-Commit Validation Skill
+
+The template includes a Claude Code skill ([.claude/skills/pre-commit/](.claude/skills/pre-commit/)) for automated code quality validation:
+
+**Available Commands:**
+- `/pre-commit validate` - Run all validation checks (formatters, linters, type checkers, tests)
+- `/pre-commit fix` - Auto-fix formatting issues
+
+**Supported Tools:**
+
+Python projects:
+- black (formatter)
+- isort (import sorter)
+- ruff (linter)
+- mypy (type checker)
+- pytest (test runner)
+
+C++/CUDA projects:
+- clang-format (formatter)
+- clang-tidy (linter)
+- cppcheck (static analyser)
+- cmake (build verification)
+
+**Key Features:**
+- Automatic project type detection
+- Comprehensive validation with consolidated reporting
+- Auto-fix support for formatters
+- Tool availability checks with installation guidance
+- Exit codes for CI/CD integration
+
+See [.claude/skills/pre-commit/README.md](.claude/skills/pre-commit/README.md) for comprehensive documentation.
+
+### Dependency Management Skill
+
+The template includes a Claude Code skill ([.claude/skills/dependency/](.claude/skills/dependency/)) for managing project dependencies:
+
+**Available Commands:**
+- `/dependency add <package> [version]` - Add a dependency to the project
+
+**Behaviour:**
+
+Python projects:
+- Updates requirements.txt
+- Installs via pip3
+- Reminds to update README.md
+
+C++/CUDA projects:
+- Updates conanfile.txt (if exists)
+- Updates CMakeLists.txt with find_package()
+- Installs via conan (if configured)
+- Reminds to update README.md
+
+**Key Features:**
+- Automatic project type detection
+- Manifest file updates (requirements.txt, CMakeLists.txt, conanfile.txt)
+- Package installation automation
+- Version constraint management
+- Documentation reminders
+
+See [.claude/skills/dependency/README.md](.claude/skills/dependency/README.md) for comprehensive documentation.
 
 ## Contributing
 

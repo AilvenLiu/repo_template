@@ -1,0 +1,64 @@
+# roadmap.yml — Canonical Execution State (Template)
+#
+# This file is the ONLY authoritative source of execution progress
+# for a roadmap task. It must reflect completed work, not intentions.
+
+roadmap:
+  name: example-roadmap
+  description: >
+    Example template demonstrating the minimal, correct structure
+    of a roadmap execution state file.
+
+status:
+  active: true
+  blocked: false
+  completed: false
+
+# Exactly one task MUST be active at any time.
+current_focus:
+  phase: phase-0
+  task: task-0-1
+
+phases:
+  - id: phase-0
+    title: Baseline & Freeze
+    status: active
+    tasks:
+      - id: task-0-1
+        title: Establish baseline tests
+        status: active
+        notes: >
+          Ensure current behavior is fully captured before any change.
+      - id: task-0-2
+        title: Document current architecture
+        status: pending
+
+  - id: phase-1
+    title: Structural Refactor
+    status: pending
+    tasks:
+      - id: task-1-1
+        title: Introduce new module boundaries
+        status: pending
+      - id: task-1-2
+        title: Deprecate legacy interfaces
+        status: pending
+
+  - id: phase-2
+    title: Behavioral Change
+    status: pending
+    tasks:
+      - id: task-2-1
+        title: Add feature-flagged new behavior
+        status: pending
+
+  - id: phase-3
+    title: Optimization & Hardening
+    status: pending
+    tasks:
+      - id: task-3-1
+        title: Performance optimization
+        status: pending
+      - id: task-3-2
+        title: Stability and regression testing
+        status: pending
