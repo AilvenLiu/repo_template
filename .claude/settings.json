@@ -3,9 +3,11 @@
     "Read(**)",
     "Bash(*)",
     "LS(**)",
+    "Tree(**)",
     "Grep(**)",
     "Glob(**)",
     "WebFetch",
+    "WebSearch",
     "MCP"
   ]
 }
