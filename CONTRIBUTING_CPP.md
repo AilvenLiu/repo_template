@@ -27,9 +27,28 @@ The repository follows a **trunk-based development model** with the following co
     - All tests must pass
     - No compiler warnings
 
+**STRICTLY FORBIDDEN**: Direct commits to `master`, `main`, or `develop` branches are **absolutely prohibited** under all circumstances. This applies to:
+- Human developers
+- AI coding agents (Claude Code, GitHub Copilot, etc.)
+- Automated scripts and CI/CD systems (except merge operations)
+- Emergency hotfixes (must still use a branch)
+
+**Violation of this rule is considered a critical failure and may result in:**
+- Immediate revert of the commit
+- Repository access restrictions
+- Session termination for AI agents
+
+**The ONLY way to modify protected branches is through:**
+1. Creating a feature/fix/hotfix branch
+2. Making changes on that branch
+3. Opening a pull request
+4. Passing all CI/CD checks
+5. Obtaining required approvals
+6. Merging via pull request
+
 Optional long-lived branches (if applicable):
-- `release/*` — release stabilization
-- `hotfix/*` — urgent fixes on released versions
+- `release/*` — release stabilisation
+- `hotfix/*` — urgent fixes on released versions (still require PR to merge to master)
 
 ### 2.2 Feature / Work Branches
 
