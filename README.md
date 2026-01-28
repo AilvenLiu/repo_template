@@ -58,6 +58,14 @@ This template contains language-specific documentation and configuration files t
 
 ### Claude Code Skills
 
+- **.claude/skills/init/** - Session Initialization skill for context-aware constraint loading
+  - MANDATORY at session start - run `/init` before any other action
+  - Automatic project type detection (Python vs C++/CUDA)
+  - Smart constraint loading based on current context (modified files, git status)
+  - Active roadmap detection and protected branch warnings
+  - Loads only relevant constraints (500-1000 lines vs 2000+ lines)
+  - See [.claude/skills/init/README.md](.claude/skills/init/README.md) for details
+
 - **.claude/skills/roadmap/** - Agent Roadmaps skill for managing multi-session workflows
   - Automatic session-start checks for active roadmaps
   - Structured commands for roadmap creation and management
@@ -78,6 +86,16 @@ This template contains language-specific documentation and configuration files t
   - Documentation reminders for README.md updates
   - Version constraint management
   - See [.claude/skills/dependency/README.md](.claude/skills/dependency/README.md) for details
+
+### Constraint Files
+
+- **.claude/constraints/** - Topic-specific constraint files for on-demand loading
+  - **python/** - Python-specific constraints (testing, formatting, type-checking, dependencies, documentation, error-handling, security)
+  - **cpp/** - C++/CUDA-specific constraints (testing, formatting, cmake, cuda, memory-safety, static-analysis, documentation)
+  - **common/** - Language-agnostic constraints (git-workflow, roadmap-awareness, session-discipline)
+  - Loaded automatically by `/init` skill based on context
+  - Each file is self-contained and focused on a single topic (150-700 lines)
+  - See [.claude/constraints/python/README.md](.claude/constraints/python/README.md) and [.claude/constraints/cpp/README.md](.claude/constraints/cpp/README.md) for details
 
 ### General Files
 
@@ -156,13 +174,45 @@ git add .
 git commit -m "chore: initialise project from template"
 ```
 
+### Using the Template in Your Workflow
+
+Once you've initialized a project from the template, start every Claude Code session with:
+
+```bash
+/init
+```
+
+This will:
+1. Detect your project type (Python or C++/CUDA)
+2. Check for active roadmaps
+3. Analyze your current git status
+4. Load only the relevant constraints for your current work
+5. Warn about protected branches
+
+Example session:
+```bash
+# Start Claude Code session
+$ /init
+
+✓ Project type: PYTHON
+✓ Current branch: feature/add-api
+✓ Found 2 modified file(s)
+
+Loaded constraints: git-workflow, session-discipline, formatting, type-checking
+
+# Now proceed with your work
+$ # Make changes, run tests, commit, etc.
+```
+
 ## Key Features
 
 ### AI Agent Integration
 - Formal operating constraints for AI coding agents
+- Session initialization with context-aware constraint loading (`/init` skill)
 - Roadmap-based development workflow
 - Context7 MCP integration for external knowledge
 - Session continuity and state management
+- On-demand constraint loading (500-1000 lines vs 2000+ lines)
 
 ### Language-Specific Standards
 - Detailed technical requirements with specific versions

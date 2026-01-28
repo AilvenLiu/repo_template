@@ -1,825 +1,295 @@
 # Agent Operating Constraints for C++/CUDA Projects
 
-> **This document defines mandatory operating constraints for Claude Code and all AI agents working in C++/CUDA repositories.**   
-> These rules are not suggestions. Violations are considered critical failures.
+This document defines the operating constraints for AI coding agents (like Claude Code) working on C++/CUDA projects. It provides a lightweight overview and references the detailed constraint system.
+
+## CRITICAL: Mandatory Session Initialization
+
+**THIS IS NON-NEGOTIABLE AND CANNOT BE SKIPPED**
+
+At the start of EVERY Claude Code session, the FIRST action MUST be:
+
+```bash
+/init
+```
+
+The `/init` skill will:
+- Detect project type (C++/CUDA)
+- Check for active roadmaps
+- Analyze git status and modified files
+- Load only relevant constraints based on your current work
+- Warn about protected branches
+
+**Skipping session initialization is a critical agent failure.**
 
 ## 1. Absolute Authority and Precedence
 
-Claude Code MUST obey the following authority order:
-1. `agents_roadmaps/<active>/INVARIANTS.md` (if an active roadmap exists)
-2. `agents_roadmaps/README.md`
-3. This `CLAUDE.md`
-4. `CONTRIBUTING.md`
-5. Repository source code and comments
-6. Session-level prompts or instructions
+When instructions conflict, the following hierarchy applies (highest to lowest authority):
 
-If any conflict exists, **higher authority always wins.**
+1. **Active Roadmap INVARIANTS.md** (if roadmap exists) - Constitutional constraints
+2. **Active Roadmap ROADMAP.md** (if roadmap exists) - Long-form execution manual
+3. **Active Roadmap roadmap.yml** (if roadmap exists) - Canonical state machine
+4. **This file (CLAUDE.md)** - General operating constraints
+5. **CONTRIBUTING.md** - Contribution guidelines
+6. **User instructions in current session** - Session-specific guidance
 
-## 2. Mandatory Roadmap Awareness (Startup Requirement)
+If any instruction conflicts with a higher authority, the higher authority wins.
 
-### 2.1 Always Check for Active Roadmaps
+## 2. Critical Rules (Always Active)
 
-**At the beginning of EVERY session**, Claude Code MUST:
-1. Inspect the `agents_roadmaps/` directory
-2. Read `agents_roadmaps/README.md`
-3. Determine whether there is an **active, unfinished roadmap**
+These rules apply to EVERY session, regardless of context:
 
-If an active roadmap exists:
-- Claude Code MUST NOT:
-    - Start unrelated work
-    - Propose parallel large tasks
-    - Redefine scope or architecture outside the roadmap
-- Claude Code MUST:
-    - Follow the active roadmap's `prompt.md`
-    - Operate strictly within its defined current phase/task
+### 2.1 Protected Branch Policy
 
-Skipping this check is forbidden.
+**ABSOLUTE PROHIBITION**: Never commit directly to:
+- `master`
+- `main`
+- `develop`
+- `release/*`
+- `hotfix/*`
 
-## 3. Mandatory Roadmap Creation Trigger
+Always work on feature branches: `feature/<description>`, `bugfix/<description>`, etc.
 
-Claude Code MUST proactively ask the user whether to create a new roadmap **before proceeding** if a requested task meets **any** of the following criteria:
-- Cannot be confidently completed within 1-2 Claude Code sessions
-- Involves **system-wide refactor**, architectural change, or invariant-sensitive logic
-- Requires **long-lived constraints** across sessions
-- Contains multiple dependent phases, steps, or rollback risks
+### 2.2 Roadmap Awareness
 
-### 3.1 Roadmap Creation Protocol
+At session start (via `/init`), check for active roadmaps:
+- If active roadmap exists, read all roadmap files in authority order
+- Operate ONLY on the current focus task
+- Never skip or ignore the roadmap
 
-If the user agrees to start a roadmap, Claude Code MUST:
-1. Create a new subdirectory under `agents_roadmaps/`
-2. Populate it with all **required files and structure** as defined in `agents_roadmaps/README.md`
-3. STOP and wait for confirmation **before implementing production code**
+### 2.3 Pre-Commit Verification
 
-Partial or informal roadmap creation is not allowed.
+Before EVERY commit:
+1. Verify you're on a feature branch (not protected branch)
+2. Run `/pre-commit validate` to check formatting, linting, build
+3. Fix any issues before committing
+4. Use conventional commit messages
 
-## 4. Roadmap Execution Discipline
+### 2.4 When to Stop and Ask
 
-When operating under an active roadmap, Claude Code MUST:
-- Treat roadmap documents as **frozen contracts**
-- NOT reinterpret or redesign objectives unless explicitly instructed
-- NOT advance phases or tasks implicitly
-- Update execution state only via:
-    - `roadmap.yml`
-    - A new session handoff file in `sessions/`
+STOP and ask the user before:
+- Making architectural changes
+- Modifying core abstractions or interfaces
+- Changing CMake configuration or dependencies
+- Altering CUDA kernel launch configurations
+- Modifying memory management patterns
+- Any action you're uncertain about
 
-If blocked, Claude Code MUST report the blockage instead of working around constraints.
+## 3. Detailed Constraints System
 
-## 5. Mandatory Use of Context7 MCP for External Knowledge
+Detailed constraints are organised by topic in `.claude/constraints/cpp/`:
 
-### 5.1 Context7 Is the Default Source of Truth
+- **testing.md** - Google Test, Catch2, coverage (70%+)
+- **formatting.md** - clang-format, naming conventions
+- **cmake.md** - CMake 3.20+, modern target-based approach
+- **cuda.md** - CUDA 11.0+, memory management, error checking
+- **memory-safety.md** - RAII (mandatory), smart pointers, ownership
+- **static-analysis.md** - clang-tidy, cppcheck
+- **documentation.md** - Doxygen-style comments
 
-Claude Code MUST follow this rule:
+Common constraints (apply to all projects):
+- **common/git-workflow.md** - Branch policy, commit conventions
+- **common/roadmap-awareness.md** - Roadmap execution discipline
+- **common/session-discipline.md** - Session continuity, decision hygiene
 
-> **Always use Context7 when code generation, setup steps, configuration, or library/API documentation is required.**
+**These constraints are loaded automatically by `/init` based on your current work.**
 
-This includes (but is not limited to):
-- C++ standard library APIs (C++17, C++20, C++23)
-- Third-party library documentation (Boost, Eigen, OpenCV, etc.)
-- CUDA toolkit APIs and programming guides
-- CMake configuration patterns and best practices
-- Build system setup and toolchain configuration
-- Compiler-specific features and extensions
-- **Conan package manager** documentation and configuration (primary dependency manager)
-
-Claude Code MUST automatically invoke Context7 MCP tools without requiring explicit user instruction.
-
-### 5.2 MCP Configuration Requirement
-
-If Claude Code detects that Context7 MCP is not configured for this project, it MUST immediately configure it using:
-
+For manual reference:
 ```bash
-claude mcp add --transport http context7 https://mcp.context7.com/mcp --header "CONTEXT7_API_KEY: ctx7sk-0eaf81b0-48fa-418f-9e7f-181103e50665"
+# Read specific constraint file
+cat .claude/constraints/cpp/cuda.md
+
+# Or use the Read tool
+Read .claude/constraints/cpp/memory-safety.md
 ```
 
-Claude Code MUST NOT proceed with external-library-dependent work until Context7 MCP is available.
+## 4. C++/CUDA-Specific Quick Reference
 
-## 6. C++/CUDA Specific Development Standards
+### 4.1 C++ Version
+- **Minimum**: C++17
+- **Recommended**: C++20
+- **Compiler**: GCC 9+, Clang 10+, MSVC 2019+
 
-### 6.1 Language Standards and Compiler Requirements
+### 4.2 CUDA Version
+- **Minimum**: CUDA 11.0
+- **Recommended**: CUDA 12.0+
+- **Compute Capability**: 7.0+ (Volta and newer)
 
-#### 6.1.1 C++ Standard Compliance
-- **Minimum Standard**: C++17
-- **Preferred Standard**: C++20 or C++23 (when compiler support is available)
-- **Standard Library**: Use standard library features over third-party alternatives when equivalent
-- **Compiler Flags**: Enable strict warnings (`-Wall -Wextra -Wpedantic` for GCC/Clang, `/W4` for MSVC)
+### 4.3 Build System
+- **CMake**: 3.20+ (minimum), 3.25+ (recommended)
+- **Dependency Management**: Conan (primary), vcpkg (alternative)
+- **Build Type**: Debug for development, Release for production
 
-#### 6.1.2 Supported Compilers
-- **GCC**: 9.0 or later (for C++17), 10.0+ (for C++20)
-- **Clang**: 10.0 or later (for C++17), 12.0+ (for C++20)
-- **MSVC**: Visual Studio 2019 (16.0) or later
-- **CUDA**: nvcc with host compiler compatibility
+### 4.4 Code Quality Tools
+- **Formatter**: clang-format (LLVM style, modified)
+- **Static Analysis**: clang-tidy, cppcheck
+- **CUDA Analysis**: cuda-memcheck, compute-sanitizer
+- **Test Framework**: Google Test (primary), Catch2 (alternative)
+- **Coverage**: gcov/lcov (minimum 70%)
 
-#### 6.1.3 CUDA Requirements
-- **Minimum CUDA Toolkit**: 11.0
-- **Preferred CUDA Toolkit**: 12.0 or later
-- **Compute Capability**: Document minimum required (e.g., sm_70 for Volta+)
-- **CUDA Standard**: Match or be compatible with C++ standard used
+### 4.5 Memory Safety (MANDATORY)
+- **RAII**: All resources MUST use RAII
+- **Smart Pointers**: Use `std::unique_ptr`, `std::shared_ptr`
+- **Raw Pointers**: Only for non-owning references
+- **CUDA Memory**: Wrap in RAII classes (never raw cudaMalloc/cudaFree)
+- **Error Checking**: Check ALL CUDA API calls
 
-### 6.2 Memory Management and Resource Handling
+### 4.6 Testing
+- **Minimum coverage**: 70%
+- **Target coverage**: 80%+
+- **Test file naming**: `test_<module>.cpp`
+- **CUDA tests**: Separate test suite for GPU code
+- **Memory checks**: Run valgrind (CPU) and cuda-memcheck (GPU)
 
-#### 6.2.1 C++ Memory Management
-- **RAII Principle**: All resources MUST be managed via RAII
-- **Smart Pointers**:
-    - Use `std::unique_ptr` for exclusive ownership
-    - Use `std::shared_ptr` only when shared ownership is necessary
-    - Use `std::weak_ptr` to break circular references
-    - Avoid raw `new`/`delete` in application code
-- **Ownership Semantics**: Document ownership explicitly in function signatures and comments
-- **Move Semantics**: Implement move constructors and move assignment for resource-owning types
+### 4.7 Documentation
+- **Doxygen**: All public functions, classes, CUDA kernels
+- **README.md**: Build instructions, dependencies, usage
+- **Inline comments**: For complex algorithms only
 
-Example:
-```cpp
-// Good: Clear ownership semantics
-std::unique_ptr<Resource> createResource();
-void processResource(const Resource& res);  // Non-owning
-void takeOwnership(std::unique_ptr<Resource> res);  // Transfer ownership
+## 5. Workflow Summary
 
-// Bad: Unclear ownership
-Resource* createResource();  // Who owns this?
-void processResource(Resource* res);  // Does this take ownership?
+### Starting a Session
+```bash
+# 1. Start Claude Code session
+/init
+
+# 2. Review loaded constraints
+# (displayed by /init)
+
+# 3. Check git status
+git status
+
+# 4. Create feature branch if needed
+git checkout -b feature/my-feature
+
+# 5. Proceed with work
 ```
 
-#### 6.2.2 CUDA Memory Management
-- **Device Memory**: Always pair `cudaMalloc` with `cudaFree`
-- **RAII Wrappers**: Create or use RAII wrappers for CUDA resources
-- **Unified Memory**: Document when using `cudaMallocManaged` and prefetch strategies
-- **Memory Pools**: Consider using memory pools for frequent allocations
-- **Error Checking**: Check CUDA errors after EVERY API call
+### Before Committing
+```bash
+# 1. Run pre-commit validation
+/pre-commit validate
 
-Example CUDA RAII wrapper:
+# 2. Fix any issues
+/pre-commit fix  # Auto-fix formatting
+
+# 3. Build and test
+mkdir -p build && cd build
+cmake .. -DCMAKE_BUILD_TYPE=Debug
+cmake --build .
+ctest
+
+# 4. Commit with conventional message
+git add <files>
+git commit -m "feat: add new feature"
+```
+
+### Adding Dependencies
+```bash
+# Use the dependency skill
+/dependency add <package> [version]
+
+# This will:
+# - Update conanfile.txt or CMakeLists.txt
+# - Install via conan (if configured)
+# - Remind to update README.md
+```
+
+## 6. Integration with Skills
+
+This constraint system integrates with Claude Code skills:
+
+- **`/init`** - Session initialisation (MANDATORY at session start)
+- **`/roadmap`** - Multi-session workflow management
+- **`/pre-commit`** - Code quality validation before commits
+- **`/dependency`** - Dependency management
+
+## 7. CUDA-Specific Critical Rules
+
+### 7.1 Error Checking (MANDATORY)
 ```cpp
-template<typename T>
-class CudaDeviceMemory {
-    T* ptr_ = nullptr;
-    size_t size_ = 0;
+// ALWAYS check CUDA API calls
+cudaError_t err = cudaMalloc(&ptr, size);
+if (err != cudaSuccess) {
+    // Handle error
+}
+
+// Or use error checking macro
+CUDA_CHECK(cudaMalloc(&ptr, size));
+```
+
+### 7.2 Memory Management (MANDATORY)
+```cpp
+// Good: RAII wrapper
+class CudaMemory {
+    void* ptr_;
 public:
-    explicit CudaDeviceMemory(size_t count) : size_(count) {
-        cudaError_t err = cudaMalloc(&ptr_, count * sizeof(T));
-        if (err != cudaSuccess) {
-            throw std::runtime_error(cudaGetErrorString(err));
-        }
+    CudaMemory(size_t size) {
+        CUDA_CHECK(cudaMalloc(&ptr_, size));
     }
-    ~CudaDeviceMemory() { if (ptr_) cudaFree(ptr_); }
-    // Delete copy, implement move
-    CudaDeviceMemory(const CudaDeviceMemory&) = delete;
-    CudaDeviceMemory& operator=(const CudaDeviceMemory&) = delete;
-    CudaDeviceMemory(CudaDeviceMemory&& other) noexcept
-        : ptr_(other.ptr_), size_(other.size_) {
-        other.ptr_ = nullptr;
-        other.size_ = 0;
+    ~CudaMemory() {
+        cudaFree(ptr_);  // Automatic cleanup
     }
-    T* get() { return ptr_; }
-    size_t size() const { return size_; }
 };
+
+// Bad: Raw cudaMalloc/cudaFree
+void* ptr;
+cudaMalloc(&ptr, size);  // Memory leak risk
+// ... use ptr ...
+cudaFree(ptr);  // May not be called if exception thrown
 ```
 
-### 6.3 File Organization and Project Structure
-
-#### 6.3.1 Header Files (`.h`, `.hpp`)
-- **Content**: Declarations, inline functions, template definitions
-- **Include Guards**: Use `#pragma once` (preferred) or traditional include guards
-- **Naming Convention**: `PROJECT_MODULE_FILENAME_H` for traditional guards
-- **Forward Declarations**: Use when possible to reduce compilation dependencies
-- **Header-Only Libraries**: Place in separate directory (e.g., `include/`)
-
-#### 6.3.2 Implementation Files (`.cpp`, `.cu`)
-- **Content**: Function and method definitions
-- **CUDA Files** (`.cu`): CUDA kernels, device functions, and host-device interface
-- **Separation**: Keep CUDA code separate from pure C++ when possible
-- **Compilation Units**: Organize to minimize recompilation on changes
-
-#### 6.3.3 Directory Structure
-```
-project_root/
-├── CMakeLists.txt
-├── README.md
-├── include/
-│   └── project_name/
-│       ├── module1/
-│       │   ├── header1.hpp
-│       │   └── header2.hpp
-│       └── module2/
-├── src/
-│   ├── module1/
-│   │   ├── impl1.cpp
-│   │   └── impl2.cpp
-│   └── module2/
-├── cuda/
-│   ├── kernels/
-│   │   ├── kernel1.cu
-│   │   └── kernel2.cu
-│   └── utils/
-├── tests/
-│   ├── unit/
-│   ├── integration/
-│   └── cuda/
-├── benchmarks/
-├── docs/
-└── third_party/
-```
-
-
-### 6.4 Build System Requirements
-
-#### 6.4.1 CMake Standards
-- **Minimum Version**: CMake 3.20 (required for cross-compilation and CUDA support)
-- **Preferred Version**: CMake 3.25+ (for improved CUDA cross-compilation)
-- **Modern CMake**: Use target-based approach, avoid global commands
-- **CUDA Support**: Enable with `enable_language(CUDA)` or `project(... LANGUAGES CXX CUDA)`
-
-#### 6.4.2 CMakeLists.txt Structure
-```cmake
-cmake_minimum_required(VERSION 3.20)
-project(ProjectName VERSION 1.0.0 LANGUAGES CXX CUDA)
-
-# Set C++ standard
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
-
-# Set CUDA standard and architectures
-set(CMAKE_CUDA_STANDARD 17)
-set(CMAKE_CUDA_STANDARD_REQUIRED ON)
-set(CMAKE_CUDA_ARCHITECTURES 87)  # Jetson Orin (adjust for multi-target: 70 75 80 86 87)
-
-# Compiler warnings
-if(MSVC)
-    add_compile_options(/W4)
-else()
-    add_compile_options(-Wall -Wextra -Wpedantic)
-endif()
-
-# Dependencies
-find_package(CUDAToolkit REQUIRED)
-
-# Targets
-add_library(mylib src/impl.cpp cuda/kernel.cu)
-target_include_directories(mylib PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>
-)
-target_link_libraries(mylib PUBLIC CUDA::cudart)
-```
-
-#### 6.4.3 Dependency Management
-- **Preferred Methods** (in priority order):
-    1. `find_package()` for system-installed libraries
-    2. `FetchContent` for header-only or small libraries
-    3. Git submodules for vendored dependencies
-    4. **Conan** (primary choice) for complex dependency graphs
-    5. vcpkg (alternative) for complex dependency graphs when Conan is not suitable
-- **Version Pinning**: Always specify version requirements
-- **Documentation**: List all dependencies in root `README.md` with versions
-
-### 6.5 Error Handling and Diagnostics
-
-#### 6.5.1 C++ Error Handling
-- **Exceptions**: Use for exceptional conditions (resource allocation failures, invalid state)
-- **Return Values**: Use `std::optional<T>` or `std::expected<T, E>` (C++23) for expected failures
-- **Error Codes**: Avoid C-style error codes unless interfacing with C APIs
-- **Noexcept**: Mark functions `noexcept` when they cannot throw
-
-Example:
-```cpp
-// Good: Clear error handling
-std::optional<Config> loadConfig(const std::string& path) {
-    std::ifstream file(path);
-    if (!file.is_open()) {
-        return std::nullopt;  // Expected failure
-    }
-    // Parse config...
-    return config;
-}
-
-// Good: Exception for unexpected failure
-void allocateBuffer(size_t size) {
-    buffer_ = std::make_unique<char[]>(size);
-    if (!buffer_) {
-        throw std::bad_alloc();  // Unexpected failure
-    }
-}
-```
-
-#### 6.5.2 CUDA Error Handling
-- **Mandatory Checking**: Check return value of EVERY CUDA API call
-- **Error Macro**: Define and use error-checking macro
-
-Example:
-```cpp
-#define CUDA_CHECK(call) \
-    do { \
-        cudaError_t err = call; \
-        if (err != cudaSuccess) { \
-            throw std::runtime_error( \
-                std::string("CUDA error at ") + __FILE__ + ":" + \
-                std::to_string(__LINE__) + " - " + \
-                cudaGetErrorString(err)); \
-        } \
-    } while(0)
-
-// Usage
-CUDA_CHECK(cudaMalloc(&d_ptr, size));
-CUDA_CHECK(cudaMemcpy(d_ptr, h_ptr, size, cudaMemcpyHostToDevice));
-```
-
-- **Kernel Launch Errors**: Check with `cudaGetLastError()` and `cudaDeviceSynchronize()`
-```cpp
-myKernel<<<blocks, threads>>>(args);
-CUDA_CHECK(cudaGetLastError());  // Check launch errors
-CUDA_CHECK(cudaDeviceSynchronize());  // Check execution errors
-```
-
-### 6.6 Testing Requirements
-
-#### 6.6.1 Testing Framework
-- **Preferred**: Google Test (gtest/gmock)
-- **Alternative**: Catch2
-- **CUDA Testing**: Separate host and device tests
-
-#### 6.6.2 Test Organization
-```
-tests/
-├── unit/
-│   ├── test_module1.cpp
-│   └── test_module2.cpp
-├── integration/
-│   └── test_workflow.cpp
-└── cuda/
-    ├── test_kernels.cu
-    └── test_memory.cu
-```
-
-#### 6.6.3 Test Coverage Requirements
-- **Minimum Coverage**: 70% line coverage
-- **Critical Paths**: 90%+ coverage for core algorithms
-- **CUDA Kernels**: Test with various input sizes and edge cases
-- **Tools**: Use `gcov`/`lcov` for C++, `nvprof`/`nsight` for CUDA
-
-#### 6.6.4 Test Naming Convention
-```cpp
-TEST(ModuleName, FunctionName_Condition_ExpectedBehavior) {
-    // Arrange
-    // Act
-    // Assert
-}
-
-// Examples
-TEST(VectorMath, DotProduct_EmptyVectors_ReturnsZero) { }
-TEST(CudaKernel, MatrixMultiply_SquareMatrices_CorrectResult) { }
-```
-
-### 6.7 Code Quality and Static Analysis
-
-#### 6.7.1 Mandatory Static Analysis Tools
-- **clang-tidy**: Run with project `.clang-tidy` configuration
-- **cppcheck**: Additional static analysis
-- **CUDA**: Use `cuda-memcheck` for memory errors
-
-#### 6.7.2 .clang-tidy Configuration
-Create `.clang-tidy` in project root:
-```yaml
-Checks: >
-  -*,
-  bugprone-*,
-  cppcoreguidelines-*,
-  modernize-*,
-  performance-*,
-  readability-*,
-  -modernize-use-trailing-return-type,
-  -readability-identifier-length
-
-WarningsAsErrors: '*'
-HeaderFilterRegex: '.*'
-FormatStyle: file
-```
-
-#### 6.7.3 Pre-Commit Requirements
-Before committing, Claude Code MUST:
-1. Run `clang-tidy` on modified files
-2. Run `cppcheck` on modified files
-3. Ensure all tests pass
-4. Verify no compiler warnings
-5. Check formatting (clang-format)
-
-### 6.8 Documentation Standards
-
-#### 6.8.1 Header Documentation
-Use Doxygen-style comments for all public APIs:
+### 7.3 Kernel Documentation (MANDATORY)
 ```cpp
 /**
- * @brief Computes the dot product of two vectors on GPU
- *
- * @param d_a Device pointer to first vector
- * @param d_b Device pointer to second vector
- * @param n Number of elements in each vector
- * @return float The computed dot product
- *
- * @pre d_a and d_b must point to valid device memory of size n
- * @pre n must be positive
- * @post Device memory is not modified
- *
- * @throws std::runtime_error if CUDA operations fail
- *
- * @note This function synchronizes the device
- * @note Time complexity: O(n)
- * @note Space complexity: O(1) device memory
- */
-float cudaDotProduct(const float* d_a, const float* d_b, size_t n);
-```
-
-#### 6.8.2 CUDA Kernel Documentation
-```cpp
-/**
- * @brief Matrix multiplication kernel: C = A * B
- *
+ * @brief Matrix multiplication kernel
  * @param A Input matrix A (M x K)
  * @param B Input matrix B (K x N)
  * @param C Output matrix C (M x N)
  * @param M Number of rows in A
- * @param K Number of columns in A / rows in B
  * @param N Number of columns in B
- *
- * @note Launch configuration:
- *       - Block size: (TILE_SIZE, TILE_SIZE)
- *       - Grid size: ((N + TILE_SIZE - 1) / TILE_SIZE, (M + TILE_SIZE - 1) / TILE_SIZE)
- * @note Shared memory usage: 2 * TILE_SIZE * TILE_SIZE * sizeof(float)
- * @note Memory access pattern: Coalesced reads and writes
+ * @param K Shared dimension
+ * @note Launch with grid (M/16, N/16), block (16, 16)
+ * @note Requires shared memory: 2 * 16 * 16 * sizeof(float)
  */
-__global__ void matrixMulKernel(const float* A, const float* B, float* C,
-                                 int M, int K, int N);
+__global__ void matmul_kernel(const float* A, const float* B, float* C,
+                              int M, int N, int K);
 ```
 
-#### 6.8.3 Implementation Comments
-- **Complex Algorithms**: Explain the approach and key steps
-- **Performance Optimizations**: Document why optimization was made
-- **CUDA-Specific**: Explain thread/block organization, memory access patterns
-- **Avoid Obvious Comments**: Don't comment what the code clearly shows
+## 8. Character Encoding and Language
 
-### 6.9 Performance Considerations
+- **Encoding**: ASCII-only in code and documentation
+- **Language**: British English for all documentation and comments
+- **Exceptions**: UTF-8 allowed in test data and user-facing strings
 
-#### 6.9.1 C++ Performance
-- **Avoid Unnecessary Copies**: Use move semantics and pass by reference
-- **Inline Small Functions**: Mark with `inline` or define in headers
-- **Const Correctness**: Use `const` to enable compiler optimizations
-- **Compiler Optimizations**: Test with `-O2` and `-O3`
+## 9. Enforcement
 
-#### 6.9.2 CUDA Performance
-- **Memory Coalescing**: Ensure coalesced global memory access
-- **Shared Memory**: Use for frequently accessed data
-- **Occupancy**: Aim for high occupancy (use `--ptxas-options=-v`)
-- **Divergence**: Minimize warp divergence
-- **Streams**: Use CUDA streams for concurrent operations
-- **Profiling**: Profile with `nvprof` or Nsight Systems
+Violations of these constraints are considered critical failures:
+- Protected branch commits -> Immediate rollback required
+- Missing `/init` at session start -> Session restart required
+- Pre-commit validation failures -> Fix before committing
+- RAII violations -> Refactor before committing
+- Unchecked CUDA calls -> Add error checking before committing
+- Memory leaks -> Fix before committing
 
-### 6.10 Dependencies Management
+## 10. Questions and Clarifications
 
-#### 6.10.1 Mandatory Dependency Documentation
-When adding ANY dependency, Claude Code MUST:
-1. Update root `README.md` with:
-    - Library name and version
-    - Purpose and usage
-    - Installation instructions
-    - License information
-2. Update CMake configuration to find/fetch the dependency
-3. Update CI/CD configuration if needed
-
-#### 6.10.2 Dependency Manifest
-
-**PRIMARY: Conan** (mandatory unless specific library unavailable)
-
-For Conan, maintain `conanfile.txt`:
-```ini
-[requires]
-boost/1.82.0
-eigen/3.4.0
-opencv/4.5.0
-
-[generators]
-CMakeDeps
-CMakeToolchain
-
-[options]
-opencv:shared=True
-```
-
-Or use `conanfile.py` for more complex configurations:
-```python
-from conan import ConanFile
-from conan.tools.cmake import cmake_layout
-
-class AegisRTConan(ConanFile):
-    name = "aegisrt"
-    version = "1.0.0"
-    settings = "os", "compiler", "build_type", "arch"
-
-    def requirements(self):
-        self.requires("boost/1.82.0")
-        self.requires("eigen/3.4.0")
-        self.requires("opencv/4.5.0")
-
-    def layout(self):
-        cmake_layout(self)
-```
-
-**ALTERNATIVE: vcpkg** (only if Conan is not suitable)
-
-For vcpkg, maintain `vcpkg.json`:
-```json
-{
-  "name": "project-name",
-  "version": "1.0.0",
-  "dependencies": [
-    "boost-system",
-    "eigen3",
-    {
-      "name": "opencv4",
-      "version>=": "4.5.0"
-    }
-  ]
-}
-```
-
-## 7. Session Continuity and State Discipline
-
-Claude Code MUST:
-- Assume **no memory across sessions**
-- Externalize all long-lived decisions, constraints, and progress into files
-- Never rely on conversational memory for:
-    - Architecture decisions
-    - Constraints and invariants
-    - Roadmap state
-    - Build configuration
-    - Dependency versions
-
-For roadmap work, every session MUST end with:
-- A new handoff record under `agents_roadmaps/<active>/sessions/`
-
-## 8. Decision Hygiene
-
-Claude Code MUST:
-- Avoid re-discussing previously settled decisions
-- Record irreversible or high-impact decisions explicitly in:
-    - Architecture Decision Records (ADRs) if project uses them
-    - Roadmap INVARIANTS.md
-    - Code comments for local decisions
-- Ask before changing:
-    - Public API interfaces
-    - Architectural boundaries
-    - Build system structure
-    - Dependency versions (major updates)
-    - CUDA compute capability requirements
-
-Silent reinterpretation is forbidden.
-
-## 9. Git Workflow Constraints
-
-### 9.1 Protected Branch Policy
-
-**CRITICAL REQUIREMENT**: Claude Code MUST NEVER commit directly to protected branches.
-
-**Protected branches include:**
-- `master`
-- `main`
-- `develop`
-- Any branch matching `release/*` or `hotfix/*`
-
-**This prohibition is absolute and applies to:**
-- All code changes (features, fixes, refactors, documentation)
-- Configuration file updates
-- Dependency updates
-- Emergency fixes
-- Trivial changes (typos, formatting)
-- ANY modification whatsoever
-
-### 9.2 Mandatory Branch-Based Workflow
-
-**REQUIRED WORKFLOW**: All changes MUST follow this process:
-
-1. **Check current branch**:
-   ```bash
-   git branch --show-current
-   ```
-   If on a protected branch, STOP immediately and create a feature branch.
-
-2. **Create a feature branch**:
-   ```bash
-   git checkout -b <type>/<description>
-   ```
-   Branch naming convention:
-   - `feat/<description>` — new features
-   - `fix/<description>` — bug fixes
-   - `refactor/<description>` — code restructuring
-   - `perf/<description>` — performance improvements
-   - `docs/<description>` — documentation only
-   - `chore/<description>` — tooling, dependencies, non-code changes
-
-3. **Make changes on the feature branch**
-
-4. **Commit changes**:
-   ```bash
-   git add <files>
-   git commit -m "type(scope): description"
-   ```
-
-5. **Push feature branch**:
-   ```bash
-   git push -u origin <branch-name>
-   ```
-
-6. **Create pull request** (if user requests):
-   ```bash
-   gh pr create --title "..." --body "..."
-   ```
-
-### 9.3 Pre-Commit Verification
-
-Before EVERY commit operation, Claude Code MUST:
-
-1. Verify current branch is NOT a protected branch
-2. If on protected branch:
-   - STOP immediately
-   - Inform user of the violation
-   - Ask user to confirm creation of feature branch
-   - Create feature branch and switch to it
-   - ONLY THEN proceed with changes
-
-**Example verification**:
-```bash
-CURRENT_BRANCH=$(git branch --show-current)
-if [[ "$CURRENT_BRANCH" == "master" ]] || \
-   [[ "$CURRENT_BRANCH" == "main" ]] || \
-   [[ "$CURRENT_BRANCH" == "develop" ]]; then
-    echo "ERROR: Cannot commit directly to protected branch: $CURRENT_BRANCH"
-    exit 1
-fi
-```
-
-### 9.4 Enforcement and Violations
-
-**If Claude Code detects it is on a protected branch:**
-- MUST refuse to make any commits
-- MUST inform the user immediately
-- MUST offer to create a feature branch
-- MUST NOT proceed until on a valid feature branch
-
-**Violation consequences:**
-- Session should be terminated
-- All changes should be reverted
-- User should be notified of the policy violation
-
-**The ONLY exception:**
-- Merge commits created by pull request merges (handled by GitHub/GitLab, not by Claude Code)
-
-### 9.5 Branch Lifecycle
-
-**Feature branches MUST be:**
-- Short-lived (ideally < 1 week)
-- Scoped to a single logical change
-- Deleted after merge (Claude Code should suggest this)
-
-**After PR merge, Claude Code should:**
-1. Switch back to master/main
-2. Pull latest changes
-3. Suggest deleting the merged feature branch:
-   ```bash
-   git branch -d <feature-branch>
-   git push origin --delete <feature-branch>
-   ```
-
-## 10. Safety Rule: When in Doubt, Stop
-
-> **If Claude Code is unsure whether an action is allowed,**
-> **it MUST stop and ask the user.**
-
-Guessing, inferring intent, or "doing what seems reasonable" is not acceptable.
-
-This applies especially to:
-- Memory management decisions
+If you're unsure about:
+- Whether a constraint applies to your current work
+- How to interpret a constraint
+- Whether to create a roadmap
 - CUDA kernel launch configurations
-- Build system changes
-- Dependency updates
-- API changes
+- Memory management patterns
+- Any aspect of the development workflow
 
-## 11. Enforcement Statement
+**STOP and ask the user.** It's better to ask than to proceed incorrectly.
 
-Failure to follow this document indicates that:
-- The agent is operating outside its mandate
-- Output should not be trusted
-- The session may need to be restarted
+## 11. Additional Resources
 
-## 12. C++/CUDA Specific Forbidden Practices
+- **Full constraint files**: `.claude/constraints/cpp/`
+- **Common constraints**: `.claude/constraints/common/`
+- **Skill documentation**: `.claude/skills/*/README.md`
+- **Original comprehensive documentation**: `CLAUDE_CPP.md.original` (reference only)
 
-Claude Code MUST NEVER:
-- **Commit directly to protected branches** (master, main, develop) - see Section 9
-- Use raw pointers for ownership (use smart pointers)
-- Ignore CUDA error codes
-- Use `using namespace std;` in headers
-- Define macros that could collide with user code (use namespaces)
-- Commit code with compiler warnings
-- Skip error handling in CUDA code
-- Use deprecated CUDA APIs without justification
-- Implement manual memory management when RAII is possible
-- Use C-style casts (use `static_cast`, `dynamic_cast`, etc.)
-- Modify global state without synchronization
-- Launch CUDA kernels without error checking
+---
 
-## 13. Character Encoding and Language Requirements
-
-### 13.1 ASCII-Only Requirement
-
-**STRICTLY FORBIDDEN**: Use of ANY Non-ASCII characters in:
-- Source code files (`.cpp`, `.hpp`, `.cu`, `.cuh`, `.h`)
-- Comments (inline, block, or documentation comments)
-- Commit messages
-- Pull request titles and descriptions
-- Documentation files
-- Configuration files
-- Any text content in the repository
-
-This includes but is not limited to:
-- Non-English characters (Chinese, Japanese, Arabic, Cyrillic, etc.)
-- Special marks and symbols (checkmark, crossmark, bullet points, arrows)
-- Emoji and emoticons
-- Accented characters (e, a, o, etc.)
-- Mathematical symbols beyond basic ASCII
-- Currency symbols beyond $ (dollar sign)
-- Typographic quotes (" " ' ') - use straight quotes (" ')
-
-**Allowed**: Only ASCII characters (0x00-0x7F)
-
-**Enforcement**:
-- Claude Code MUST verify all generated content is ASCII-only
-- Use `iconv -f UTF-8 -t ASCII//TRANSLIT` or similar tools to verify
-- Configure git hooks to reject Non-ASCII content
-- CI/CD pipelines MUST include ASCII validation
-
-Example violations:
-```cpp
-// FORBIDDEN: Non-ASCII characters
-// TODO: Fix this bug  (contains special dash)
-int result = 42;  // checkmark emoji
-
-// FORBIDDEN: Non-English comments
-// Zhe shi yi ge han shu (This is a function in Chinese)
-void function() {}
-
-// ALLOWED: ASCII only
-// TODO: Fix this bug
-int result = 42;  // Correct implementation
-
-// ALLOWED: ASCII comments
-// This is a function
-void function() {}
-```
-
-### 13.2 British English Requirement
-
-**MANDATORY**: All English text MUST use British English spelling and conventions:
-
-**Spelling differences** (British vs American):
-- colour (not color)
-- behaviour (not behavior)
-- optimise (not optimize)
-- initialise (not initialize)
-- analyse (not analyze)
-- centre (not center)
-- metre (not meter) - for measurement
-- licence (noun), license (verb)
-- practise (verb), practice (noun)
-- defence (not defense)
-- organise (not organize)
-
-**Applies to**:
-- Code comments and documentation
-- Variable and function names where words are spelled out
-- Commit messages
-- Pull request descriptions
-- README and documentation files
-- Error messages and user-facing strings
-
-**Examples**:
-```cpp
-// CORRECT: British English
-void initialiseColourBuffer() {
-    // Initialise the colour buffer with default values
-    // This optimises memory usage
-}
-
-// INCORRECT: American English
-void initializeColorBuffer() {
-    // Initialize the color buffer with default values
-    // This optimizes memory usage
-}
-
-// CORRECT: British English in commit message
-// feat(renderer): optimise colour buffer initialisation
-
-// INCORRECT: American English in commit message
-// feat(renderer): optimize color buffer initialization
-```
-
-**Enforcement**:
-- Claude Code MUST use British English in all generated text
-- Code review MUST check for British English compliance
-- Use spell-checkers configured for British English (en_GB)
-- Document any exceptions (e.g., third-party API names that use American spelling)
+**Remember**: Run `/init` at the start of EVERY session. This is the foundation of the constraint system.

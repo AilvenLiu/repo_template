@@ -4,7 +4,7 @@ You are operating under an active roadmap in this repository.
 Before doing anything else, you MUST:
 
 1. Read and obey:
-   - agents_roadmaps/README.md
+   - agent_roadmaps/README.md
    - This roadmap’s INVARIANTS.md
    - This roadmap’s ROADMAP.md
    - This roadmap’s roadmap.yml
