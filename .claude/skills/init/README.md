@@ -113,28 +113,28 @@ $ /init
 SESSION INITIALIZATION
 ======================================================================
 
-✓ Project type: PYTHON
-✓ Active roadmap detected
-✓ Current branch: feature/add-authentication
-✓ Found 3 modified file(s)
+[OK] Project type: PYTHON
+[OK] Active roadmap detected
+[OK] Current branch: feature/add-authentication
+[OK] Found 3 modified file(s)
 
 ======================================================================
 LOADED CONSTRAINTS
 ======================================================================
 
-📋 common/git-workflow
+[CONSTRAINT] common/git-workflow
    # Git Workflow Constraints
 
-📋 common/roadmap-awareness
+[CONSTRAINT] common/roadmap-awareness
    # Roadmap Awareness and Execution Discipline
 
-📋 python/formatting
+[CONSTRAINT] python/formatting
    # Python Code Style and Formatting Constraints
 
-📋 python/type-checking
+[CONSTRAINT] python/type-checking
    # Python Type Hints and Static Type Checking Constraints
 
-📋 python/testing
+[CONSTRAINT] python/testing
    # Python Testing Requirements
 
 ======================================================================

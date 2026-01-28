@@ -63,13 +63,13 @@ def display_status() -> None:
 
         # Phase status symbol
         if phase_status == "completed":
-            symbol = "[✓]"
+            symbol = "[DONE]"
         elif phase_status == "active":
-            symbol = "[→]"
+            symbol = "[ACTIVE]"
         elif phase_status == "blocked":
-            symbol = "[!]"
+            symbol = "[BLOCKED]"
         else:
-            symbol = "[ ]"
+            symbol = "[PENDING]"
 
         print(f"  {symbol} {phase_id}: {phase_title} ({phase_completed}/{phase_total} tasks completed)")
 
@@ -81,13 +81,13 @@ def display_status() -> None:
 
             # Task status symbol
             if task_status == "completed":
-                task_symbol = "[✓]"
+                task_symbol = "[DONE]"
             elif task_status == "active":
-                task_symbol = "[→]"
+                task_symbol = "[ACTIVE]"
             elif task_status == "blocked":
-                task_symbol = "[!]"
+                task_symbol = "[BLOCKED]"
             else:
-                task_symbol = "[ ]"
+                task_symbol = "[PENDING]"
 
             # Highlight current task
             is_current = (phase_id == current_focus.get("phase") and

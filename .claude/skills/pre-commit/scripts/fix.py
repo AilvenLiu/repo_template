@@ -20,22 +20,22 @@ def fix_python_formatting(manager: PreCommitManager) -> None:
         print("Running black...")
         returncode, stdout, stderr = manager.run_command(["black", "."])
         if returncode == 0:
-            print("[✓] black formatting applied")
+            print("[OK] black formatting applied")
         else:
-            print(f"[✗] black failed: {stderr}")
+            print(f"[ERROR] black failed: {stderr}")
     else:
-        print("[!] black not installed")
+        print("[INFO] black not installed")
 
     # Run isort
     if manager.check_tool_available("isort"):
         print("Running isort...")
         returncode, stdout, stderr = manager.run_command(["isort", "."])
         if returncode == 0:
-            print("[✓] isort applied")
+            print("[OK] isort applied")
         else:
-            print(f"[✗] isort failed: {stderr}")
+            print(f"[ERROR] isort failed: {stderr}")
     else:
-        print("[!] isort not installed")
+        print("[INFO] isort not installed")
 
 
 def fix_cpp_formatting(manager: PreCommitManager) -> None:
@@ -56,10 +56,10 @@ def fix_cpp_formatting(manager: PreCommitManager) -> None:
                 ["clang-format", "-i", str(file)]
             )
             if returncode != 0:
-                print(f"[✗] Failed to format {file}: {stderr}")
-        print("[✓] clang-format applied")
+                print(f"[ERROR] Failed to format {file}: {stderr}")
+        print("[OK] clang-format applied")
     else:
-        print("[!] clang-format not installed")
+        print("[INFO] clang-format not installed")
 
 
 def main():

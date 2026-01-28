@@ -268,13 +268,13 @@ kernel<<<blocks, threads, shared_mem_size, stream>>>(args);
 ### 5.1 File Structure
 ```
 cuda/
-├── kernels/
-│   ├── kernel1.cu
-│   ├── kernel2.cu
-│   └── kernel_utils.cuh
-└── utils/
-    ├── cuda_utils.cu
-    └── cuda_utils.cuh
+|-- kernels/
+|   |-- kernel1.cu
+|   |-- kernel2.cu
+|   `-- kernel_utils.cuh
+`-- utils/
+    |-- cuda_utils.cu
+    `-- cuda_utils.cuh
 ```
 
 ### 5.2 Header Files (.cuh)

@@ -1,4 +1,4 @@
-# INVARIANTS — Constitutional Constraints (Template)
+# INVARIANTS -- Constitutional Constraints (Template)
 
 > This document defines **non-negotiable invariants** for a roadmap task.
 > These constraints override ROADMAP.md, roadmap.yml, session instructions, and prompts.
@@ -15,7 +15,7 @@
 
 ## 2. Architectural Invariants
 
-(Examples — must be customized per roadmap)
+(Examples -- must be customized per roadmap)
 
 - Public APIs MUST remain backward compatible unless explicitly approved.
 - Core module boundaries MUST NOT be collapsed or bypassed.

@@ -194,9 +194,9 @@ Example session:
 # Start Claude Code session
 $ /init
 
-✓ Project type: PYTHON
-✓ Current branch: feature/add-api
-✓ Found 2 modified file(s)
+[OK] Project type: PYTHON
+[OK] Current branch: feature/add-api
+[OK] Found 2 modified file(s)
 
 Loaded constraints: git-workflow, session-discipline, formatting, type-checking
 

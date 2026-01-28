@@ -1,4 +1,4 @@
-# ROADMAP — Long-Form Execution Guide (Template)
+# ROADMAP -- Long-Form Execution Guide (Template)
 
 > This document describes a **large, multi-session roadmap task**.
 > It is written to be read by an AI agent with no prior context.
@@ -58,16 +58,16 @@ Phases MUST be completed sequentially.
 
 Example:
 
-- Phase 0 — Baseline & Freeze
-- Phase 1 — Structural Change
-- Phase 2 — Behavioral Change
-- Phase 3 — Optimization & Hardening
+- Phase 0 -- Baseline & Freeze
+- Phase 1 -- Structural Change
+- Phase 2 -- Behavioral Change
+- Phase 3 -- Optimization & Hardening
 
 ---
 
 ## 6. Phase Details
 
-### Phase X — <Phase Name>
+### Phase X -- <Phase Name>
 
 #### Objective
 

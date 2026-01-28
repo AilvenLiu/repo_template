@@ -138,21 +138,21 @@ class SessionInitializer:
         # Check for active roadmap
         if self.check_active_roadmap():
             self.needed_constraints.add("common/roadmap-awareness")
-            print("✓ Active roadmap detected")
+            print("[OK] Active roadmap detected")
 
         # Get git status
         branch, modified_files = self.get_git_status()
         if branch:
-            print(f"✓ Current branch: {branch}")
+            print(f"[OK] Current branch: {branch}")
             # Check if on protected branch
             protected_branches = ["master", "main", "develop"]
             if branch in protected_branches or branch.startswith(("release/", "hotfix/")):
-                print(f"⚠️  WARNING: You are on protected branch '{branch}'")
-                print("   You should create a feature branch before making changes")
+                print(f"[WARNING] You are on protected branch '{branch}'")
+                print("          You should create a feature branch before making changes")
 
         # Analyze modified files to determine needed constraints
         if modified_files:
-            print(f"✓ Found {len(modified_files)} modified file(s)")
+            print(f"[OK] Found {len(modified_files)} modified file(s)")
             self._analyze_modified_files(modified_files)
 
     def _analyze_modified_files(self, files: List[str]) -> None:
@@ -203,7 +203,7 @@ class SessionInitializer:
     def display_constraints(self) -> None:
         """Display loaded constraints."""
         if not self.needed_constraints:
-            print("\n✓ No specific constraints needed for current context")
+            print("\n[OK] No specific constraints needed for current context")
             return
 
         print(f"\n{'='*70}")
@@ -211,13 +211,13 @@ class SessionInitializer:
         print(f"{'='*70}\n")
 
         for constraint in sorted(self.needed_constraints):
-            print(f"📋 {constraint}")
+            print(f"[CONSTRAINT] {constraint}")
             content = self.load_constraint_file(constraint)
             if content:
                 # Display first few lines as preview
                 lines = content.split("\n")
                 header = lines[0] if lines else ""
-                print(f"   {header}")
+                print(f"             {header}")
             print()
 
         print(f"{'='*70}")
@@ -233,7 +233,7 @@ class SessionInitializer:
 
         # Detect project type
         self.project_type = self.detect_project_type()
-        print(f"✓ Project type: {self.project_type.upper()}")
+        print(f"[OK] Project type: {self.project_type.upper()}")
 
         # Analyze context
         self.analyze_context()

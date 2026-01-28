@@ -26,18 +26,18 @@ pytest-mock>=3.10.0
 ### 2.1 Directory Structure
 ```
 tests/
-├── __init__.py
-├── conftest.py              # Shared fixtures and configuration
-├── test_module1.py          # Unit tests for module1
-├── test_module2.py          # Unit tests for module2
-├── integration/
-│   ├── __init__.py
-│   ├── conftest.py          # Integration test fixtures
-│   └── test_workflow.py     # Integration tests
-├── fixtures/
-│   ├── sample_data.json     # Test data files
-│   └── test_config.yaml
-└── utils.py                 # Test utilities
+|-- __init__.py
+|-- conftest.py              # Shared fixtures and configuration
+|-- test_module1.py          # Unit tests for module1
+|-- test_module2.py          # Unit tests for module2
+|-- integration/
+|   |-- __init__.py
+|   |-- conftest.py          # Integration test fixtures
+|   `-- test_workflow.py     # Integration tests
+|-- fixtures/
+|   |-- sample_data.json     # Test data files
+|   `-- test_config.yaml
+`-- utils.py                 # Test utilities
 ```
 
 ### 2.2 Test File Naming

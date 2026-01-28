@@ -133,14 +133,14 @@ Before every commit, ensure:
 
 ```
 .claude/constraints/cpp/
-├── README.md              # This file
-├── testing.md             # Testing requirements
-├── formatting.md          # Code style and formatting
-├── cmake.md               # CMake build system
-├── cuda.md                # CUDA-specific guidelines
-├── memory-safety.md       # Memory safety and RAII
-├── static-analysis.md     # Static analysis tools
-└── documentation.md       # Documentation standards
+|-- README.md              # This file
+|-- testing.md             # Testing requirements
+|-- formatting.md          # Code style and formatting
+|-- cmake.md               # CMake build system
+|-- cuda.md                # CUDA-specific guidelines
+|-- memory-safety.md       # Memory safety and RAII
+|-- static-analysis.md     # Static analysis tools
+`-- documentation.md       # Documentation standards
 ```
 
 ## Usage

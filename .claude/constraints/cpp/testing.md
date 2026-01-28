@@ -50,20 +50,20 @@ TEST_F(ModuleTest, FunctionName_InvalidInput_ThrowsException) {
 ### 2.1 Directory Structure
 ```
 tests/
-├── unit/
-│   ├── test_module1.cpp
-│   ├── test_module2.cpp
-│   └── CMakeLists.txt
-├── integration/
-│   ├── test_workflow.cpp
-│   └── CMakeLists.txt
-├── cuda/
-│   ├── test_kernels.cu
-│   ├── test_memory.cu
-│   └── CMakeLists.txt
-└── benchmarks/
-    ├── benchmark_matrix_mul.cpp
-    └── CMakeLists.txt
+|-- unit/
+|   |-- test_module1.cpp
+|   |-- test_module2.cpp
+|   `-- CMakeLists.txt
+|-- integration/
+|   |-- test_workflow.cpp
+|   `-- CMakeLists.txt
+|-- cuda/
+|   |-- test_kernels.cu
+|   |-- test_memory.cu
+|   `-- CMakeLists.txt
+`-- benchmarks/
+    |-- benchmark_matrix_mul.cpp
+    `-- CMakeLists.txt
 ```
 
 ### 2.2 Test File Naming

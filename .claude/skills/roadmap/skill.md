@@ -291,12 +291,12 @@ When a roadmap is created, the following structure is generated:
 
 ```
 agent_roadmaps/<roadmap-name>/
-├── INVARIANTS.md       # Constitutional constraints (highest authority)
-├── ROADMAP.md          # Long-form execution manual
-├── roadmap.yml         # Machine-readable state (canonical)
-├── prompt.md           # Session initialisation prompt
-└── sessions/           # Session handoff records
-    └── YYYY-MM-DD-claude-N.md
+|-- INVARIANTS.md       # Constitutional constraints (highest authority)
+|-- ROADMAP.md          # Long-form execution manual
+|-- roadmap.yml         # Machine-readable state (canonical)
+|-- prompt.md           # Session initialisation prompt
+`-- sessions/           # Session handoff records
+    `-- YYYY-MM-DD-claude-N.md
 ```
 
 ### File Purposes

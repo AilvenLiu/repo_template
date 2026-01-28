@@ -19,9 +19,9 @@ def add_python_dependency(
 
     # Add to requirements.txt
     if manager.add_to_requirements_txt(package, version):
-        print(f"[✓] Added {package} to requirements.txt")
+        print(f"[OK] Added {package} to requirements.txt")
     else:
-        print(f"[!] {package} already in requirements.txt")
+        print(f"[INFO] {package} already in requirements.txt")
 
     # Install the package
     print(f"\nInstalling {package}...")
@@ -31,9 +31,9 @@ def add_python_dependency(
 
     returncode, stdout, stderr = manager.run_command(cmd)
     if returncode == 0:
-        print(f"[✓] {package} installed successfully")
+        print(f"[OK] {package} installed successfully")
     else:
-        print(f"[✗] Failed to install {package}")
+        print(f"[ERROR] Failed to install {package}")
         print(f"Error: {stderr}")
         sys.exit(1)
 
@@ -59,9 +59,9 @@ def add_cpp_dependency(
     conan_file = manager.repo_root / "conanfile.txt"
     if conan_file.exists():
         if manager.add_to_conanfile_txt(package, version):
-            print(f"[✓] Added {package} to conanfile.txt")
+            print(f"[OK] Added {package} to conanfile.txt")
         else:
-            print(f"[!] {package} already in conanfile.txt")
+            print(f"[INFO] {package} already in conanfile.txt")
 
         # Run conan install
         print(f"\nInstalling {package} via Conan...")
@@ -69,18 +69,18 @@ def add_cpp_dependency(
             ["conan", "install", ".", "--build=missing"]
         )
         if returncode == 0:
-            print(f"[✓] Conan install successful")
+            print(f"[OK] Conan install successful")
         else:
-            print(f"[✗] Conan install failed")
+            print(f"[ERROR] Conan install failed")
             print(f"Error: {stderr}")
 
     # Add to CMakeLists.txt
     cmake_file = manager.repo_root / "CMakeLists.txt"
     if cmake_file.exists():
         if manager.add_to_cmake(package, version):
-            print(f"[✓] Added find_package({package}) to CMakeLists.txt")
+            print(f"[OK] Added find_package({package}) to CMakeLists.txt")
         else:
-            print(f"[!] {package} already in CMakeLists.txt")
+            print(f"[INFO] {package} already in CMakeLists.txt")
 
     # Update README.md
     readme_path = manager.repo_root / "README.md"

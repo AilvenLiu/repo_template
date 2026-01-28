@@ -1,4 +1,4 @@
-# Agents Roadmaps – Authoritative Guide
+# Agents Roadmaps - Authoritative Guide
 
 **This document is authoritative for all AI agents (including Claude Code) operating in this repository.**   
 Any violation of the rules defined here is considered a critical agent failure.
@@ -49,7 +49,7 @@ If **no roadmap is active**, this section MUST explicitly say:
 ## 4. When a New Roadmap MUST Be Created
 
 An AI agent **MUST ask the user to create a new roadmap** if a task meets **any** of the following conditions:
-- Cannot be confidently completed within **1–2 Claude Code sessions**
+- Cannot be confidently completed within **1-2 Claude Code sessions**
 - Involves **system-wide refactor**, architectural change, or invariant-sensitive work
 - Requires **long-lived constraints** that must survive context resets
 - Has multiple dependent phases or non-trivial rollback risk
@@ -63,12 +63,12 @@ When a roadmap is activated, a **dedicated subdirectory** MUST be created under 
 
 ```
 agent_roadmaps/
-└── <roadmap-name>/
-    ├── INVARIANTS.md
-    ├── ROADMAP.md
-    ├── roadmap.yml
-    ├── prompt.md
-    └── sessions/
+`-- <roadmap-name>/
+    |-- INVARIANTS.md
+    |-- ROADMAP.md
+    |-- roadmap.yml
+    |-- prompt.md
+    `-- sessions/
 ```
 
 Each file has **strict semantics** defined below.
@@ -79,7 +79,7 @@ Each file has **strict semantics** defined below.
 **Template:**    
 Use @agent_roadmaps/template/ as example. 
 
-### 6.1 INVARIANTS.md — Constitutional Constraints
+### 6.1 INVARIANTS.md -- Constitutional Constraints
 
 **Template:**     
 Use @agent_roadmaps/template/INVARIANTS.md as example.
@@ -91,7 +91,7 @@ Requirements:
 - Must be compatible with:
     - CLAUDE.md
     - CONTRIBUTING.md
-    - The project’s existing architectural and policy constraints
+    - The project's existing architectural and policy constraints
 - Must clearly state:
     - What **must never change**
     - What **must always hold true**
@@ -105,7 +105,7 @@ Requirements:
 5. prompt.md
 
 
-### 6.2 ROADMAP.md — Long-Form Execution Manual
+### 6.2 ROADMAP.md -- Long-Form Execution Manual
 
 **Template:**    
 Use @agent_roadmaps/template/ROADMAP.md as example.
@@ -127,7 +127,7 @@ A **detailed, instructional, long-form document** describing the roadmap task in
 **FORBIDDEN:** ROADMAP.md must **NOT** be a TODO list or a timeline-only document.
 
 
-### 6.3 roadmap.yml — Canonical Execution State (Machine-Readable)
+### 6.3 roadmap.yml -- Canonical Execution State (Machine-Readable)
 
 **Template:**     
 Use @agent_roadmaps/template/roadmap.yml as example.
@@ -172,7 +172,7 @@ phases:
 - State changes must reflect **already completed work**, not intentions
 
 
-### 6.4 prompt.md — Session Initialization Prompt (Copy-Paste Only)
+### 6.4 prompt.md -- Session Initialization Prompt (Copy-Paste Only)
 
 **Purpose:**     
 Contains the **entire initialization prompt** for starting a new Claude Code session for this roadmap.
@@ -191,7 +191,7 @@ Contains the **entire initialization prompt** for starting a new Claude Code ses
 If content should **not** be copied into Claude Code, it **must not** be in this file.
 
 
-### 6.5 sessions/ — Session-to-Session Handoff Records
+### 6.5 sessions/ -- Session-to-Session Handoff Records
 
 **Purpose:**     
 Ensures **continuity across sessions and agent restarts.** 

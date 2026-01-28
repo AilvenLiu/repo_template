@@ -63,11 +63,11 @@ Project Type: python
 
 Validation Results:
 --------------------------------------------------
-[✓] black (formatter)
-[✓] isort (import sorter)
-[✗] ruff (linter)
-[✓] mypy (type checker)
-[✓] pytest (tests)
+[OK] black (formatter)
+[OK] isort (import sorter)
+[X] ruff (linter)
+[OK] mypy (type checker)
+[OK] pytest (tests)
 
 Passed: 4/5
 Failed: 1/5
@@ -113,9 +113,9 @@ Project Type: python
 Fixing Python formatting...
 --------------------------------------------------
 Running black...
-[✓] black formatting applied
+[OK] black formatting applied
 Running isort...
-[✓] isort applied
+[OK] isort applied
 
 Auto-fix complete. Run validation to check results.
 ```

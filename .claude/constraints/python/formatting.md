@@ -437,7 +437,78 @@ All pull requests MUST pass:
 - Using `# noqa` without explanation
 - Disabling formatters in code
 
-## 12. Formatting Checklist
+## 12. Character Encoding and Language Requirements
+
+### 12.1 ASCII-Only Requirement
+**STRICTLY FORBIDDEN**: Use of ANY non-ASCII characters in:
+- Source code files (`.py`, `.pyi`)
+- Comments (inline, block, or docstring comments)
+- String literals (except test data and user-facing strings)
+- Variable names, function names, class names
+- Any Python code
+
+**Forbidden characters include**:
+- Non-English characters (Chinese, Japanese, Arabic, Cyrillic, etc.)
+- Emoji and emoticons
+- Accented characters (e, a, o, etc.)
+- Mathematical symbols beyond basic ASCII
+- Currency symbols beyond $ (dollar sign)
+- Typographic quotes (" " ' ') - use straight quotes (" ')
+- Special dashes (em dash, en dash) - use hyphen (-)
+- Box-drawing characters
+- Special symbols (checkmark, crossmark, arrows, etc.)
+
+**Allowed**: Only ASCII characters (0x00-0x7F)
+
+Example violations:
+```python
+# FORBIDDEN: Non-ASCII characters
+# TODO: Fix this bug  (contains em dash)
+result = 42  # checkmark emoji
+name = "Francois"  # accented character
+
+# ALLOWED: ASCII only
+# TODO: Fix this bug
+result = 42  # Correct implementation
+name = "Francois"  # ASCII only
+```
+
+### 12.2 British English Requirement
+**STRICTLY REQUIRED**: Use British English spelling in all:
+- Code comments
+- Docstrings
+- Variable names
+- Function names
+- Documentation
+
+**Common British vs American spellings**:
+- colour (not color)
+- behaviour (not behavior)
+- optimise (not optimize)
+- initialise (not initialize)
+- analyse (not analyze)
+- serialise (not serialize)
+- synchronise (not synchronize)
+- recognise (not recognize)
+- organise (not organize)
+- centre (not center)
+- metre (not meter)
+- licence (noun, not license)
+
+Example:
+```python
+# Good: British English
+def initialise_colour_scheme(behaviour: str) -> None:
+    """Initialise the colour scheme based on user behaviour."""
+    pass
+
+# Bad: American English
+def initialize_color_scheme(behavior: str) -> None:
+    """Initialize the color scheme based on user behavior."""
+    pass
+```
+
+## 13. Formatting Checklist
 
 Before committing, verify:
 - [ ] Code is formatted with black (`black .`)
@@ -448,3 +519,5 @@ Before committing, verify:
 - [ ] Line length is within limits (100 characters)
 - [ ] Naming conventions are followed
 - [ ] Comments are clear and explain WHY, not WHAT
+- [ ] British English spelling used
+- [ ] ASCII-only characters used

@@ -637,7 +637,49 @@ All pull requests MUST:
 - Have updated CHANGELOG.md
 - Pass documentation linting
 
-## 13. Documentation Checklist
+## 13. Character Encoding and Language Requirements
+
+### 13.1 ASCII-Only Requirement
+**STRICTLY FORBIDDEN**: Use of ANY non-ASCII characters in documentation:
+- Source code comments
+- Docstrings (module, class, function, method)
+- README.md and other markdown files
+- CHANGELOG.md
+- Any documentation files
+
+**Allowed**: Only ASCII characters (0x00-0x7F)
+
+### 13.2 British English Requirement
+**STRICTLY REQUIRED**: Use British English spelling in all documentation:
+- Docstrings
+- Comments
+- README.md
+- CHANGELOG.md
+- API documentation
+- User guides
+
+**Common British spellings**:
+- colour, behaviour, optimise, initialise, analyse, serialise, synchronise, recognise, organise, centre, metre, licence (noun)
+
+Example:
+```python
+def optimise_performance(colour_scheme: str) -> None:
+    """
+    Optimise application performance based on colour scheme.
+
+    This function analyses the current behaviour and initialises
+    the optimisation process to improve overall performance.
+
+    Args:
+        colour_scheme: The colour scheme to optimise for
+
+    Returns:
+        None
+    """
+    pass
+```
+
+## 14. Documentation Checklist
 
 Before committing, verify:
 - [ ] All public functions have complete docstrings
@@ -650,3 +692,5 @@ Before committing, verify:
 - [ ] Type hints are complete and accurate
 - [ ] API changes are documented
 - [ ] Workarounds are documented with reasons
+- [ ] British English spelling used
+- [ ] ASCII-only characters used

@@ -8,7 +8,7 @@ version: 1.0.0
 
 This skill provides intelligent, context-aware session initialization for Claude Code. It automatically detects project type, analyzes current context, and loads only the relevant constraint files needed for your current work.
 
-## ⚠️ CRITICAL: Mandatory Session-Start Execution
+## [WARNING] CRITICAL: Mandatory Session-Start Execution
 
 **THIS IS NON-NEGOTIABLE:**
 
@@ -98,28 +98,28 @@ python3 .claude/skills/init/scripts/init.py --verbose
 SESSION INITIALIZATION
 ======================================================================
 
-✓ Project type: PYTHON
-✓ Active roadmap detected
-✓ Current branch: feature/add-authentication
-✓ Found 3 modified file(s)
+[OK] Project type: PYTHON
+[OK] Active roadmap detected
+[OK] Current branch: feature/add-authentication
+[OK] Found 3 modified file(s)
 
 ======================================================================
 LOADED CONSTRAINTS
 ======================================================================
 
-📋 common/git-workflow
+[CONSTRAINT] common/git-workflow
    # Git Workflow Constraints
 
-📋 common/roadmap-awareness
+[CONSTRAINT] common/roadmap-awareness
    # Roadmap Awareness and Execution Discipline
 
-📋 common/session-discipline
+[CONSTRAINT] common/session-discipline
    # Session Continuity and State Discipline
 
-📋 python/formatting
+[CONSTRAINT] python/formatting
    # Python Code Style and Formatting Constraints
 
-📋 python/type-checking
+[CONSTRAINT] python/type-checking
    # Python Type Hints and Static Type Checking Constraints
 
 ======================================================================
@@ -164,26 +164,26 @@ Constraints are organized in `.claude/constraints/`:
 
 ```
 .claude/constraints/
-├── python/
-│   ├── testing.md
-│   ├── formatting.md
-│   ├── type-checking.md
-│   ├── dependencies.md
-│   ├── documentation.md
-│   ├── error-handling.md
-│   └── security.md
-├── cpp/
-│   ├── testing.md
-│   ├── formatting.md
-│   ├── cmake.md
-│   ├── cuda.md
-│   ├── memory-safety.md
-│   ├── static-analysis.md
-│   └── documentation.md
-└── common/
-    ├── git-workflow.md
-    ├── roadmap-awareness.md
-    └── session-discipline.md
+|-- python/
+|   |-- testing.md
+|   |-- formatting.md
+|   |-- type-checking.md
+|   |-- dependencies.md
+|   |-- documentation.md
+|   |-- error-handling.md
+|   `-- security.md
+|-- cpp/
+|   |-- testing.md
+|   |-- formatting.md
+|   |-- cmake.md
+|   |-- cuda.md
+|   |-- memory-safety.md
+|   |-- static-analysis.md
+|   `-- documentation.md
+`-- common/
+    |-- git-workflow.md
+    |-- roadmap-awareness.md
+    `-- session-discipline.md
 ```
 
 Each file is self-contained and focused on a single topic, making them easy to reference and understand.

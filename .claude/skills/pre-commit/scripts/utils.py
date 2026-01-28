@@ -25,7 +25,7 @@ class ValidationResult:
         self.error = error
 
     def __repr__(self) -> str:
-        status = "✓" if self.passed else "✗"
+        status = "PASS" if self.passed else "FAIL"
         return f"[{status}] {self.tool}"
 
 

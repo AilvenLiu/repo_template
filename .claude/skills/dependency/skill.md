@@ -66,10 +66,10 @@ Version: 2.31.0
 
 Adding Python dependency: requests
 --------------------------------------------------
-[✓] Added requests to requirements.txt
+[OK] Added requests to requirements.txt
 
 Installing requests...
-[✓] requests installed successfully
+[OK] requests installed successfully
 
 REMINDER: Update README.md to document requests
 Add to Dependencies section:
@@ -95,11 +95,11 @@ Version: 3.4
 
 Adding C++/CUDA dependency: Eigen
 --------------------------------------------------
-[✓] Added Eigen to conanfile.txt
+[OK] Added Eigen to conanfile.txt
 
 Installing Eigen via Conan...
-[✓] Conan install successful
-[✓] Added find_package(Eigen) to CMakeLists.txt
+[OK] Conan install successful
+[OK] Added find_package(Eigen) to CMakeLists.txt
 
 REMINDER: Update README.md to document Eigen
 Add to Dependencies section:
