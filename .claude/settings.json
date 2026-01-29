@@ -6,6 +6,7 @@
     "Tree(**)",
     "Grep(**)",
     "Glob(**)",
+    "Python3(.claude/skills/init/scripts/init.py)",
     "WebFetch",
     "WebSearch",
     "MCP"
