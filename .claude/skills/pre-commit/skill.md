@@ -130,13 +130,13 @@ The skill automatically detects project type based on indicator files:
 - setup.py
 - pyproject.toml
 - requirements.txt
-- CLAUDE_PYTHON.md
+- CLAUDE.md
 
 **C++/CUDA indicators:**
 - CMakeLists.txt
 - conanfile.txt
 - conanfile.py
-- CLAUDE_CPP.md
+- CLAUDE.md
 
 If no indicators are found, the skill exits with an error.
 
@@ -272,8 +272,8 @@ The skill respects existing configuration files:
 ### "ERROR: Unknown project type"
 
 The skill couldn't detect Python or C++/CUDA indicators. Ensure you have:
-- Python: `pyproject.toml`, `requirements.txt`, or `CLAUDE_PYTHON.md`
-- C++/CUDA: `CMakeLists.txt`, `conanfile.txt`, or `CLAUDE_CPP.md`
+- Python: `pyproject.toml`, `requirements.txt`, or `CLAUDE.md`
+- C++/CUDA: `CMakeLists.txt`, `conanfile.txt`, or `CLAUDE.md`
 
 ### "Tool not installed" warnings
 

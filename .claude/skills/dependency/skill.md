@@ -123,13 +123,13 @@ The skill automatically detects project type based on indicator files:
 - setup.py
 - pyproject.toml
 - requirements.txt
-- CLAUDE_PYTHON.md
+- CLAUDE.md
 
 **C++/CUDA indicators:**
 - CMakeLists.txt
 - conanfile.txt
 - conanfile.py
-- CLAUDE_CPP.md
+- CLAUDE.md
 
 ---
 
@@ -234,8 +234,8 @@ After adding a dependency, the skill reminds you to:
 ### "ERROR: Unknown project type"
 
 The skill couldn't detect Python or C++/CUDA indicators. Ensure you have:
-- Python: `requirements.txt`, `pyproject.toml`, or `CLAUDE_PYTHON.md`
-- C++/CUDA: `CMakeLists.txt`, `conanfile.txt`, or `CLAUDE_CPP.md`
+- Python: `requirements.txt`, `pyproject.toml`, or `CLAUDE.md`
+- C++/CUDA: `CMakeLists.txt`, `conanfile.txt`, or `CLAUDE.md`
 
 ### "Package already in requirements.txt"
 

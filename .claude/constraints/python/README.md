@@ -1,11 +1,11 @@
 # Python Constraints
 
-This directory contains topic-specific constraint files for Python development. These files have been extracted from the main CLAUDE_PYTHON.md and CONTRIBUTING_PYTHON.md documents to provide focused, modular guidance.
+This directory contains topic-specific constraint files for Python development. These files have been extracted from the main CLAUDE.md and CONTRIBUTING.md documents to provide focused, modular guidance.
 
 ## Constraint Files
 
 ### 1. testing.md (425 lines)
-**Extracted from**: CLAUDE_PYTHON.md Section 6.7, CONTRIBUTING_PYTHON.md Section 8
+**Extracted from**: CLAUDE.md Section 6.7, CONTRIBUTING.md Section 8
 
 **Contents**:
 - Testing framework requirements (pytest)
@@ -19,7 +19,7 @@ This directory contains topic-specific constraint files for Python development. 
 - Testing exceptions
 
 ### 2. formatting.md (449 lines)
-**Extracted from**: CLAUDE_PYTHON.md Section 6.3, CONTRIBUTING_PYTHON.md Section 6
+**Extracted from**: CLAUDE.md Section 6.3, CONTRIBUTING.md Section 6
 
 **Contents**:
 - Mandatory formatting tools (black, isort, ruff)
@@ -33,7 +33,7 @@ This directory contains topic-specific constraint files for Python development. 
 - Pre-commit formatting checks
 
 ### 3. type-checking.md (501 lines)
-**Extracted from**: CLAUDE_PYTHON.md Section 6.4, CONTRIBUTING_PYTHON.md Section 7
+**Extracted from**: CLAUDE.md Section 6.4, CONTRIBUTING.md Section 7
 
 **Contents**:
 - Type hint requirements
@@ -46,7 +46,7 @@ This directory contains topic-specific constraint files for Python development. 
 - Pre-commit type checking
 
 ### 4. dependencies.md (468 lines)
-**Extracted from**: CLAUDE_PYTHON.md Section 6.2, CONTRIBUTING_PYTHON.md Section 5.2
+**Extracted from**: CLAUDE.md Section 6.2, CONTRIBUTING.md Section 5.2
 
 **Contents**:
 - Dependency management tools (poetry, venv, pipenv)
@@ -59,7 +59,7 @@ This directory contains topic-specific constraint files for Python development. 
 - Dependency conflicts resolution
 
 ### 5. documentation.md (651 lines)
-**Extracted from**: CLAUDE_PYTHON.md Section 6.8, CONTRIBUTING_PYTHON.md Section 9
+**Extracted from**: CLAUDE.md Section 6.8, CONTRIBUTING.md Section 9
 
 **Contents**:
 - Docstring format (Google-style and NumPy-style)
@@ -73,7 +73,7 @@ This directory contains topic-specific constraint files for Python development. 
 - Documentation best practices
 
 ### 6. error-handling.md (602 lines)
-**Extracted from**: CLAUDE_PYTHON.md Section 6.6
+**Extracted from**: CLAUDE.md Section 6.6
 
 **Contents**:
 - Exception handling best practices
@@ -87,7 +87,7 @@ This directory contains topic-specific constraint files for Python development. 
 - Error recovery strategies
 
 ### 7. security.md (747 lines)
-**Extracted from**: CLAUDE_PYTHON.md Section 6.11
+**Extracted from**: CLAUDE.md Section 6.11
 
 **Contents**:
 - Input validation
@@ -111,8 +111,8 @@ These constraint files are designed to be:
 ## Integration with Main Documents
 
 These files complement but do not replace:
-- `/Users/ailven.liu/proj/Personal/repo_template/CLAUDE_PYTHON.md` - Main operating constraints
-- `/Users/ailven.liu/proj/Personal/repo_template/CONTRIBUTING_PYTHON.md` - Contribution guidelines
+- `/Users/ailven.liu/proj/Personal/repo_template/CLAUDE.md` - Main operating constraints
+- `/Users/ailven.liu/proj/Personal/repo_template/CONTRIBUTING.md` - Contribution guidelines
 
 The main documents still contain:
 - Authority and precedence rules

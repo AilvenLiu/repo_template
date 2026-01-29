@@ -215,8 +215,8 @@ If not in a git repository:
 ## Relationship to Main Documentation
 
 The `/init` skill extracts and loads sections from:
-- `CLAUDE.md` (or `CLAUDE_PYTHON.md`/`CLAUDE_CPP.md` in template)
-- `CONTRIBUTING.md` (or `CONTRIBUTING_PYTHON.md`/`CONTRIBUTING_CPP.md` in template)
+- `CLAUDE.md`
+- `CONTRIBUTING.md`
 
 The main documentation files remain as comprehensive references. The `/init` skill provides on-demand, context-aware loading.
 

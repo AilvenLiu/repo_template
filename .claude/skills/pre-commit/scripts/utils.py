@@ -42,14 +42,14 @@ class PreCommitManager:
             "setup.py",
             "pyproject.toml",
             "requirements.txt",
-            "CLAUDE_PYTHON.md",
+            "CLAUDE.md",
         ]
 
         cpp_indicators = [
             "CMakeLists.txt",
             "conanfile.txt",
             "conanfile.py",
-            "CLAUDE_CPP.md",
+            "CLAUDE.md",
         ]
 
         # Check for Python

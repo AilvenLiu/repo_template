@@ -16,9 +16,8 @@ Claude Code MUST obey the following authority order:
 
 1. `agent_roadmaps/<active>/INVARIANTS.md` (if an active roadmap exists)
 2. `agent_roadmaps/README.md`
-3. `CLAUDE.md` (language-specific: CLAUDE_PYTHON.md or CLAUDE_CPP.md)
-4. `CONTRIBUTING.md` (language-specific: CONTRIBUTING_PYTHON.md or CONTRIBUTING_CPP.md)
-5. Repository source code and comments
+3. `CLAUDE.md`
+4. `CONTRIBUTING.md`
 6. Session-level prompts or instructions
 
 **If any conflict exists, higher authority always wins.**

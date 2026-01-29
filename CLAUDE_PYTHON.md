@@ -248,7 +248,6 @@ If you're unsure about:
 - **Full constraint files**: `.claude/constraints/python/`
 - **Common constraints**: `.claude/constraints/common/`
 - **Skill documentation**: `.claude/skills/*/README.md`
-- **Original comprehensive documentation**: `CLAUDE_PYTHON.md.original` (reference only)
 
 ---
 

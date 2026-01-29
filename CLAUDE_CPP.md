@@ -319,7 +319,6 @@ If you're unsure about:
 - **Full constraint files**: `.claude/constraints/cpp/`
 - **Common constraints**: `.claude/constraints/common/`
 - **Skill documentation**: `.claude/skills/*/README.md`
-- **Original comprehensive documentation**: `CLAUDE_CPP.md.original` (reference only)
 
 ---
 

@@ -191,8 +191,8 @@ Each file is self-contained and focused on a single topic, making them easy to r
 ## Relationship to Main Documentation
 
 The constraint files in `.claude/constraints/` are extracted from:
-- `CLAUDE.md` (CLAUDE_PYTHON.md or CLAUDE_CPP.md in template)
-- `CONTRIBUTING.md` (CONTRIBUTING_PYTHON.md or CONTRIBUTING_CPP.md in template)
+- `CLAUDE.md`
+- `CONTRIBUTING.md`
 
 The main documentation files remain as comprehensive references. The `/init` skill provides on-demand, context-aware loading of relevant sections.
 

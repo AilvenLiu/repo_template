@@ -160,14 +160,14 @@ Before every commit, ensure:
 ## Relationship to Other Documents
 
 These constraint files are extracted from:
-- `/Users/ailven.liu/proj/Personal/repo_template/CLAUDE_CPP.md` - Agent operating constraints
-- `/Users/ailven.liu/proj/Personal/repo_template/CONTRIBUTING_CPP.md` - Contribution guidelines
+- `/Users/ailven.liu/proj/Personal/repo_template/CLAUDE.md` - Agent operating constraints
+- `/Users/ailven.liu/proj/Personal/repo_template/CONTRIBUTING.md` - Contribution guidelines
 
 **Authority hierarchy:**
 1. `agent_roadmaps/<active>/INVARIANTS.md` (if active roadmap exists)
 2. `agent_roadmaps/README.md`
-3. `CLAUDE_CPP.md`
-4. `CONTRIBUTING_CPP.md`
+3. `CLAUDE.md`
+4. `CONTRIBUTING.md`
 5. These constraint files (topic-specific details)
 6. Repository source code and comments
 
@@ -177,7 +177,7 @@ These constraint files are extracted from:
 When updating these files:
 1. Ensure consistency across all constraint files
 2. Update this README.md if adding/removing files
-3. Keep in sync with CLAUDE_CPP.md and CONTRIBUTING_CPP.md
+3. Keep in sync with CLAUDE.md and CONTRIBUTING.md
 4. Document changes in commit messages
 
 ### Adding New Constraints
@@ -191,7 +191,7 @@ To add a new constraint file:
 
 For questions or clarifications:
 1. Check the specific constraint file
-2. Refer to CLAUDE_CPP.md or CONTRIBUTING_CPP.md
+2. Refer to CLAUDE.md or CONTRIBUTING.md
 3. Review source code examples in the repository
 4. Ask the team for guidance
 
