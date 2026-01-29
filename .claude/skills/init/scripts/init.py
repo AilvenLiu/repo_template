@@ -135,6 +135,11 @@ class SessionInitializer:
         self.needed_constraints.add("common/git-workflow")
         self.needed_constraints.add("common/session-discipline")
 
+        # CRITICAL: Always load dependency constraints
+        # Dependency management is fundamental - agents must always be aware of these rules
+        # to prevent global installations, even in fresh sessions
+        self.needed_constraints.add(f"{self.project_type}/dependencies")
+
         # Check for active roadmap
         if self.check_active_roadmap():
             self.needed_constraints.add("common/roadmap-awareness")

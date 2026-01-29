@@ -15,6 +15,52 @@ def validate_python(manager: PreCommitManager) -> List[ValidationResult]:
     """Run Python validation checks."""
     results = []
 
+    # CRITICAL: Check for virtual environment (dependency management)
+    venv_paths = [".venv", "venv", ".virtualenv"]
+    venv_exists = any((manager.repo_root / venv).exists() for venv in venv_paths)
+
+    if venv_exists:
+        venv_name = next(venv for venv in venv_paths if (manager.repo_root / venv).exists())
+        results.append(
+            ValidationResult(
+                "virtual environment",
+                True,
+                f"Found virtual environment: {venv_name}",
+                "",
+            )
+        )
+    else:
+        results.append(
+            ValidationResult(
+                "virtual environment",
+                False,
+                "",
+                "No virtual environment found. Create with: python3 -m venv .venv\n"
+                "CRITICAL: NEVER install packages globally or to system Python.",
+            )
+        )
+
+    # Check for requirements.txt (dependency management)
+    requirements_file = manager.repo_root / "requirements.txt"
+    if requirements_file.exists():
+        results.append(
+            ValidationResult(
+                "requirements.txt",
+                True,
+                "requirements.txt exists",
+                "",
+            )
+        )
+    else:
+        results.append(
+            ValidationResult(
+                "requirements.txt",
+                False,
+                "",
+                "requirements.txt not found. Create it to track dependencies.",
+            )
+        )
+
     # Check for black (formatter)
     if manager.check_tool_available("black"):
         returncode, stdout, stderr = manager.run_command(
@@ -132,6 +178,33 @@ def validate_python(manager: PreCommitManager) -> List[ValidationResult]:
 def validate_cpp(manager: PreCommitManager) -> List[ValidationResult]:
     """Run C++/CUDA validation checks."""
     results = []
+
+    # CRITICAL: Check for package manager configuration (dependency management)
+    conan_file = manager.repo_root / "conanfile.txt"
+    vcpkg_file = manager.repo_root / "vcpkg.json"
+    has_package_manager = conan_file.exists() or vcpkg_file.exists()
+
+    if has_package_manager:
+        pkg_mgr = "conanfile.txt" if conan_file.exists() else "vcpkg.json"
+        results.append(
+            ValidationResult(
+                "package manager",
+                True,
+                f"Found package manager configuration: {pkg_mgr}",
+                "",
+            )
+        )
+    else:
+        results.append(
+            ValidationResult(
+                "package manager",
+                False,
+                "",
+                "No package manager configuration found (conanfile.txt or vcpkg.json).\n"
+                "CRITICAL: NEVER install C++ libraries system-wide (apt, yum, brew).\n"
+                "Create conanfile.txt or vcpkg.json for dependency management.",
+            )
+        )
 
     # Check for clang-format
     cpp_files = manager.find_cpp_files()
