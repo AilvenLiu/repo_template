@@ -7,8 +7,8 @@
 
 ### 1.1 Required Tools
 - **Primary Formatter**: `black` (non-negotiable, "The Uncompromising Code Formatter")
-- **Import Sorting**: `isort` or `ruff` (with isort rules)
-- **Linter**: `ruff` (fast, comprehensive) or `flake8` + `pylint`
+- **Import Sorting**: `isort` (primary) or `ruff` with isort rules (alternative)
+- **Linter**: `ruff` (primary, fast and comprehensive) or `flake8` + `pylint` (alternative)
 
 ### 1.2 Installation
 ```bash

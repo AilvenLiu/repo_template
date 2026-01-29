@@ -165,17 +165,45 @@ target_compile_options(mylib PRIVATE
 
 ## 6. Dependency Management
 
-### 6.1 Dependency Priority Order
+### 6.1 Dependency Management Priority
+
+**CRITICAL: NEVER install libraries system-wide (apt/yum/brew)**
+
+System-wide installation breaks reproducibility, cross-platform compatibility, and version control. Always use a package manager.
+
 **Preferred Methods** (in priority order):
-1. `find_package()` for system-installed libraries
-2. `FetchContent` for header-only or small libraries
-3. Git submodules for vendored dependencies
-4. **Conan** (primary choice) for complex dependency graphs
-5. vcpkg (alternative) for complex dependency graphs
+
+1. **Conan** (primary) - For all external dependencies
+   - Best for complex dependency graphs
+   - Excellent cross-platform support
+   - Version pinning and conflict resolution
+   - Use `conanfile.txt` or `conanfile.py`
+
+2. **vcpkg** (alternative) - If Conan is not suitable
+   - Microsoft-maintained package manager
+   - Good Windows support
+   - Use `vcpkg.json` manifest mode
+
+3. `FetchContent` - Only for header-only or small libraries
+   - Downloads source at configure time
+   - Good for libraries without complex dependencies
+   - Example: nlohmann/json, spdlog
+
+4. Git submodules - Only for vendored dependencies
+   - When you need to track specific commits
+   - For libraries you may need to modify
+   - Requires manual updates
+
+5. `find_package()` - Only AFTER package manager installation
+   - Used to locate dependencies installed by Conan/vcpkg
+   - NOT a method to find system-installed libraries
+   - Always specify version requirements
+
+**Important**: `find_package()` should only be used to locate dependencies that were installed via Conan, vcpkg, or FetchContent. It is NOT a method to use system-installed libraries.
 
 ### 6.2 Using find_package()
 ```cmake
-# Find system-installed packages
+# Find packages (installed via Conan/vcpkg/FetchContent)
 find_package(CUDAToolkit REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(OpenCV REQUIRED)

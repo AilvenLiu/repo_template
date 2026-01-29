@@ -95,7 +95,21 @@ Before EVERY commit:
 3. Fix any issues before committing
 4. Use conventional commit messages
 
-### 3.4 When to Stop and Ask
+### 3.4 Dependency Management (BLOCKING REQUIREMENT)
+
+**ABSOLUTE PROHIBITION**: NEVER install packages globally or to system Python.
+
+**MANDATORY REQUIREMENTS**:
+- **ALWAYS** use virtual environments (.venv, poetry, pipenv)
+- **ALWAYS** activate virtual environment before any `pip install`
+- **ALWAYS** update requirements.txt immediately after installing packages
+- **NEVER** use `pip install` without checking for virtual environment first
+
+**VIOLATION**: Installing to system Python is a critical failure that breaks reproducibility.
+
+**Enforcement**: The `/dependency` skill automatically enforces these rules.
+
+### 3.5 When to Stop and Ask
 
 STOP and ask the user before:
 - Making architectural changes
@@ -121,6 +135,7 @@ Common constraints (apply to all projects):
 - **common/git-workflow.md** - Branch policy, commit conventions
 - **common/roadmap-awareness.md** - Roadmap execution discipline
 - **common/session-discipline.md** - Session continuity, decision hygiene
+- **common/ascii-only.md** - ASCII-only code compliance
 
 **These constraints are loaded automatically by `/init` based on your current work.**
 
@@ -142,7 +157,8 @@ Read .claude/constraints/python/formatting.md
 
 ### 5.2 Code Quality Tools
 - **Formatter**: black (line length 100)
-- **Linter**: ruff
+- **Import Sorting**: isort (primary) or ruff with isort rules (alternative)
+- **Linter**: ruff (primary) or flake8 + pylint (alternative)
 - **Type checker**: mypy (strict mode)
 - **Test framework**: pytest
 - **Coverage**: pytest-cov (minimum 80%)
@@ -201,12 +217,13 @@ git commit -m "feat: add new feature"
 
 ### Adding Dependencies
 ```bash
-# Use the dependency skill
+# Use the dependency skill (automatically enforces virtual environment)
 /dependency add <package> [version]
 
 # This will:
+# - Ensure virtual environment exists (creates .venv if needed)
 # - Update requirements.txt
-# - Install via pip3
+# - Install in virtual environment (never system Python)
 # - Remind to update README.md
 ```
 

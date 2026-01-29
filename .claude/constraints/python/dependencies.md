@@ -5,11 +5,14 @@
 
 ## 1. Dependency Management Tools
 
-### 1.1 Preferred Tools (Priority Order)
-1. **poetry** (primary choice for dependency management and packaging)
-2. **venv** (built-in, for simple projects)
-3. **pipenv** (alternative with Pipfile)
-4. **conda** (for scientific computing with non-Python dependencies)
+### 1.1 Acceptable Tools
+All of the following tools are acceptable for virtual environment management:
+- **venv** (built-in, recommended for simple projects)
+- **poetry** (comprehensive dependency management and packaging)
+- **pipenv** (alternative with Pipfile)
+- **conda** (for scientific computing with non-Python dependencies)
+
+Choose based on project needs. For simple projects, venv is sufficient. For complex projects with packaging requirements, poetry is recommended.
 
 ### 1.2 Virtual Environment Requirement
 - **MANDATORY**: ALWAYS use virtual environments (never install to system Python)

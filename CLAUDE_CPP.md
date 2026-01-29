@@ -95,7 +95,21 @@ Before EVERY commit:
 3. Fix any issues before committing
 4. Use conventional commit messages
 
-### 3.4 When to Stop and Ask
+### 3.4 Dependency Management (BLOCKING REQUIREMENT)
+
+**ABSOLUTE PROHIBITION**: NEVER install C++ libraries system-wide (apt, yum, brew, or manual installation).
+
+**MANDATORY REQUIREMENTS**:
+- **ALWAYS** use Conan (primary) or vcpkg (alternative) for dependency management
+- **ALWAYS** update conanfile.txt or vcpkg.json when adding dependencies
+- **ALWAYS** install dependencies via package manager, not system package manager
+- **NEVER** use `apt install`, `yum install`, or `brew install` for C++ libraries
+
+**VIOLATION**: System-wide installation is a critical failure that breaks reproducibility and cross-platform compatibility.
+
+**Enforcement**: The `/dependency` skill automatically enforces these rules.
+
+### 3.5 When to Stop and Ask
 
 STOP and ask the user before:
 - Making architectural changes
@@ -121,6 +135,7 @@ Common constraints (apply to all projects):
 - **common/git-workflow.md** - Branch policy, commit conventions
 - **common/roadmap-awareness.md** - Roadmap execution discipline
 - **common/session-discipline.md** - Session continuity, decision hygiene
+- **common/ascii-only.md** - ASCII-only code compliance
 
 **These constraints are loaded automatically by `/init` based on your current work.**
 
