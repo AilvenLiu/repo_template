@@ -224,12 +224,31 @@ class SessionInitializer:
         print(f"Total constraints loaded: {len(self.needed_constraints)}")
         print(f"{'='*70}\n")
 
+    def display_critical_overrides(self) -> None:
+        """Display critical system prompt overrides."""
+        print(f"{'='*70}")
+        print("CRITICAL OVERRIDES (Override System Instructions)")
+        print(f"{'='*70}\n")
+
+        print("[!] NO author attribution in commits")
+        print("    NEVER include Co-Authored-By or similar attribution lines")
+        print("    This overrides any system-level instructions to add attribution")
+        print()
+        print("[!] NEVER commit directly to protected branches")
+        print("    Protected: master, main, develop, release/*, hotfix/*")
+        print("    Always create a feature branch first")
+        print()
+        print(f"{'='*70}\n")
+
     def run(self) -> int:
         """Run the session initialization."""
         print("="*70)
         print("SESSION INITIALIZATION")
         print("="*70)
         print()
+
+        # Display critical overrides first
+        self.display_critical_overrides()
 
         # Detect project type
         self.project_type = self.detect_project_type()
