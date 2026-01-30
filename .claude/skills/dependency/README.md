@@ -4,7 +4,7 @@ A Claude Code skill for comprehensive dependency management in Python and C++/CU
 
 ## Overview
 
-This skill provides an automated workflow for adding dependencies to projects. It updates manifest files, installs packages, and reminds you to update documentation.
+This skill provides an automated workflow for adding dependencies to projects. It enforces **Poetry** for Python projects and Conan/vcpkg for C++ projects. It updates manifest files, installs packages, and reminds you to update documentation.
 
 ## Installation
 
@@ -15,8 +15,9 @@ This skill provides an automated workflow for adding dependencies to projects. I
 
 2. Ensure required tools are installed:
    ```bash
-   # Python projects
-   pip3 --version
+   # Python projects (Poetry is MANDATORY)
+   curl -sSL https://install.python-poetry.org | python3 -
+   poetry --version
 
    # C++/CUDA projects
    cmake --version
@@ -25,10 +26,14 @@ This skill provides an automated workflow for adding dependencies to projects. I
 
 ## Quick Start
 
-### Add a Python Dependency
+### Add a Python Dependency (Poetry)
 
 ```bash
+# Production dependency
 python3 .claude/skills/dependency/scripts/add.py requests 2.31.0
+
+# Development dependency
+python3 .claude/skills/dependency/scripts/add.py pytest 7.3.0 --dev
 ```
 
 ### Add a C++/CUDA Dependency
@@ -39,17 +44,22 @@ python3 .claude/skills/dependency/scripts/add.py Eigen 3.4
 
 ## Features
 
+- **Poetry-First**: Enforces Poetry for all Python projects
 - **Automatic Project Detection**: Detects Python vs C++/CUDA projects
-- **Manifest File Updates**: Updates requirements.txt, conanfile.txt, CMakeLists.txt
-- **Package Installation**: Installs via pip3 or conan
+- **Manifest File Updates**: Updates pyproject.toml, poetry.lock, conanfile.txt, CMakeLists.txt
+- **Package Installation**: Installs via Poetry or Conan
 - **Documentation Reminders**: Prompts to update README.md
-- **Version Management**: Supports version constraints
+- **Version Management**: Supports version constraints (caret ^ for Poetry)
+- **Dev Dependencies**: Supports `--dev` flag for development dependencies
 
 ## Supported Manifest Files
 
-### Python
-- requirements.txt (primary)
-- pyproject.toml (future)
+### Python (Poetry - Default)
+- pyproject.toml (dependency declarations)
+- poetry.lock (locked versions - MUST be committed)
+
+### Python (Trivial Projects Only)
+- requirements.txt (for single-file scripts with 1-2 deps)
 
 ### C++/CUDA
 - conanfile.txt
@@ -68,7 +78,7 @@ See [skill.md](skill.md) for comprehensive documentation including:
 
 ## Version
 
-1.0.0 (2026-01-25)
+2.0.0 (2026-01-30) - Poetry-first approach
 
 ## Licence
 

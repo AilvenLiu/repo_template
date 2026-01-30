@@ -100,14 +100,14 @@ Before EVERY commit:
 **ABSOLUTE PROHIBITION**: NEVER install packages globally or to system Python.
 
 **MANDATORY REQUIREMENTS**:
-- **ALWAYS** use virtual environments (.venv, poetry, pipenv)
-- **ALWAYS** activate virtual environment before any `pip install`
-- **ALWAYS** update requirements.txt immediately after installing packages
-- **NEVER** use `pip install` without checking for virtual environment first
+- **ALWAYS** use **Poetry** for dependency management (mandatory for all projects)
+- **ALWAYS** use `poetry add` to install packages (never raw `pip install`)
+- **ALWAYS** commit both `pyproject.toml` and `poetry.lock` together
+- **NEVER** use pip directly except for trivial projects (single-file scripts with 1-2 deps)
 
-**VIOLATION**: Installing to system Python is a critical failure that breaks reproducibility.
+**VIOLATION**: Installing to system Python or skipping Poetry is a critical failure.
 
-**Enforcement**: The `/dependency` skill automatically enforces these rules.
+**Enforcement**: The `/dependency` skill automatically enforces Poetry usage.
 
 ### 3.5 When to Stop and Ask
 
@@ -153,7 +153,7 @@ Read .claude/constraints/python/formatting.md
 ### 5.1 Python Version
 - **Minimum**: Python 3.9
 - **Recommended**: Python 3.11+
-- Always use virtual environments (.venv, poetry, pipenv)
+- **Dependency Management**: Poetry (mandatory)
 
 ### 5.2 Code Quality Tools
 - **Formatter**: black (line length 100)
@@ -217,13 +217,15 @@ git commit -m "feat: add new feature"
 
 ### Adding Dependencies
 ```bash
-# Use the dependency skill (automatically enforces virtual environment)
+# Use the dependency skill (automatically uses Poetry)
 /dependency add <package> [version]
+/dependency add <package> --dev  # For development dependencies
 
 # This will:
-# - Ensure virtual environment exists (creates .venv if needed)
-# - Update requirements.txt
-# - Install in virtual environment (never system Python)
+# - Ensure Poetry is installed
+# - Initialise Poetry project if needed
+# - Run `poetry add` to install package
+# - Update pyproject.toml and poetry.lock
 # - Remind to update README.md
 ```
 

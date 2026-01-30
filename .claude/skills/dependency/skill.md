@@ -1,45 +1,55 @@
 ---
 name: dependency
-description: Comprehensive dependency management workflow for adding dependencies to Python and C++/CUDA projects. Automatically updates manifest files, installs packages, and provides documentation reminders.
-version: 1.0.0
+description: Comprehensive dependency management workflow for adding dependencies to Python and C++/CUDA projects. Uses Poetry for Python (mandatory) and Conan/vcpkg for C++. Automatically updates manifest files, installs packages, and provides documentation reminders.
+version: 2.0.0
 ---
 
 # Dependency Management Skill
 
-This skill provides a comprehensive workflow for adding dependencies to Python and C++/CUDA projects. It automatically updates manifest files, installs packages, and reminds you to update documentation.
+This skill provides a comprehensive workflow for adding dependencies to Python and C++/CUDA projects. It enforces Poetry for Python projects and Conan/vcpkg for C++ projects.
 
 ## Requirements
 
 This skill requires Python 3.9+ and project-specific tools:
 
 **For Python projects:**
-- pip3 (package installer)
+- **Poetry** (mandatory) - Install: `curl -sSL https://install.python-poetry.org | python3 -`
 
 **For C++/CUDA projects:**
 - cmake (build system)
-- conan (optional, for package management)
+- conan or vcpkg (package management)
 
 ## Available Commands
 
-### `/dependency add <package> [version]`
+### `/dependency add <package> [version] [--dev]`
 
 Add a dependency to the project.
 
 **Usage:**
 ```bash
-python3 .claude/skills/dependency/scripts/add.py <package> [version]
+python3 .claude/skills/dependency/scripts/add.py <package> [version] [--dev]
 ```
 
 **Arguments:**
 - `<package>`: Required. Package name (e.g., requests, Eigen)
 - `[version]`: Optional. Minimum version (e.g., 2.31.0, 3.4)
+- `[--dev]`: Optional. Add as development dependency (Poetry only)
 
 **Behaviour:**
 
-For Python projects:
-1. Adds package to requirements.txt
-2. Installs package via pip3
-3. Reminds to update README.md
+For Python projects (Poetry - default):
+1. Ensures Poetry is installed
+2. Initialises Poetry project if needed
+3. Adds package via `poetry add`
+4. Automatically updates pyproject.toml and poetry.lock
+5. Reminds to update README.md
+
+For Python projects (trivial - requirements.txt only):
+1. Creates virtual environment if needed
+2. Adds package to requirements.txt
+3. Installs package via pip
+4. Reminds to update README.md
+5. Warns to consider migrating to Poetry
 
 For C++/CUDA projects:
 1. Adds package to conanfile.txt (if exists)
@@ -54,7 +64,7 @@ For C++/CUDA projects:
 
 **Examples:**
 
-Python project:
+Python project (Poetry):
 ```bash
 $ python3 .claude/skills/dependency/scripts/add.py requests 2.31.0
 
@@ -64,16 +74,21 @@ Project Type: python
 Package: requests
 Version: 2.31.0
 
-Adding Python dependency: requests
+Adding Python dependency via Poetry: requests
 --------------------------------------------------
-[OK] Added requests to requirements.txt
-
 Installing requests...
-[OK] requests installed successfully
+[OK] requests installed successfully via Poetry
+
+Poetry automatically updated:
+  - pyproject.toml (dependency declaration)
+  - poetry.lock (locked versions)
+
+IMPORTANT: Commit BOTH files:
+  git add pyproject.toml poetry.lock
 
 REMINDER: Update README.md to document requests
 Add to Dependencies section:
-  - requests >= 2.31.0
+  - **requests** (^2.31.0): [description]
 
 Dependency added successfully!
 
@@ -81,6 +96,31 @@ Next steps:
 1. Update README.md with dependency documentation
 2. Run tests to verify compatibility
 3. Commit changes to version control
+   git add pyproject.toml poetry.lock <your-code>
+```
+
+Python project (development dependency):
+```bash
+$ python3 .claude/skills/dependency/scripts/add.py pytest 7.3.0 --dev
+
+Dependency Management
+==================================================
+Project Type: python
+Package: pytest
+Version: 7.3.0
+Group: dev
+
+Adding Python dependency via Poetry: pytest
+--------------------------------------------------
+Installing pytest (dev)...
+[OK] pytest installed successfully via Poetry
+
+Poetry automatically updated:
+  - pyproject.toml (dependency declaration)
+  - poetry.lock (locked versions)
+
+IMPORTANT: Commit BOTH files:
+  git add pyproject.toml poetry.lock
 ```
 
 C++/CUDA project:
@@ -119,34 +159,47 @@ Next steps:
 
 The skill automatically detects project type based on indicator files:
 
-**Python indicators:**
+**Python indicators (checked in order):**
+- pyproject.toml (Poetry project)
+- requirements.txt (trivial project)
 - setup.py
-- pyproject.toml
-- requirements.txt
-- CLAUDE.md
 
 **C++/CUDA indicators:**
 - CMakeLists.txt
 - conanfile.txt
 - conanfile.py
-- CLAUDE.md
+
+**Python project type detection:**
+- If pyproject.toml contains `[tool.poetry]` or `poetry-core` -> Poetry project
+- If only requirements.txt exists -> Trivial project (manual venv)
+- Otherwise -> New project (will initialise Poetry)
 
 ---
 
 ## Manifest Files
 
-### Python Projects
+### Python Projects (Poetry - Default)
 
 The skill updates the following files:
+
+1. **pyproject.toml**
+   - Adds package to `[tool.poetry.dependencies]` or `[tool.poetry.group.dev.dependencies]`
+   - Uses caret (^) version constraints by default
+   - Format: `package = "^version"`
+
+2. **poetry.lock**
+   - Automatically updated by Poetry
+   - Contains locked versions of all dependencies
+   - **MUST be committed** for reproducible builds
+
+### Python Projects (Trivial)
+
+For trivial projects (requirements.txt only):
 
 1. **requirements.txt**
    - Adds package with version constraint
    - Creates file if it doesn't exist
    - Format: `package>=version`
-
-2. **pyproject.toml** (future support)
-   - Not yet implemented
-   - Will add to dependencies section
 
 ### C++/CUDA Projects
 
@@ -166,11 +219,26 @@ The skill updates the following files:
 
 ## Installation Behaviour
 
-### Python
+### Python (Poetry - Default)
 
-Uses pip3 to install packages:
+Uses Poetry to install packages:
 ```bash
-pip3 install package>=version
+poetry add package
+poetry add "package^version"
+poetry add --group dev package
+```
+
+Poetry automatically:
+- Creates/manages virtual environment
+- Resolves dependencies
+- Updates pyproject.toml
+- Updates poetry.lock
+
+### Python (Trivial)
+
+Uses pip in virtual environment:
+```bash
+.venv/bin/pip install package>=version
 ```
 
 ### C++/CUDA
@@ -199,7 +267,8 @@ After adding a dependency, the skill reminds you to:
    - Ensure functionality
 
 3. **Commit changes**
-   - Include manifest file updates
+   - Include pyproject.toml and poetry.lock (Poetry)
+   - Include requirements.txt (trivial)
    - Include README.md updates
    - Use descriptive commit message
 
@@ -207,22 +276,32 @@ After adding a dependency, the skill reminds you to:
 
 ## Best Practices
 
-1. **Always specify versions**
+1. **Use Poetry for all Python projects**
+   - Only use manual venv for truly trivial projects
+   - Poetry provides better dependency resolution
+   - Lock files ensure reproducibility
+
+2. **Always specify versions**
    - Ensures reproducible builds
    - Prevents breaking changes
    - Documents requirements clearly
 
-2. **Update README.md immediately**
+3. **Commit lock files**
+   - poetry.lock MUST be committed
+   - Ensures all developers use same versions
+   - Required for reproducible CI/CD
+
+4. **Update README.md immediately**
    - Don't skip documentation
    - Explain dependency purpose
    - Note any special configuration
 
-3. **Test after adding**
+5. **Test after adding**
    - Run full test suite
    - Check for conflicts
    - Verify build succeeds
 
-4. **Commit atomically**
+6. **Commit atomically**
    - One dependency per commit
    - Include all related changes
    - Write clear commit message
@@ -231,22 +310,34 @@ After adding a dependency, the skill reminds you to:
 
 ## Troubleshooting
 
+### "Poetry is not installed"
+
+Install Poetry:
+```bash
+curl -sSL https://install.python-poetry.org | python3 -
+```
+
+Or see: https://python-poetry.org/docs/#installation
+
 ### "ERROR: Unknown project type"
 
 The skill couldn't detect Python or C++/CUDA indicators. Ensure you have:
-- Python: `requirements.txt`, `pyproject.toml`, or `CLAUDE.md`
-- C++/CUDA: `CMakeLists.txt`, `conanfile.txt`, or `CLAUDE.md`
+- Python: `pyproject.toml` (recommended) or `requirements.txt`
+- C++/CUDA: `CMakeLists.txt`, `conanfile.txt`, or `vcpkg.json`
 
-### "Package already in requirements.txt"
+### "Development dependencies require Poetry"
 
-The package is already listed. To update version:
-1. Manually edit requirements.txt
-2. Run: `pip3 install --upgrade package`
+Trivial projects (requirements.txt only) don't support `--dev` flag.
+Migrate to Poetry:
+```bash
+poetry init
+poetry add --group dev package-name
+```
 
 ### "Conan install failed"
 
 Check:
-- Conan is installed: `pip3 install conan`
+- Conan is installed: `pip install conan`
 - Package name is correct
 - Version is available
 - Network connectivity
@@ -265,12 +356,13 @@ cmake
 
 ## Integration with Constraints
 
-This skill follows constraints from CLAUDE.md and CONTRIBUTING.md:
+This skill follows constraints from `.claude/constraints/python/dependencies.md`:
 
 **Python projects:**
-- Respects dependency priority order
-- Follows version pinning guidelines
-- Updates all required manifest files
+- Enforces Poetry as the default tool
+- Allows manual venv only for trivial projects
+- Requires committing poetry.lock
+- Follows version pinning guidelines (caret ^)
 
 **C++/CUDA projects:**
 - Uses Conan for dependency management
@@ -280,6 +372,12 @@ This skill follows constraints from CLAUDE.md and CONTRIBUTING.md:
 ---
 
 ## Version History
+
+- **2.0.0** (2026-01-30): Poetry-first approach
+  - Poetry is now mandatory for Python projects
+  - Manual venv only for trivial projects
+  - Added --dev flag for development dependencies
+  - Improved error messages and guidance
 
 - **1.0.0** (2026-01-25): Initial release
   - Python dependency management (requirements.txt, pip3)

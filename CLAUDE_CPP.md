@@ -100,14 +100,15 @@ Before EVERY commit:
 **ABSOLUTE PROHIBITION**: NEVER install C++ libraries system-wide (apt, yum, brew, or manual installation).
 
 **MANDATORY REQUIREMENTS**:
-- **ALWAYS** use Conan (primary) or vcpkg (alternative) for dependency management
+- **ALWAYS** use **Conan** for dependency management (strongly recommended - mandatory first choice)
+- **ONLY** use vcpkg if Conan genuinely cannot meet your needs (rare cases)
 - **ALWAYS** update conanfile.txt or vcpkg.json when adding dependencies
 - **ALWAYS** install dependencies via package manager, not system package manager
 - **NEVER** use `apt install`, `yum install`, or `brew install` for C++ libraries
 
 **VIOLATION**: System-wide installation is a critical failure that breaks reproducibility and cross-platform compatibility.
 
-**Enforcement**: The `/dependency` skill automatically enforces these rules.
+**Enforcement**: The `/dependency` skill automatically enforces Conan as the default.
 
 ### 3.5 When to Stop and Ask
 
@@ -162,7 +163,7 @@ Read .claude/constraints/cpp/memory-safety.md
 
 ### 4.3 Build System
 - **CMake**: 3.20+ (minimum), 3.25+ (recommended)
-- **Dependency Management**: Conan (primary), vcpkg (alternative)
+- **Dependency Management**: Conan (strongly recommended - mandatory first choice), vcpkg (only if Conan unsuitable)
 - **Build Type**: Debug for development, Release for production
 
 ### 4.4 Code Quality Tools

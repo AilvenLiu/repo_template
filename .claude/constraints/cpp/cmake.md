@@ -173,16 +173,20 @@ System-wide installation breaks reproducibility, cross-platform compatibility, a
 
 **Preferred Methods** (in priority order):
 
-1. **Conan** (primary) - For all external dependencies
+1. **Conan** (STRONGLY RECOMMENDED - use this by default)
+   - **This is the mandatory first choice for all C++/CUDA projects**
    - Best for complex dependency graphs
-   - Excellent cross-platform support
-   - Version pinning and conflict resolution
+   - Excellent cross-platform support (Linux, Windows, macOS, embedded)
+   - Superior version pinning and conflict resolution
+   - Active community and extensive package repository
    - Use `conanfile.txt` or `conanfile.py`
+   - **Only consider alternatives if Conan genuinely cannot meet your needs**
 
-2. **vcpkg** (alternative) - If Conan is not suitable
+2. **vcpkg** (alternative - only if Conan is unsuitable)
    - Microsoft-maintained package manager
    - Good Windows support
    - Use `vcpkg.json` manifest mode
+   - **Use only if**: Package not available in Conan, or Windows-specific requirements
 
 3. `FetchContent` - Only for header-only or small libraries
    - Downloads source at configure time

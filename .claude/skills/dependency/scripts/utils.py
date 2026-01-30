@@ -5,13 +5,20 @@ import re
 import subprocess
 from enum import Enum
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
 
 class ProjectType(Enum):
     """Project type enumeration."""
     PYTHON = "python"
     CPP_CUDA = "cpp_cuda"
+    UNKNOWN = "unknown"
+
+
+class PythonProjectType(Enum):
+    """Python project type enumeration."""
+    POETRY = "poetry"
+    TRIVIAL = "trivial"  # Manual venv with requirements.txt
     UNKNOWN = "unknown"
 
 
@@ -25,30 +32,52 @@ class DependencyManager:
         """Detect project type based on files present."""
         # Check for Python indicators
         python_indicators = [
-            "setup.py",
             "pyproject.toml",
+            "setup.py",
             "requirements.txt",
-            "CLAUDE.md",
         ]
 
         cpp_indicators = [
             "CMakeLists.txt",
             "conanfile.txt",
             "conanfile.py",
-            "CLAUDE.md",
         ]
-
-        # Check for Python
-        for indicator in python_indicators:
-            if (self.repo_root / indicator).exists():
-                return ProjectType.PYTHON
 
         # Check for C++/CUDA
         for indicator in cpp_indicators:
             if (self.repo_root / indicator).exists():
                 return ProjectType.CPP_CUDA
 
+        # Check for Python
+        for indicator in python_indicators:
+            if (self.repo_root / indicator).exists():
+                return ProjectType.PYTHON
+
         return ProjectType.UNKNOWN
+
+    def detect_python_project_type(self) -> PythonProjectType:
+        """Detect Python project type (Poetry vs trivial)."""
+        pyproject = self.repo_root / "pyproject.toml"
+
+        if pyproject.exists():
+            content = pyproject.read_text()
+            # Check if it's a Poetry project
+            if "[tool.poetry]" in content:
+                return PythonProjectType.POETRY
+            # Check for poetry-core in build-system
+            if "poetry-core" in content or "poetry.core" in content:
+                return PythonProjectType.POETRY
+
+        # Check for requirements.txt only (trivial project)
+        if (self.repo_root / "requirements.txt").exists():
+            return PythonProjectType.TRIVIAL
+
+        return PythonProjectType.UNKNOWN
+
+    def is_poetry_available(self) -> bool:
+        """Check if Poetry is installed and available."""
+        returncode, _, _ = self.run_command(["poetry", "--version"])
+        return returncode == 0
 
     def run_command(
         self, cmd: List[str], cwd: Optional[Path] = None
@@ -74,10 +103,9 @@ class DependencyManager:
         """Find Python dependency manifest files."""
         manifests = []
         candidates = [
-            "requirements.txt",
             "pyproject.toml",
-            "setup.py",
-            "setup.cfg",
+            "poetry.lock",
+            "requirements.txt",
         ]
 
         for candidate in candidates:
@@ -103,8 +131,64 @@ class DependencyManager:
 
         return manifests
 
-    def add_to_requirements_txt(self, package: str, version: Optional[str] = None) -> bool:
-        """Add package to requirements.txt."""
+    def poetry_add(
+        self, package: str, version: Optional[str] = None, dev: bool = False
+    ) -> Tuple[bool, str]:
+        """Add package using Poetry.
+
+        Returns (success, message).
+        """
+        cmd = ["poetry", "add"]
+
+        if dev:
+            cmd.extend(["--group", "dev"])
+
+        if version:
+            cmd.append(f"{package}^{version}")
+        else:
+            cmd.append(package)
+
+        returncode, stdout, stderr = self.run_command(cmd)
+
+        if returncode == 0:
+            return True, stdout
+        else:
+            return False, stderr
+
+    def poetry_init(self) -> Tuple[bool, str]:
+        """Initialise a new Poetry project.
+
+        Returns (success, message).
+        """
+        # Use non-interactive mode
+        cmd = ["poetry", "init", "--no-interaction"]
+        returncode, stdout, stderr = self.run_command(cmd)
+
+        if returncode == 0:
+            return True, stdout
+        else:
+            return False, stderr
+
+    def poetry_install(self, with_dev: bool = True) -> Tuple[bool, str]:
+        """Install dependencies using Poetry.
+
+        Returns (success, message).
+        """
+        cmd = ["poetry", "install"]
+        if with_dev:
+            cmd.extend(["--with", "dev"])
+
+        returncode, stdout, stderr = self.run_command(cmd)
+
+        if returncode == 0:
+            return True, stdout
+        else:
+            return False, stderr
+
+    def add_to_requirements_txt(
+        self, package: str, version: Optional[str] = None
+    ) -> bool:
+        """Add package to requirements.txt (for trivial projects only)."""
         requirements_file = self.repo_root / "requirements.txt"
 
         # Create if doesn't exist
@@ -179,7 +263,9 @@ class DependencyManager:
         cmake_file.write_text(new_content)
         return True
 
-    def add_to_conanfile_txt(self, package: str, version: Optional[str] = None) -> bool:
+    def add_to_conanfile_txt(
+        self, package: str, version: Optional[str] = None
+    ) -> bool:
         """Add package to conanfile.txt."""
         conan_file = self.repo_root / "conanfile.txt"
 
