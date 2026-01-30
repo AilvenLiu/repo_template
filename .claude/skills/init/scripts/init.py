@@ -134,6 +134,10 @@ class SessionInitializer:
         # Always load common constraints
         self.needed_constraints.add("common/git-workflow")
         self.needed_constraints.add("common/session-discipline")
+        self.needed_constraints.add("common/mcp-integration")
+
+        # Always load language-specific forbidden practices
+        self.needed_constraints.add(f"{self.project_type}/forbidden-practices")
 
         # CRITICAL: Always load dependency constraints
         # Dependency management is fundamental - agents must always be aware of these rules

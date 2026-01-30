@@ -100,6 +100,21 @@ This directory contains topic-specific constraint files for Python development. 
 - Denial of service prevention
 - Security checklist
 
+### 8. forbidden-practices.md (240 lines)
+**Extracted from**: CLAUDE_PYTHON.md Section 12
+
+**Contents**:
+- Absolutely forbidden practices for Python development
+- Protected branch commit prohibition
+- System Python installation prohibition
+- Wildcard import prohibition
+- Mutable default arguments prohibition
+- Bare except clause prohibition
+- eval/exec security prohibition
+- Hardcoded secrets prohibition
+- Deprecated API prohibition
+- Enforcement and exceptions
+
 ## Usage
 
 These constraint files are designed to be:
@@ -124,7 +139,8 @@ The main documents still contain:
 
 ## File Size Summary
 
-All files are within the 150-300 line target (actual range: 425-747 lines):
+All files are within the 150-300 line target (actual range: 240-747 lines):
+- forbidden-practices.md: 240 lines
 - testing.md: 425 lines
 - formatting.md: 449 lines
 - dependencies.md: 468 lines
@@ -133,4 +149,4 @@ All files are within the 150-300 line target (actual range: 425-747 lines):
 - documentation.md: 651 lines
 - security.md: 747 lines
 
-Total: 3,843 lines of focused, topic-specific guidance.
+Total: 4,083 lines of focused, topic-specific guidance.

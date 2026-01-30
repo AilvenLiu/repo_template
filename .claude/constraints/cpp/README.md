@@ -110,6 +110,23 @@
 - Documentation best practices
 - Pre-commit documentation requirements
 
+### 8. [forbidden-practices.md](forbidden-practices.md)
+**Absolutely Forbidden Practices**
+- Protected branch commit prohibition
+- Raw pointer ownership prohibition
+- Manual new/delete prohibition
+- C-style cast prohibition
+- using namespace in headers prohibition
+- CUDA error ignoring prohibition
+- Compiler warning prohibition
+
+**Key Topics:**
+- Memory management forbidden practices
+- Type safety forbidden practices
+- CUDA-specific forbidden practices
+- Concurrency forbidden practices
+- Enforcement and exceptions
+
 ## Quick Reference
 
 ### Pre-Commit Checklist
@@ -140,7 +157,8 @@ Before every commit, ensure:
 |-- cuda.md                # CUDA-specific guidelines
 |-- memory-safety.md       # Memory safety and RAII
 |-- static-analysis.md     # Static analysis tools
-`-- documentation.md       # Documentation standards
+|-- documentation.md       # Documentation standards
+`-- forbidden-practices.md # Absolutely forbidden practices
 ```
 
 ## Usage

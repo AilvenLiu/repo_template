@@ -80,6 +80,7 @@ Constraints are organized by topic in `.claude/constraints/`:
 - `python/documentation.md` - Docstrings, README, API docs
 - `python/error-handling.md` - Exception handling, context managers
 - `python/security.md` - Input validation, secrets management
+- `python/forbidden-practices.md` - Absolutely forbidden practices (always loaded)
 
 ### C++/CUDA Constraints
 - `cpp/testing.md` - Google Test, Catch2, coverage
@@ -89,9 +90,11 @@ Constraints are organized by topic in `.claude/constraints/`:
 - `cpp/memory-safety.md` - RAII, smart pointers, ownership
 - `cpp/static-analysis.md` - clang-tidy, cppcheck
 - `cpp/documentation.md` - Doxygen, comments, README
+- `cpp/forbidden-practices.md` - Absolutely forbidden practices (always loaded)
 
 ### Common Constraints
 - `common/git-workflow.md` - Branch policy, commit conventions
+- `common/mcp-integration.md` - Context7 MCP for external documentation
 - `common/roadmap-awareness.md` - Roadmap execution discipline
 - `common/session-discipline.md` - Session continuity, decision hygiene
 
