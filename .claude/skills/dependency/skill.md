@@ -265,7 +265,7 @@ cmake
 
 ## Integration with Constraints
 
-This skill follows constraints from CLAUDE_*.md and CONTRIBUTING_*.md:
+This skill follows constraints from CLAUDE.md and CONTRIBUTING.md:
 
 **Python projects:**
 - Respects dependency priority order
