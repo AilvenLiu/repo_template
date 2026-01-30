@@ -101,7 +101,7 @@ This directory contains topic-specific constraint files for Python development. 
 - Security checklist
 
 ### 8. forbidden-practices.md (240 lines)
-**Extracted from**: CLAUDE_PYTHON.md Section 12
+**Extracted from**: CLAUDE.md Section 12
 
 **Contents**:
 - Absolutely forbidden practices for Python development
