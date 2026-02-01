@@ -34,6 +34,21 @@ Poetry provides:
 - **MANDATORY**: ALWAYS use virtual environments (never install to system Python)
 - **NEVER** install packages globally
 - **NEVER** use `pip install` directly without Poetry or activated venv
+- **NEVER** use raw `python` or `python3` commands - always use `poetry run`
+
+**CRITICAL EXAMPLES**:
+
+```bash
+# FORBIDDEN: Direct system Python usage
+python script.py                    # WRONG - uses system Python
+python3 -m pytest                   # WRONG - uses system Python
+pip install requests                # WRONG - installs to system Python
+
+# REQUIRED: Always use Poetry
+poetry run python script.py         # CORRECT
+poetry run pytest                   # CORRECT
+poetry add requests                 # CORRECT
+```
 
 ## 2. Poetry Project Structure
 

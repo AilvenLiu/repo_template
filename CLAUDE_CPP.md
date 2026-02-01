@@ -124,19 +124,23 @@ STOP and ask the user before:
 
 Detailed constraints are organised by topic in `.claude/constraints/cpp/`:
 
+- **dependencies.md** - Conan/vcpkg dependency management (ALWAYS loaded)
+- **forbidden-practices.md** - Absolute prohibitions (ALWAYS loaded)
+- **error-handling.md** - Error handling patterns (ALWAYS loaded)
+- **static-analysis.md** - clang-tidy, cppcheck (ALWAYS loaded)
 - **testing.md** - Google Test, Catch2, coverage (70%+)
 - **formatting.md** - clang-format, naming conventions
 - **cmake.md** - CMake 3.20+, modern target-based approach
 - **cuda.md** - CUDA 11.0+, memory management, error checking
 - **memory-safety.md** - RAII (mandatory), smart pointers, ownership
-- **static-analysis.md** - clang-tidy, cppcheck
 - **documentation.md** - Doxygen-style comments
 
 Common constraints (apply to all projects):
 - **common/git-workflow.md** - Branch policy, commit conventions
-- **common/roadmap-awareness.md** - Roadmap execution discipline
 - **common/session-discipline.md** - Session continuity, decision hygiene
+- **common/mcp-integration.md** - MCP server integration
 - **common/ascii-only.md** - ASCII-only code compliance
+- **common/roadmap-awareness.md** - Roadmap execution discipline (when roadmap active)
 
 **These constraints are loaded automatically by `/init` based on your current work.**
 

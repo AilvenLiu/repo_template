@@ -43,12 +43,26 @@ The skill automatically detects whether you're working on:
 
 Based on your current context, the skill loads only relevant constraint files:
 
-**Always loaded:**
+**Always loaded (common):**
 - `common/git-workflow` - Git workflow and commit conventions
 - `common/session-discipline` - Session continuity and decision hygiene
+- `common/mcp-integration` - MCP server integration guidelines
+- `common/ascii-only` - ASCII-only code compliance
 
 **Loaded when active roadmap detected:**
 - `common/roadmap-awareness` - Roadmap execution discipline
+
+**Always loaded (Python projects):**
+- `python/dependencies` - Poetry enforcement (ALWAYS loaded to prevent system Python usage)
+- `python/forbidden-practices` - Absolute prohibitions (ALWAYS loaded)
+- `python/security` - Security best practices (ALWAYS loaded)
+- `python/error-handling` - Exception handling patterns (ALWAYS loaded)
+
+**Always loaded (C++/CUDA projects):**
+- `cpp/dependencies` - Conan/vcpkg enforcement (ALWAYS loaded to prevent system-wide installation)
+- `cpp/forbidden-practices` - Absolute prohibitions (ALWAYS loaded)
+- `cpp/error-handling` - Error handling patterns (ALWAYS loaded)
+- `cpp/static-analysis` - Static analysis requirements (ALWAYS loaded)
 
 **Loaded based on modified files:**
 
@@ -56,7 +70,6 @@ For Python projects:
 - `python/testing` - When test files are modified
 - `python/formatting` - When .py files are modified
 - `python/type-checking` - When .py files are modified
-- `python/dependencies` - When requirements.txt or pyproject.toml modified
 - `python/documentation` - When .md or doc files modified
 
 For C++/CUDA projects:
@@ -66,6 +79,8 @@ For C++/CUDA projects:
 - `cpp/cuda` - When .cu/.cuh files are modified
 - `cpp/cmake` - When CMakeLists.txt modified
 - `cpp/documentation` - When .md or doc files modified
+
+**Note**: Critical constraints (dependencies, forbidden-practices, security, error-handling, static-analysis) are ALWAYS loaded to ensure fundamental rules are enforced from the start of every session, even before any files are modified.
 
 ## Usage
 

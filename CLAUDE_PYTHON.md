@@ -102,8 +102,23 @@ Before EVERY commit:
 **MANDATORY REQUIREMENTS**:
 - **ALWAYS** use **Poetry** for dependency management (mandatory for all projects)
 - **ALWAYS** use `poetry add` to install packages (never raw `pip install`)
+- **ALWAYS** use `poetry run` to execute commands (never raw `python` or `python3`)
 - **ALWAYS** commit both `pyproject.toml` and `poetry.lock` together
 - **NEVER** use pip directly except for trivial projects (single-file scripts with 1-2 deps)
+- **NEVER** use system python/python3 commands directly
+
+**CRITICAL**: When you need to run Python commands, you MUST use:
+```bash
+# CORRECT: Use Poetry to run commands
+poetry run python script.py
+poetry run pytest
+poetry run black .
+
+# FORBIDDEN: Direct system Python usage
+python script.py      # WRONG
+python3 script.py     # WRONG
+pip install package   # WRONG
+```
 
 **VIOLATION**: Installing to system Python or skipping Poetry is a critical failure.
 
@@ -123,19 +138,24 @@ STOP and ask the user before:
 
 Detailed constraints are organized by topic in `.claude/constraints/python/`:
 
+**Always loaded (critical constraints):**
+- **dependencies.md** - Poetry enforcement (ALWAYS loaded)
+- **forbidden-practices.md** - Absolute prohibitions (ALWAYS loaded)
+- **security.md** - Input validation, secrets management (ALWAYS loaded)
+- **error-handling.md** - Exception handling, context managers (ALWAYS loaded)
+
+**Loaded based on context:**
 - **testing.md** - pytest, coverage (80%+), test organization
 - **formatting.md** - black, ruff, PEP 8, naming conventions
 - **type-checking.md** - Type hints (mandatory), mypy configuration
-- **dependencies.md** - pip, poetry, requirements.txt management
 - **documentation.md** - Docstrings (Google-style), README, API docs
-- **error-handling.md** - Exception handling, context managers
-- **security.md** - Input validation, secrets management
 
 Common constraints (apply to all projects):
 - **common/git-workflow.md** - Branch policy, commit conventions
-- **common/roadmap-awareness.md** - Roadmap execution discipline
 - **common/session-discipline.md** - Session continuity, decision hygiene
+- **common/mcp-integration.md** - MCP server integration
 - **common/ascii-only.md** - ASCII-only code compliance
+- **common/roadmap-awareness.md** - Roadmap execution discipline (when roadmap active)
 
 **These constraints are loaded automatically by `/init` based on your current work.**
 
