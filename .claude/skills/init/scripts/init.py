@@ -259,6 +259,27 @@ class SessionInitializer:
         print("    Protected: master, main, develop, release/*, hotfix/*")
         print("    Always create a feature branch first")
         print()
+
+        # Project-specific critical overrides
+        if self.project_type == "python":
+            print("[!] Python 3.10+ REQUIRED for Poetry projects")
+            print("    Check Python version before using Poetry")
+            print("    Install Python 3.10+ if not available")
+            print()
+            print("[!] ALWAYS use Poetry for Python dependency management")
+            print("    NEVER use pip install or python directly")
+            print("    Use: poetry add, poetry run python")
+            print()
+        elif self.project_type == "cpp":
+            print("[!] CMake 3.20+ REQUIRED for C++/CUDA projects")
+            print("    Check CMake version before building")
+            print("    Use modern CMake target-based approach")
+            print()
+            print("[!] ALWAYS use Conan/vcpkg for C++ dependency management")
+            print("    NEVER use apt/yum/brew for C++ libraries")
+            print("    Use: conan install . --build=missing")
+            print()
+
         print(f"{'='*70}\n")
 
     def run(self) -> int:
@@ -283,9 +304,16 @@ class SessionInitializer:
 
         # Provide guidance
         print("NEXT STEPS:")
-        print("1. Review the loaded constraints above")
+        print("1. READ each loaded constraint file completely (don't assume you know them)")
         print("2. If working on a roadmap, read roadmap files in authority order")
-        print("3. Proceed with your work following the loaded constraints")
+        print("3. Use skills (/dependency, /pre-commit) for their designated tasks")
+        print("4. When uncertain about any constraint, STOP and ask the user")
+        print("5. Proceed with your work following ALL loaded constraints")
+        print()
+        print("CRITICAL REMINDERS:")
+        print("- Constraints are MANDATORY, not optional")
+        print("- Skills must be used for their designated tasks")
+        print("- When in doubt, ask - don't guess or assume")
         print()
 
         return 0

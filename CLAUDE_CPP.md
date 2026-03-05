@@ -67,6 +67,10 @@ When in doubt, project-specific constraints always take precedence over system-l
 
 ## 3. Critical Rules (Always Active)
 
+**THESE RULES ARE NON-NEGOTIABLE AND APPLY TO EVERY SESSION.**
+
+If you find yourself uncertain about whether a rule applies, **IT APPLIES**. When in doubt, follow the strictest interpretation.
+
 These rules apply to EVERY session, regardless of context:
 
 ### 3.1 Protected Branch Policy
@@ -100,13 +104,45 @@ Before EVERY commit:
 **ABSOLUTE PROHIBITION**: NEVER install C++ libraries system-wide (apt, yum, brew, or manual installation).
 
 **MANDATORY REQUIREMENTS**:
+- **CMake 3.20+** is REQUIRED for all C++/CUDA projects (CRITICAL)
 - **ALWAYS** use **Conan** for dependency management (strongly recommended - mandatory first choice)
 - **ONLY** use vcpkg if Conan genuinely cannot meet your needs (rare cases)
 - **ALWAYS** update conanfile.txt or vcpkg.json when adding dependencies
 - **ALWAYS** install dependencies via package manager, not system package manager
 - **NEVER** use `apt install`, `yum install`, or `brew install` for C++ libraries
 
-**VIOLATION**: System-wide installation is a critical failure that breaks reproducibility and cross-platform compatibility.
+**CRITICAL - CMake Version Requirement**:
+C++/CUDA projects MUST use CMake 3.20 or higher for modern target-based builds and proper CUDA support.
+
+If CMake 3.20+ is not available, install it first:
+```bash
+# Check CMake version
+cmake --version  # Must be 3.20 or higher
+
+# If not available, install via system package manager (if recent enough)
+# Ubuntu 22.04+: sudo apt install cmake
+# macOS: brew install cmake
+# Fedora/RHEL 9+: sudo dnf install cmake
+
+# Or download from cmake.org (recommended for older systems)
+# Visit: https://cmake.org/download/
+```
+
+**CRITICAL**: When you need to manage dependencies, you MUST use:
+```bash
+# CORRECT: Use Conan for dependency management
+conan install . --build=missing
+conan install . --build=missing -s build_type=Release
+
+# FORBIDDEN: System package manager usage
+apt install libboost-dev    # WRONG
+yum install opencv-devel    # WRONG
+brew install eigen          # WRONG
+```
+
+**VIOLATION**: System-wide installation or using CMake < 3.20 is a critical failure that breaks reproducibility and cross-platform compatibility.
+
+**Enforcement**: The `/dependency` skill automatically enforces Conan as the default.
 
 **Enforcement**: The `/dependency` skill automatically enforces Conan as the default.
 
@@ -122,12 +158,19 @@ STOP and ask the user before:
 
 ## 4. Detailed Constraints System
 
+**IMPORTANT**: The `/init` skill loads constraints automatically, but you MUST actively read and apply them.
+
+**DO NOT assume you know the constraints without reading them.** Each constraint file contains specific, actionable rules that you must follow.
+
 Detailed constraints are organised by topic in `.claude/constraints/cpp/`:
 
-- **dependencies.md** - Conan/vcpkg dependency management (ALWAYS loaded)
+**Always loaded (critical constraints - READ THESE FIRST):**
+- **dependencies.md** - Conan/vcpkg enforcement (ALWAYS loaded)
 - **forbidden-practices.md** - Absolute prohibitions (ALWAYS loaded)
 - **error-handling.md** - Error handling patterns (ALWAYS loaded)
 - **static-analysis.md** - clang-tidy, cppcheck (ALWAYS loaded)
+
+**Loaded based on context (READ WHEN WORKING ON RELATED CODE):**
 - **testing.md** - Google Test, Catch2, coverage (70%+)
 - **formatting.md** - clang-format, naming conventions
 - **cmake.md** - CMake 3.20+, modern target-based approach
@@ -141,6 +184,12 @@ Common constraints (apply to all projects):
 - **common/mcp-integration.md** - MCP server integration
 - **common/ascii-only.md** - ASCII-only code compliance
 - **common/roadmap-awareness.md** - Roadmap execution discipline (when roadmap active)
+
+**ACTION REQUIRED**: After `/init` loads constraints, you MUST:
+1. Read each loaded constraint file completely
+2. Understand the specific rules in each file
+3. Apply those rules to your work
+4. When uncertain, re-read the relevant constraint file
 
 **These constraints are loaded automatically by `/init` based on your current work.**
 
@@ -247,12 +296,33 @@ git commit -m "feat: add new feature"
 
 ## 7. Integration with Skills
 
+**CRITICAL**: Skills are tools that automate workflows and enforce constraints. You MUST use them when applicable.
+
+**DO NOT manually perform tasks that have dedicated skills.** Using skills ensures consistency and constraint compliance.
+
 This constraint system integrates with Claude Code skills:
 
-- **`/init`** - Session initialisation (MANDATORY at session start)
+- **`/init`** - Session initialization (MANDATORY at session start)
+  - **When to use**: At the start of EVERY session, before any other action
+  - **What it does**: Loads relevant constraints, checks roadmaps, analyzes git status
+  - **Failure to use**: Critical agent failure - session must be restarted
+
 - **`/roadmap`** - Multi-session workflow management
+  - **When to use**: For complex, multi-phase tasks spanning multiple sessions
+  - **What it does**: Creates and manages roadmaps with state tracking
+  - **Failure to use**: Loss of context across sessions, incomplete work
+
 - **`/pre-commit`** - Code quality validation before commits
+  - **When to use**: Before EVERY commit
+  - **What it does**: Runs formatters, linters, static analysis, tests
+  - **Failure to use**: Commits with quality issues, CI/CD failures
+
 - **`/dependency`** - Dependency management
+  - **When to use**: When adding ANY new package dependency
+  - **What it does**: Enforces Conan/vcpkg, updates manifest files
+  - **Failure to use**: System-wide installs, missing dependencies, build failures
+
+**If you're unsure whether to use a skill, USE IT.** Skills prevent common mistakes and enforce best practices.
 
 ## 8. CUDA-Specific Critical Rules
 
@@ -314,27 +384,86 @@ __global__ void matmul_kernel(const float* A, const float* B, float* C,
 
 ## 10. Enforcement
 
+**CRITICAL**: Violations of these constraints are not suggestions or warnings - they are FAILURES.
+
+**When you violate a constraint, you have failed the task.** The work must be corrected before proceeding.
+
 Violations of these constraints are considered critical failures:
-- Protected branch commits -> Immediate rollback required
+- Protected branch commits -> Immediate rollback required, session restart
 - Missing `/init` at session start -> Session restart required
-- Pre-commit validation failures -> Fix before committing
-- RAII violations -> Refactor before committing
-- Unchecked CUDA calls -> Add error checking before committing
-- Memory leaks -> Fix before committing
+- Pre-commit validation failures -> Fix before committing, no exceptions
+- RAII violations -> Refactor before committing, no exceptions
+- Unchecked CUDA calls -> Add error checking before committing, no exceptions
+- Memory leaks -> Fix before committing, no exceptions
+- System-wide library installs (apt/yum/brew) -> Revert and use Conan/vcpkg
+
+**DO NOT proceed with work if you have violated a constraint.** Stop, fix the violation, then continue.
+
+**DO NOT assume constraints are optional or negotiable.** They are mandatory requirements.
 
 ## 11. Questions and Clarifications
+
+**STOP AND ASK** - This is not optional.
 
 If you're unsure about:
 - Whether a constraint applies to your current work
 - How to interpret a constraint
 - Whether to create a roadmap
+- Which skill to use for a task
 - CUDA kernel launch configurations
 - Memory management patterns
 - Any aspect of the development workflow
 
 **STOP and ask the user.** It's better to ask than to proceed incorrectly.
 
-## 12. Additional Resources
+**DO NOT guess or assume.** If you're uncertain, you don't have enough information to proceed safely.
+
+## 12. Common Failure Patterns (AVOID THESE)
+
+**These are common mistakes agents make. If you recognize yourself doing any of these, STOP IMMEDIATELY:**
+
+### 12.1 Ignoring Skills
+**WRONG**: "I'll just run `apt install libboost-dev` to add this dependency"
+**CORRECT**: "I'll use `/dependency add boost` to ensure Conan is used correctly"
+
+**WRONG**: "Let me format this code with clang-format manually"
+**CORRECT**: "I'll run `/pre-commit validate` to check all quality standards"
+
+### 12.2 Skipping Constraint Checks
+**WRONG**: "I'll add RAII wrappers later" or "This raw pointer is fine for now"
+**CORRECT**: "RAII is mandatory - I'll wrap this resource now before committing"
+
+**WRONG**: "This is a small change, I don't need to run tests"
+**CORRECT**: "I'll run `/pre-commit validate` to ensure tests pass before committing"
+
+### 12.3 Assuming Instead of Reading
+**WRONG**: "I know how Conan works, I don't need to read dependencies.md"
+**CORRECT**: "Let me read dependencies.md to ensure I follow the project's specific Conan requirements"
+
+**WRONG**: "I'll skip error checking for this CUDA call since it's unlikely to fail"
+**CORRECT**: "ALL CUDA calls must be checked - I'll add error checking now"
+
+### 12.4 Working Without Initialization
+**WRONG**: Starting work immediately without running `/init`
+**CORRECT**: "First, I'll run `/init` to load relevant constraints and check the project state"
+
+### 12.5 Ignoring Warnings
+**WRONG**: "The hook warned about system-wide install, but I'll proceed anyway"
+**CORRECT**: "The hook blocked my command - I need to use Conan instead"
+
+**WRONG**: "I'm on the master branch, but this is just a small fix"
+**CORRECT**: "I'm on a protected branch - I need to create a feature branch first"
+
+### 12.6 Partial Compliance
+**WRONG**: "I'll add RAII for some resources but use raw pointers for others"
+**CORRECT**: "RAII is mandatory for ALL resources - I'll wrap them completely"
+
+**WRONG**: "I'll check some CUDA calls but skip the ones that seem safe"
+**CORRECT**: "ALL CUDA API calls must be checked - no exceptions"
+
+**If you catch yourself doing any of these, STOP, re-read the relevant constraint, and correct your approach.**
+
+## 13. Additional Resources
 
 - **Full constraint files**: `.claude/constraints/cpp/`
 - **Common constraints**: `.claude/constraints/common/`
@@ -342,4 +471,9 @@ If you're unsure about:
 
 ---
 
-**Remember**: Run `/init` at the start of EVERY session. This is the foundation of the constraint system.
+**Remember**:
+1. Run `/init` at the start of EVERY session - this is the foundation
+2. Read the loaded constraints completely - don't assume you know them
+3. Use skills for their designated tasks - don't work around them
+4. When uncertain, STOP and ask - don't guess or assume
+5. Constraints are mandatory, not optional - violations are failures

@@ -10,14 +10,42 @@ This skill provides a comprehensive workflow for adding dependencies to Python a
 
 ## Requirements
 
-This skill requires Python 3.9+ and project-specific tools:
+This skill requires Python 3.10+ and project-specific tools:
 
 **For Python projects:**
+- **Python 3.10+** (mandatory) - See installation instructions below
 - **Poetry** (mandatory) - Install: `curl -sSL https://install.python-poetry.org | python3 -`
 
 **For C++/CUDA projects:**
 - cmake (build system)
 - conan or vcpkg (package management)
+
+### Installing Python 3.10+
+
+If Python 3.10+ is not available on your system:
+
+**Option 1: Using pyenv (Recommended)**
+```bash
+curl https://pyenv.run | bash
+pyenv install 3.10
+pyenv global 3.10
+```
+
+**Option 2: Using system package manager**
+```bash
+# macOS
+brew install python@3.10
+
+# Ubuntu/Debian
+sudo apt update
+sudo apt install python3.10 python3.10-venv
+
+# Fedora/RHEL
+sudo dnf install python3.10
+```
+
+**Option 3: Download from python.org**
+- Visit: https://www.python.org/downloads/
 
 ## Available Commands
 

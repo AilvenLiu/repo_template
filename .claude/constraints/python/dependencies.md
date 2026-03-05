@@ -16,7 +16,57 @@ Poetry provides:
 - Reproducible builds via `poetry.lock`
 - Clean separation of production and development dependencies
 
-### 1.2 Exception: Manual venv for Trivial Projects
+### 1.2 Python Version Requirement
+
+**CRITICAL**: Poetry MUST use Python 3.10 or higher.
+
+**Why Python 3.10+ is mandatory:**
+- Modern dependency resolution algorithms
+- Compatibility with latest package versions
+- Consistent virtual environment management
+- Avoids conflicts with older Python versions (e.g., Python 3.9 venvs)
+
+**Before using Poetry, verify Python 3.10+ is available:**
+```bash
+# Check for Python 3.10+
+python3.10 --version  # Preferred
+python3.11 --version  # Also acceptable
+python3.12 --version  # Also acceptable
+
+# Or check system default
+python3 --version  # Must be 3.10+
+```
+
+**If Python 3.10+ is not available, install it first:**
+
+Option 1: Using pyenv (Recommended)
+```bash
+# Install pyenv
+curl https://pyenv.run | bash
+
+# Install Python 3.10+
+pyenv install 3.10
+pyenv global 3.10
+```
+
+Option 2: Using system package manager
+```bash
+# macOS
+brew install python@3.10
+
+# Ubuntu/Debian
+sudo apt update
+sudo apt install python3.10 python3.10-venv
+
+# Fedora/RHEL
+sudo dnf install python3.10
+```
+
+Option 3: Download from python.org
+- Visit: https://www.python.org/downloads/
+- Download Python 3.10 or higher
+
+### 1.3 Exception: Manual venv for Trivial Projects
 
 **ONLY** for extremely simple projects (single-file scripts, quick prototypes with 1-2 dependencies), manual venv with requirements.txt is acceptable.
 
@@ -29,7 +79,7 @@ Poetry provides:
 
 **If in doubt, use Poetry.** The overhead is minimal and the benefits are significant.
 
-### 1.3 Virtual Environment Requirement
+### 1.4 Virtual Environment Requirement
 
 - **MANDATORY**: ALWAYS use virtual environments (never install to system Python)
 - **NEVER** install packages globally
@@ -71,7 +121,7 @@ license = "MIT"
 packages = [{include = "src"}]
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "^3.10"
 numpy = "^1.24.0"
 pandas = "^2.0.0"
 requests = "^2.31.0"
@@ -89,17 +139,17 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.black]
 line-length = 100
-target-version = ['py39', 'py310', 'py311', 'py312']
+target-version = ['py310', 'py311', 'py312']
 
 [tool.mypy]
-python_version = "3.9"
+python_version = "3.10"
 strict = true
 warn_return_any = true
 warn_unused_configs = true
 
 [tool.ruff]
 line-length = 100
-target-version = "py39"
+target-version = "py310"
 select = ["E", "F", "I", "N", "W", "B", "C4", "UP"]
 
 [tool.pytest.ini_options]
@@ -124,6 +174,9 @@ exclude_lines = [
 ### 3.1 Project Setup
 
 ```bash
+# Ensure Python 3.10+ is available
+python3.10 --version  # Or python3.11, python3.12, etc.
+
 # Install Poetry (if not installed)
 curl -sSL https://install.python-poetry.org | python3 -
 
@@ -131,7 +184,7 @@ curl -sSL https://install.python-poetry.org | python3 -
 poetry new project-name
 
 # Or initialise in existing directory
-poetry init
+poetry init --python=^3.10
 
 # Install all dependencies (creates virtual environment automatically)
 poetry install
@@ -253,19 +306,26 @@ numpy = ">=1.24.0,<2.0.0"  # Explicit range
 
 When starting work on a project, Claude Code MUST:
 
-1. Check for `pyproject.toml` (Poetry project indicator)
-2. If exists, run `poetry install` to set up environment
-3. If not exists, initialise with `poetry init`
-4. Verify installation success with `poetry show`
+1. **Verify Python 3.10+ is available** (CRITICAL)
+2. Check for `pyproject.toml` (Poetry project indicator)
+3. If exists, run `poetry install` to set up environment
+4. If not exists, initialise with `poetry init --python=^3.10`
+5. Verify installation success with `poetry show`
 
 ```bash
+# Check Python version first
+python3.10 --version || python3.11 --version || python3 --version
+
+# If Python 3.10+ not found, guide user to install it
+# See Section 1.2 for installation instructions
+
 # Check for Poetry project
 if [ -f "pyproject.toml" ]; then
     echo "Poetry project detected"
     poetry install --with dev
 else
     echo "Initialising Poetry project..."
-    poetry init
+    poetry init --python=^3.10
 fi
 
 # Verify installation

@@ -5,7 +5,47 @@
 
 ## 1. Mandatory Tool: Conan (Primary) or vcpkg (Alternative)
 
-### 1.1 Conan as the Default Standard
+### 1.1 CMake Version Requirement
+
+**CRITICAL**: CMake 3.20 or higher is REQUIRED for all C++/CUDA projects.
+
+**Why CMake 3.20+ is mandatory:**
+- Modern target-based approach
+- Better CUDA support
+- Improved package finding
+- Consistent cross-platform builds
+
+**Before starting work, verify CMake 3.20+ is available:**
+```bash
+# Check CMake version
+cmake --version  # Must be 3.20 or higher
+```
+
+**If CMake 3.20+ is not available, install it first:**
+
+Option 1: Using system package manager (if recent enough)
+```bash
+# Ubuntu 22.04+
+sudo apt update
+sudo apt install cmake
+
+# macOS
+brew install cmake
+
+# Fedora/RHEL 9+
+sudo dnf install cmake
+```
+
+Option 2: Download from cmake.org (Recommended for older systems)
+- Visit: https://cmake.org/download/
+- Download CMake 3.20 or higher
+
+Option 3: Using pip (Alternative)
+```bash
+pip install cmake
+```
+
+### 1.2 Conan as the Default Standard
 
 **MANDATORY**: Use **Conan** as the primary dependency manager for all C++/CUDA projects.
 
@@ -16,7 +56,7 @@ Conan provides:
 - Reproducible builds via conanfile.txt/conanfile.py
 - Support for custom package repositories
 
-### 1.2 vcpkg as Alternative
+### 1.3 vcpkg as Alternative
 
 **ONLY** use vcpkg if Conan genuinely cannot meet your needs (rare cases):
 - Specific library not available in Conan
@@ -25,7 +65,7 @@ Conan provides:
 
 **If in doubt, use Conan.** It has better cross-platform support and binary caching.
 
-### 1.3 System Package Manager Prohibition
+### 1.4 System Package Manager Prohibition
 
 **ABSOLUTELY FORBIDDEN**: Installing C++ libraries via system package managers.
 

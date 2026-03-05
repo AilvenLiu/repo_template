@@ -10,6 +10,61 @@ sys.path.insert(0, str(Path(__file__).parent))
 from utils import DependencyManager, ProjectType, PythonProjectType
 
 
+def ensure_python_version(manager: DependencyManager) -> str:
+    """Ensure Python 3.10+ is available for Poetry.
+
+    CRITICAL: Poetry MUST use Python 3.10+ to avoid version conflicts.
+
+    Returns:
+        Python executable path that meets requirements
+    """
+    meets_req, python_exec, version = manager.check_python_version(min_version=(3, 10))
+
+    if not meets_req:
+        print("[ERROR] Python 3.10+ is required for Poetry")
+        print("=" * 50)
+        print()
+        if version != (0, 0):
+            print(f"Current Python version: {version[0]}.{version[1]}")
+            print()
+        print("Poetry requires Python 3.10 or higher to ensure:")
+        print("  - Modern dependency resolution")
+        print("  - Compatibility with latest packages")
+        print("  - Consistent virtual environment management")
+        print()
+        print("Please install Python 3.10+ using one of these methods:")
+        print()
+        print("Option 1: Using pyenv (Recommended)")
+        print("  # Install pyenv")
+        print("  curl https://pyenv.run | bash")
+        print()
+        print("  # Install Python 3.10+")
+        print("  pyenv install 3.10")
+        print("  pyenv global 3.10")
+        print()
+        print("Option 2: Using system package manager")
+        print("  # macOS")
+        print("  brew install python@3.10")
+        print()
+        print("  # Ubuntu/Debian")
+        print("  sudo apt update")
+        print("  sudo apt install python3.10 python3.10-venv")
+        print()
+        print("  # Fedora/RHEL")
+        print("  sudo dnf install python3.10")
+        print()
+        print("Option 3: Download from python.org")
+        print("  https://www.python.org/downloads/")
+        print()
+        print("After installation, verify:")
+        print("  python3.10 --version")
+        print()
+        sys.exit(1)
+
+    print(f"[OK] Using Python {version[0]}.{version[1]} ({python_exec})")
+    return python_exec
+
+
 def ensure_poetry_available(manager: DependencyManager) -> None:
     """Ensure Poetry is installed and available.
 
@@ -29,8 +84,12 @@ def ensure_poetry_available(manager: DependencyManager) -> None:
         sys.exit(1)
 
 
-def ensure_poetry_project(manager: DependencyManager) -> None:
-    """Ensure the project is initialised as a Poetry project."""
+def ensure_poetry_project(manager: DependencyManager, python_exec: str) -> None:
+    """Ensure the project is initialised as a Poetry project.
+
+    Args:
+        python_exec: Python executable to use for Poetry environment
+    """
     pyproject = manager.repo_root / "pyproject.toml"
 
     if not pyproject.exists():
@@ -38,13 +97,13 @@ def ensure_poetry_project(manager: DependencyManager) -> None:
         print("[ACTION] Initialising Poetry project...")
         print("=" * 50)
 
-        success, message = manager.poetry_init()
+        success, message = manager.poetry_init(python_exec)
         if not success:
             print(f"[ERROR] Failed to initialise Poetry project")
             print(f"Error: {message}")
             print()
             print("Please initialise manually:")
-            print("  poetry init")
+            print(f"  {python_exec} -m poetry init --python=^3.10")
             sys.exit(1)
 
         print("[OK] Poetry project initialised")
@@ -62,11 +121,14 @@ def add_python_dependency_poetry(
     print(f"Adding Python dependency via Poetry: {package}")
     print("-" * 50)
 
+    # Ensure Python 3.10+ is available
+    python_exec = ensure_python_version(manager)
+
     # Ensure Poetry is available
     ensure_poetry_available(manager)
 
     # Ensure project is initialised
-    ensure_poetry_project(manager)
+    ensure_poetry_project(manager, python_exec)
 
     # Add the package
     group_str = " (dev)" if dev else ""

@@ -67,6 +67,10 @@ When in doubt, project-specific constraints always take precedence over system-l
 
 ## 3. Critical Rules (Always Active)
 
+**THESE RULES ARE NON-NEGOTIABLE AND APPLY TO EVERY SESSION.**
+
+If you find yourself uncertain about whether a rule applies, **IT APPLIES**. When in doubt, follow the strictest interpretation.
+
 These rules apply to EVERY session, regardless of context:
 
 ### 3.1 Protected Branch Policy
@@ -100,12 +104,32 @@ Before EVERY commit:
 **ABSOLUTE PROHIBITION**: NEVER install packages globally or to system Python.
 
 **MANDATORY REQUIREMENTS**:
+- **Python 3.10+** is REQUIRED for all Poetry projects (CRITICAL)
 - **ALWAYS** use **Poetry** for dependency management (mandatory for all projects)
 - **ALWAYS** use `poetry add` to install packages (never raw `pip install`)
 - **ALWAYS** use `poetry run` to execute commands (never raw `python` or `python3`)
 - **ALWAYS** commit both `pyproject.toml` and `poetry.lock` together
 - **NEVER** use pip directly except for trivial projects (single-file scripts with 1-2 deps)
 - **NEVER** use system python/python3 commands directly
+
+**CRITICAL - Python Version Requirement**:
+Poetry projects MUST use Python 3.10 or higher to avoid version conflicts and ensure modern dependency resolution.
+
+If Python 3.10+ is not available, install it first:
+```bash
+# Check for Python 3.10+
+python3.10 --version  # Must be 3.10 or higher
+
+# If not available, install via pyenv (recommended)
+curl https://pyenv.run | bash
+pyenv install 3.10
+pyenv global 3.10
+
+# Or use system package manager
+# macOS: brew install python@3.10
+# Ubuntu: sudo apt install python3.10 python3.10-venv
+# Fedora: sudo dnf install python3.10
+```
 
 **CRITICAL**: When you need to run Python commands, you MUST use:
 ```bash
@@ -120,9 +144,9 @@ python3 script.py     # WRONG
 pip install package   # WRONG
 ```
 
-**VIOLATION**: Installing to system Python or skipping Poetry is a critical failure.
+**VIOLATION**: Installing to system Python, skipping Poetry, or using Python < 3.10 is a critical failure.
 
-**Enforcement**: The `/dependency` skill automatically enforces Poetry usage.
+**Enforcement**: The `/dependency` skill automatically enforces Poetry usage and Python 3.10+ requirement.
 
 ### 3.5 When to Stop and Ask
 
@@ -136,15 +160,19 @@ STOP and ask the user before:
 
 ## 4. Detailed Constraints System
 
+**IMPORTANT**: The `/init` skill loads constraints automatically, but you MUST actively read and apply them.
+
+**DO NOT assume you know the constraints without reading them.** Each constraint file contains specific, actionable rules that you must follow.
+
 Detailed constraints are organized by topic in `.claude/constraints/python/`:
 
-**Always loaded (critical constraints):**
-- **dependencies.md** - Poetry enforcement (ALWAYS loaded)
+**Always loaded (critical constraints - READ THESE FIRST):**
+- **dependencies.md** - Poetry enforcement, Python 3.10+ requirement (ALWAYS loaded)
 - **forbidden-practices.md** - Absolute prohibitions (ALWAYS loaded)
 - **security.md** - Input validation, secrets management (ALWAYS loaded)
 - **error-handling.md** - Exception handling, context managers (ALWAYS loaded)
 
-**Loaded based on context:**
+**Loaded based on context (READ WHEN WORKING ON RELATED CODE):**
 - **testing.md** - pytest, coverage (80%+), test organization
 - **formatting.md** - black, ruff, PEP 8, naming conventions
 - **type-checking.md** - Type hints (mandatory), mypy configuration
@@ -156,6 +184,12 @@ Common constraints (apply to all projects):
 - **common/mcp-integration.md** - MCP server integration
 - **common/ascii-only.md** - ASCII-only code compliance
 - **common/roadmap-awareness.md** - Roadmap execution discipline (when roadmap active)
+
+**ACTION REQUIRED**: After `/init` loads constraints, you MUST:
+1. Read each loaded constraint file completely
+2. Understand the specific rules in each file
+3. Apply those rules to your work
+4. When uncertain, re-read the relevant constraint file
 
 **These constraints are loaded automatically by `/init` based on your current work.**
 
@@ -171,9 +205,10 @@ Read .claude/constraints/python/formatting.md
 ## 5. Python-Specific Quick Reference
 
 ### 5.1 Python Version
-- **Minimum**: Python 3.9
+- **Minimum**: Python 3.10 (MANDATORY for Poetry projects)
 - **Recommended**: Python 3.11+
 - **Dependency Management**: Poetry (mandatory)
+- **Version Check**: Run `python3.10 --version` before starting work
 
 ### 5.2 Code Quality Tools
 - **Formatter**: black (line length 100)
@@ -237,13 +272,17 @@ git commit -m "feat: add new feature"
 
 ### Adding Dependencies
 ```bash
-# Use the dependency skill (automatically uses Poetry)
+# IMPORTANT: Ensure Python 3.10+ is available first
+python3.10 --version  # Must be 3.10 or higher
+
+# Use the dependency skill (automatically uses Poetry with Python 3.10+)
 /dependency add <package> [version]
 /dependency add <package> --dev  # For development dependencies
 
 # This will:
+# - Check Python 3.10+ is available (blocks if not)
 # - Ensure Poetry is installed
-# - Initialise Poetry project if needed
+# - Initialise Poetry project if needed (with python = "^3.10")
 # - Run `poetry add` to install package
 # - Update pyproject.toml and poetry.lock
 # - Remind to update README.md
@@ -251,12 +290,33 @@ git commit -m "feat: add new feature"
 
 ## 7. Integration with Skills
 
+**CRITICAL**: Skills are tools that automate workflows and enforce constraints. You MUST use them when applicable.
+
+**DO NOT manually perform tasks that have dedicated skills.** Using skills ensures consistency and constraint compliance.
+
 This constraint system integrates with Claude Code skills:
 
 - **`/init`** - Session initialization (MANDATORY at session start)
+  - **When to use**: At the start of EVERY session, before any other action
+  - **What it does**: Loads relevant constraints, checks roadmaps, analyzes git status
+  - **Failure to use**: Critical agent failure - session must be restarted
+
 - **`/roadmap`** - Multi-session workflow management
+  - **When to use**: For complex, multi-phase tasks spanning multiple sessions
+  - **What it does**: Creates and manages roadmaps with state tracking
+  - **Failure to use**: Loss of context across sessions, incomplete work
+
 - **`/pre-commit`** - Code quality validation before commits
+  - **When to use**: Before EVERY commit
+  - **What it does**: Runs formatters, linters, type checkers, tests
+  - **Failure to use**: Commits with quality issues, CI/CD failures
+
 - **`/dependency`** - Dependency management
+  - **When to use**: When adding ANY new package dependency
+  - **What it does**: Enforces Poetry, checks Python 3.10+, updates manifest files
+  - **Failure to use**: Manual pip installs, missing lock files, version conflicts
+
+**If you're unsure whether to use a skill, USE IT.** Skills prevent common mistakes and enforce best practices.
 
 ## 8. Character Encoding and Language
 
@@ -266,23 +326,83 @@ This constraint system integrates with Claude Code skills:
 
 ## 9. Enforcement
 
+**CRITICAL**: Violations of these constraints are not suggestions or warnings - they are FAILURES.
+
+**When you violate a constraint, you have failed the task.** The work must be corrected before proceeding.
+
 Violations of these constraints are considered critical failures:
-- Protected branch commits -> Immediate rollback required
+- Protected branch commits -> Immediate rollback required, session restart
 - Missing `/init` at session start -> Session restart required
-- Pre-commit validation failures -> Fix before committing
-- Type hint omissions -> Add before committing
+- Pre-commit validation failures -> Fix before committing, no exceptions
+- Type hint omissions -> Add before committing, no exceptions
+- Poetry violations (using pip/python directly) -> Revert and use Poetry
+- Python < 3.10 for Poetry projects -> Install Python 3.10+ first
+
+**DO NOT proceed with work if you have violated a constraint.** Stop, fix the violation, then continue.
+
+**DO NOT assume constraints are optional or negotiable.** They are mandatory requirements.
 
 ## 10. Questions and Clarifications
+
+**STOP AND ASK** - This is not optional.
 
 If you're unsure about:
 - Whether a constraint applies to your current work
 - How to interpret a constraint
 - Whether to create a roadmap
+- Which skill to use for a task
 - Any aspect of the development workflow
 
 **STOP and ask the user.** It's better to ask than to proceed incorrectly.
 
-## 11. Additional Resources
+**DO NOT guess or assume.** If you're uncertain, you don't have enough information to proceed safely.
+
+## 11. Common Failure Patterns (AVOID THESE)
+
+**These are common mistakes agents make. If you recognize yourself doing any of these, STOP IMMEDIATELY:**
+
+### 11.1 Ignoring Skills
+**WRONG**: "I'll just run `pip install requests` to add this dependency"
+**CORRECT**: "I'll use `/dependency add requests` to ensure Poetry is used correctly"
+
+**WRONG**: "Let me format this code with black manually"
+**CORRECT**: "I'll run `/pre-commit validate` to check all quality standards"
+
+### 11.2 Skipping Constraint Checks
+**WRONG**: "I'll add type hints later" or "Type hints aren't critical for this function"
+**CORRECT**: "Type hints are mandatory - I'll add them now before committing"
+
+**WRONG**: "This is a small change, I don't need to run tests"
+**CORRECT**: "I'll run `/pre-commit validate` to ensure tests pass before committing"
+
+### 11.3 Assuming Instead of Reading
+**WRONG**: "I know how Poetry works, I don't need to read dependencies.md"
+**CORRECT**: "Let me read dependencies.md to ensure I follow the project's specific Poetry requirements"
+
+**WRONG**: "I'll use Python 3.9 since it's available on the system"
+**CORRECT**: "This project requires Python 3.10+ for Poetry - I'll check if it's available first"
+
+### 11.4 Working Without Initialization
+**WRONG**: Starting work immediately without running `/init`
+**CORRECT**: "First, I'll run `/init` to load relevant constraints and check the project state"
+
+### 11.5 Ignoring Warnings
+**WRONG**: "The hook warned about direct Python usage, but I'll proceed anyway"
+**CORRECT**: "The hook blocked my command - I need to use `poetry run` instead"
+
+**WRONG**: "I'm on the master branch, but this is just a small fix"
+**CORRECT**: "I'm on a protected branch - I need to create a feature branch first"
+
+### 11.6 Partial Compliance
+**WRONG**: "I'll add some type hints but skip the complex ones"
+**CORRECT**: "Type hints are mandatory for ALL functions - I'll add them completely"
+
+**WRONG**: "I'll update pyproject.toml but skip poetry.lock"
+**CORRECT**: "Both pyproject.toml and poetry.lock must be committed together"
+
+**If you catch yourself doing any of these, STOP, re-read the relevant constraint, and correct your approach.**
+
+## 12. Additional Resources
 
 - **Full constraint files**: `.claude/constraints/python/`
 - **Common constraints**: `.claude/constraints/common/`
@@ -290,4 +410,9 @@ If you're unsure about:
 
 ---
 
-**Remember**: Run `/init` at the start of EVERY session. This is the foundation of the constraint system.
+**Remember**:
+1. Run `/init` at the start of EVERY session - this is the foundation
+2. Read the loaded constraints completely - don't assume you know them
+3. Use skills for their designated tasks - don't work around them
+4. When uncertain, STOP and ask - don't guess or assume
+5. Constraints are mandatory, not optional - violations are failures
