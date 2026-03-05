@@ -148,6 +148,8 @@ pip install package   # WRONG
 
 **Enforcement**: The `/dependency` skill automatically enforces Poetry usage and Python 3.10+ requirement.
 
+**Environment Issues**: If `poetry install` fails or Poetry detects the wrong Python version, use `/python-env-setup` to diagnose and fix pyenv+Poetry configuration issues (especially VIRTUAL_ENV interference).
+
 ### 3.5 When to Stop and Ask
 
 STOP and ask the user before:
