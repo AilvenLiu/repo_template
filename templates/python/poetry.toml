@@ -1,0 +1,5 @@
+# Poetry local configuration
+# This file ensures Poetry creates virtual environments inside the project directory
+
+[virtualenvs]
+in-project = true
