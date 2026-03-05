@@ -78,7 +78,7 @@ python3 .claude/skills/roadmap/scripts/complete.py
 
 ## Documentation
 
-See [skill.md](skill.md) for comprehensive documentation including:
+See [SKILL.md](SKILL.md) for comprehensive documentation including:
 - Detailed command usage
 - Authority hierarchy
 - Critical rules and enforcement

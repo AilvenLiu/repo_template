@@ -193,7 +193,7 @@ NEXT STEPS:
 
 If `/init` is not recognized:
 1. Ensure `.claude/skills/init/` directory exists
-2. Check that `skill.md` is present
+2. Check that `SKILL.md` is present
 3. Restart Claude Code
 
 ### Project Type Not Detected
@@ -237,7 +237,7 @@ The main documentation files remain as comprehensive references. The `/init` ski
 
 To improve the `/init` skill:
 1. Modify `.claude/skills/init/scripts/init.py` for detection logic
-2. Update `.claude/skills/init/skill.md` for documentation
+2. Update `.claude/skills/init/SKILL.md` for documentation
 3. Add new constraint files to `.claude/constraints/` as needed
 4. Test with both Python and C++/CUDA projects
 

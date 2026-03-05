@@ -67,7 +67,7 @@ python3 .claude/skills/pre-commit/scripts/fix.py
 
 ## Documentation
 
-See [skill.md](skill.md) for comprehensive documentation including:
+See [SKILL.md](SKILL.md) for comprehensive documentation including:
 - Detailed command usage
 - Project type detection
 - Validation checks

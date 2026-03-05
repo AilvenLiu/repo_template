@@ -98,7 +98,7 @@ python3 .claude/skills/dependency/scripts/add.py Eigen 3.4
 
 ## Documentation
 
-See [skill.md](skill.md) for comprehensive documentation including:
+See [SKILL.md](SKILL.md) for comprehensive documentation including:
 - Detailed command usage
 - Project type detection
 - Manifest file formats
