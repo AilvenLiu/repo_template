@@ -44,6 +44,28 @@ If no active roadmap is found (exit code 1):
 
 ---
 
+## Template Compliance
+
+**CRITICAL**: All roadmaps MUST strictly follow the template schema.
+
+Before finalizing any roadmap, you MUST validate it:
+
+```bash
+python3 .claude/skills/roadmap/scripts/validate_schema.py <roadmap-name>
+```
+
+**Requirements**:
+- Phase IDs: `phase-0`, `phase-1`, etc. (format: `phase-\d+`)
+- Task IDs: `task-0-1`, `task-1-2`, etc. (format: `task-\d+-\d+`)
+- Status values: ONLY `pending`, `active`, `completed`, `blocked`
+- No custom fields allowed
+- Tasks must be atomic (1-2 hours max)
+- Detailed task descriptions required
+
+See [TEMPLATE_COMPLIANCE_GUIDE.md](./TEMPLATE_COMPLIANCE_GUIDE.md) for detailed guidance.
+
+---
+
 ## Available Commands
 
 ### `/roadmap check`

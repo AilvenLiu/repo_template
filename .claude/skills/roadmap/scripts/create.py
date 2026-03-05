@@ -102,7 +102,9 @@ def create_roadmap(name: str, description: str = "") -> None:
             print(f"1. Edit {roadmap_dir.relative_to(repo_root)}/INVARIANTS.md")
             print(f"2. Edit {roadmap_dir.relative_to(repo_root)}/ROADMAP.md")
             print(f"3. Edit {roadmap_dir.relative_to(repo_root)}/roadmap.yml")
-            print(f"4. Activate roadmap by setting status.active: true in roadmap.yml")
+            print(f"4. Validate schema: python3 .claude/skills/roadmap/scripts/validate_schema.py {name}")
+            print(f"5. Activate roadmap by setting status.active: true in roadmap.yml")
+            print(f"\nIMPORTANT: Run validation (step 4) before activating to ensure template compliance.")
 
     except Exception as e:
         print(f"ERROR: Failed to create roadmap: {e}")

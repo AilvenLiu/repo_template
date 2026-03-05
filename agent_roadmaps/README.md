@@ -59,7 +59,7 @@ If the user agrees, the agent MUST create a new roadmap following Section 5 **be
 
 ## 5. Mandatory Structure of a Roadmap Directory
 
-When a roadmap is activated, a **dedicated subdirectory** MUST be created under agent_roadmaps/ with @agent_roadmaps/template/ as example.
+When a roadmap is activated, a **dedicated subdirectory** MUST be created under agent_roadmaps/ with `.claude/skills/roadmap/templates/` as reference.
 
 ```
 agent_roadmaps/
@@ -81,8 +81,8 @@ Use @agent_roadmaps/template/ as example.
 
 ### 6.1 INVARIANTS.md -- Constitutional Constraints
 
-**Template:**     
-Use @agent_roadmaps/template/INVARIANTS.md as example.
+**Template:**
+Use `.claude/skills/roadmap/templates/INVARIANTS.md` as reference.
 
 **Purpose:**     
 Defines **non-negotiable, constitutional-level constraints** that override all other instructions.
@@ -107,8 +107,8 @@ Requirements:
 
 ### 6.2 ROADMAP.md -- Long-Form Execution Manual
 
-**Template:**    
-Use @agent_roadmaps/template/ROADMAP.md as example.
+**Template:**
+Use `.claude/skills/roadmap/templates/ROADMAP.md` as reference.
 
 **Purpose:**     
 A **detailed, instructional, long-form document** describing the roadmap task in its entirety.
@@ -129,8 +129,8 @@ A **detailed, instructional, long-form document** describing the roadmap task in
 
 ### 6.3 roadmap.yml -- Canonical Execution State (Machine-Readable)
 
-**Template:**     
-Use @agent_roadmaps/template/roadmap.yml as example.
+**Template:**
+Use `.claude/skills/roadmap/templates/roadmap.yml` as reference.
 
 **Purpose:**     
 Provides a **normalized, authoritative state machine** for the roadmap.
