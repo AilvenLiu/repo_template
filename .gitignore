@@ -25,3 +25,6 @@ Thumbs.db
 *.tmp
 *.bak
 *.log
+
+# Claude Code session state (temporary, not committed)
+.claude/session_state.json

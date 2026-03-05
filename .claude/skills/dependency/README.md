@@ -75,6 +75,7 @@ python3 .claude/skills/dependency/scripts/add.py Eigen 3.4
 ## Features
 
 - **Poetry-First**: Enforces Poetry for all Python projects
+- **In-Project Virtual Environments**: Automatically configures Poetry to create `.venv` inside the project directory
 - **Automatic Project Detection**: Detects Python vs C++/CUDA projects
 - **Manifest File Updates**: Updates pyproject.toml, poetry.lock, conanfile.txt, CMakeLists.txt
 - **Package Installation**: Installs via Poetry or Conan

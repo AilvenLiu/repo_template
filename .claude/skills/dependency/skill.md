@@ -1,7 +1,6 @@
 ---
 name: dependency
 description: Comprehensive dependency management workflow for adding dependencies to Python and C++/CUDA projects. Uses Poetry for Python (mandatory) and Conan/vcpkg for C++. Automatically updates manifest files, installs packages, and provides documentation reminders.
-version: 2.0.0
 ---
 
 # Dependency Management Skill
@@ -67,10 +66,14 @@ python3 .claude/skills/dependency/scripts/add.py <package> [version] [--dev]
 
 For Python projects (Poetry - default):
 1. Ensures Poetry is installed
-2. Initialises Poetry project if needed
-3. Adds package via `poetry add`
-4. Automatically updates pyproject.toml and poetry.lock
-5. Reminds to update README.md
+2. Checks for existing external virtual environments
+3. Removes external venvs if found (with user notification)
+4. Configures Poetry to use in-project venvs (`.venv/`)
+5. Initialises Poetry project if needed
+6. Adds package via `poetry add`
+7. Automatically updates pyproject.toml and poetry.lock
+8. Verifies venv is in project directory
+9. Reminds to update README.md
 
 For Python projects (trivial - requirements.txt only):
 1. Creates virtual environment if needed
@@ -379,6 +382,46 @@ The conanfile.txt is malformed. Ensure it has:
 [generators]
 cmake
 ```
+
+### "Poetry virtual environment is outside the project"
+
+If Poetry created a venv in a centralized cache location instead of in the project:
+
+```bash
+# Check current venv location
+poetry env info --path
+
+# Remove external venv
+poetry env remove --all
+
+# Configure for in-project venvs
+poetry config virtualenvs.in-project true --local
+
+# Recreate venv in project
+poetry install
+```
+
+The `/dependency` skill automatically detects and fixes this issue.
+
+### "Virtual environment not found in .venv/"
+
+If you expect a `.venv/` directory but don't see it:
+
+1. Check Poetry configuration:
+   ```bash
+   poetry config virtualenvs.in-project
+   ```
+   Should return `true`
+
+2. If it returns `null` or `false`, configure it:
+   ```bash
+   poetry config virtualenvs.in-project true --local
+   ```
+
+3. Recreate the virtual environment:
+   ```bash
+   poetry install
+   ```
 
 ---
 

@@ -141,3 +141,6 @@ logs/
 # Documentation
 docs/_build/
 docs/.doctrees/
+
+# Claude Code session state (temporary, not committed)
+.claude/session_state.json

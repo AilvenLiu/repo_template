@@ -10,9 +10,11 @@ Usage:
 """
 
 import argparse
+import json
 import os
 import subprocess
 import sys
+from datetime import datetime
 from pathlib import Path
 from typing import List, Set, Tuple
 
@@ -282,6 +284,63 @@ class SessionInitializer:
 
         print(f"{'='*70}\n")
 
+    def create_session_state(self) -> None:
+        """Create session state file to track initialization."""
+        state_dir = self.repo_root / '.claude'
+        state_dir.mkdir(exist_ok=True)
+
+        state = {
+            'initialized': True,
+            'timestamp': datetime.now().isoformat(),
+            'project_type': self.project_type,
+            'constraints_loaded': sorted(list(self.needed_constraints)),
+            'session_id': datetime.now().strftime('%Y%m%d_%H%M%S')
+        }
+
+        state_file = state_dir / 'session_state.json'
+        with open(state_file, 'w') as f:
+            json.dump(state, f, indent=2)
+
+        print(f"[OK] Session state created: {state_file}")
+
+    def print_skill_usage_reminders(self) -> None:
+        """Print reminders about when to use skills."""
+        print(f"{'='*70}")
+        print("SKILL USAGE REMINDERS")
+        print(f"{'='*70}")
+        print()
+        print("Use these skills for their designated tasks:")
+        print()
+
+        if self.project_type == 'python':
+            print("  /dependency add <package> [version] [--dev]")
+            print("    -> When adding ANY Python package")
+            print("    -> DO NOT use: pip install, poetry add, manual edits")
+            print()
+
+        elif self.project_type == 'cpp':
+            print("  /dependency add <package> [version]")
+            print("    -> When adding ANY C++/CUDA library")
+            print("    -> DO NOT use: apt install, conan install directly")
+            print()
+
+        print("  /pre-commit validate")
+        print("    -> Before EVERY commit")
+        print("    -> Runs formatters, linters, type checkers, tests")
+        print()
+
+        print("  /pre-commit fix")
+        print("    -> To auto-fix formatting issues")
+        print()
+
+        print("  /roadmap check")
+        print("    -> Already done by /init")
+        print("    -> Use /roadmap status to see current roadmap state")
+        print()
+
+        print(f"{'='*70}")
+        print()
+
     def run(self) -> int:
         """Run the session initialization."""
         print("="*70)
@@ -301,6 +360,12 @@ class SessionInitializer:
 
         # Display constraints
         self.display_constraints()
+
+        # Create session state
+        self.create_session_state()
+
+        # Print skill usage reminders
+        self.print_skill_usage_reminders()
 
         # Provide guidance
         print("NEXT STEPS:")

@@ -8,6 +8,14 @@ from typing import List
 # Add scripts directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent))
 
+# Add common utilities to path
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / 'common'))
+from check_session import check_session_initialized
+from validate_constraints import validate_all_constraints, print_violations
+
+# Check session initialization
+session_state = check_session_initialized('pre-commit')
+
 from utils import PreCommitManager, ProjectType, ValidationResult
 
 
@@ -355,6 +363,26 @@ def main():
     print("Pre-Commit Validation")
     print("=" * 50)
     print(f"Project Type: {project_type.value}")
+    print()
+
+    # Run constraint validation first
+    print("=" * 50)
+    print("CONSTRAINT VALIDATION")
+    print("=" * 50)
+    print()
+
+    constraint_violations = validate_all_constraints()
+    print_violations(constraint_violations)
+
+    # If critical constraint violations, fail immediately
+    critical = [v for v in constraint_violations if v.severity == 'CRITICAL']
+    if critical:
+        print()
+        print("=" * 50)
+        print("FAILED: Critical constraint violations must be fixed before committing")
+        print("=" * 50)
+        sys.exit(1)
+
     print()
 
     # Run appropriate validations

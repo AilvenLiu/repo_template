@@ -131,3 +131,6 @@ Doxyfile.bak
 *.log
 *.bak
 *.orig
+
+# Claude Code session state (temporary, not committed)
+.claude/session_state.json

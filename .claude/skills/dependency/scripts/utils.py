@@ -117,6 +117,87 @@ class DependencyManager:
         returncode, _, _ = self.run_command(["poetry", "--version"])
         return returncode == 0
 
+    def configure_poetry_in_project(self) -> Tuple[bool, str]:
+        """Configure Poetry to use in-project virtual environments.
+
+        This ensures Poetry creates .venv inside the project directory
+        instead of in a centralized cache location.
+
+        Returns:
+            (success, message)
+        """
+        # First, try to set local configuration (creates poetry.toml in project)
+        cmd = ["poetry", "config", "virtualenvs.in-project", "true", "--local"]
+        returncode, stdout, stderr = self.run_command(cmd)
+
+        if returncode == 0:
+            # Verify poetry.toml was created
+            poetry_toml = self.repo_root / "poetry.toml"
+            if poetry_toml.exists():
+                return True, "Poetry configured to use in-project virtualenvs (local)"
+            else:
+                return True, "Poetry configured to use in-project virtualenvs"
+        else:
+            # Try without --local flag (global config)
+            cmd = ["poetry", "config", "virtualenvs.in-project", "true"]
+            returncode, stdout, stderr = self.run_command(cmd)
+            if returncode == 0:
+                return True, "Poetry configured globally to use in-project virtualenvs"
+            else:
+                return False, stderr
+
+    def check_poetry_venv_location(self) -> Tuple[bool, Optional[Path]]:
+        """Check if Poetry has an existing virtual environment and where it's located.
+
+        Returns:
+            (is_in_project, venv_path)
+            - is_in_project: True if venv is in project directory, False if external
+            - venv_path: Path to the venv, or None if no venv exists
+        """
+        # Check for in-project venv
+        in_project_venv = self.repo_root / ".venv"
+        if in_project_venv.exists() and (in_project_venv / "bin" / "python").exists():
+            return True, in_project_venv
+
+        # Check if Poetry knows about an external venv
+        returncode, stdout, _ = self.run_command(["poetry", "env", "info", "--path"])
+        if returncode == 0 and stdout.strip():
+            external_venv = Path(stdout.strip())
+            if external_venv.exists():
+                # Check if it's actually outside the project
+                try:
+                    external_venv.relative_to(self.repo_root)
+                    # It's inside the project (but not .venv)
+                    return True, external_venv
+                except ValueError:
+                    # It's outside the project
+                    return False, external_venv
+
+        return True, None  # No venv exists yet
+
+    def remove_external_poetry_venv(self) -> Tuple[bool, str]:
+        """Remove Poetry's external virtual environment if it exists.
+
+        This is needed when switching from external to in-project venvs.
+
+        Returns:
+            (success, message)
+        """
+        is_in_project, venv_path = self.check_poetry_venv_location()
+
+        if venv_path is None:
+            return True, "No existing virtual environment found"
+
+        if is_in_project:
+            return True, "Virtual environment is already in project"
+
+        # External venv exists, remove it
+        returncode, stdout, stderr = self.run_command(["poetry", "env", "remove", "--all"])
+        if returncode == 0:
+            return True, f"Removed external virtual environment at {venv_path}"
+        else:
+            return False, f"Failed to remove external venv: {stderr}"
+
     def get_poetry_python_version(self) -> Optional[Tuple[int, int]]:
         """Get the Python version that Poetry is using.
 
@@ -189,6 +270,9 @@ class DependencyManager:
 
         Returns (success, message).
         """
+        # Ensure in-project venv is configured
+        self.configure_poetry_in_project()
+
         cmd = ["poetry", "add"]
 
         if dev:
@@ -215,13 +299,30 @@ class DependencyManager:
         Returns:
             (success, message)
         """
+        # Configure Poetry to use in-project virtualenvs
+        import os
+
+        # First, configure Poetry to create venv in project
+        config_cmd = ["poetry", "config", "virtualenvs.in-project", "true"]
+        try:
+            subprocess.run(
+                config_cmd,
+                cwd=self.repo_root,
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+        except Exception:
+            # If config fails, continue - we'll try with env var
+            pass
+
         # Use non-interactive mode with specific Python version
         cmd = ["poetry", "init", "--no-interaction", f"--python=^3.10"]
 
-        # Set environment to use specific Python
-        import os
+        # Set environment to use specific Python and in-project venv
         env = os.environ.copy()
         env["POETRY_PYTHON"] = python_executable
+        env["POETRY_VIRTUALENVS_IN_PROJECT"] = "true"
 
         try:
             result = subprocess.run(
@@ -244,6 +345,9 @@ class DependencyManager:
 
         Returns (success, message).
         """
+        # Ensure in-project venv is configured
+        self.configure_poetry_in_project()
+
         cmd = ["poetry", "install"]
         if with_dev:
             cmd.extend(["--with", "dev"])
@@ -251,7 +355,14 @@ class DependencyManager:
         returncode, stdout, stderr = self.run_command(cmd)
 
         if returncode == 0:
-            return True, stdout
+            # Verify venv is in project
+            is_in_project, venv_path = self.check_poetry_venv_location()
+            if venv_path and is_in_project:
+                return True, f"{stdout}\n\nVirtual environment created at: {venv_path}"
+            elif venv_path:
+                return True, f"{stdout}\n\nWARNING: Virtual environment is at {venv_path} (not in project)"
+            else:
+                return True, stdout
         else:
             return False, stderr
 

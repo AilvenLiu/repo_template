@@ -82,9 +82,86 @@ Option 3: Download from python.org
 ### 1.4 Virtual Environment Requirement
 
 - **MANDATORY**: ALWAYS use virtual environments (never install to system Python)
+- **MANDATORY**: Poetry MUST create virtual environments inside the project directory (`.venv`)
 - **NEVER** install packages globally
 - **NEVER** use `pip install` directly without Poetry or activated venv
 - **NEVER** use raw `python` or `python3` commands - always use `poetry run`
+
+**Poetry Virtual Environment Configuration:**
+
+Poetry should be configured to create virtual environments inside the project:
+```bash
+# Configure Poetry to use in-project virtualenvs (local to project)
+poetry config virtualenvs.in-project true --local
+
+# Or configure globally for all projects
+poetry config virtualenvs.in-project true
+```
+
+### 1.5 Skill Usage Requirement
+
+**CRITICAL**: When adding ANY dependency, YOU MUST use the `/dependency` skill.
+
++-------------------------------------------------------------+
+| DEPENDENCY MANAGEMENT PROTOCOL                              |
+|                                                             |
+| WHEN: Adding a new package to the project                   |
+| USE: /dependency add <package> [version] [--dev]            |
+|                                                             |
+| CORRECT EXAMPLES:                                           |
+|   /dependency add requests 2.31.0                           |
+|   /dependency add pytest 7.3.0 --dev                        |
+|                                                             |
+| FORBIDDEN COMMANDS:                                         |
+|   pip install requests          # WRONG - bypasses skill    |
+|   poetry add requests            # WRONG - bypasses skill   |
+|   Manual requirements.txt edit   # WRONG - bypasses skill   |
+|                                                             |
+| WHY USE THE SKILL:                                          |
+| - Ensures Poetry configuration                              |
+| - Updates pyproject.toml and poetry.lock                    |
+| - Validates virtual environment                             |
+| - Provides documentation reminders                          |
+| - Prevents system Python pollution                          |
+|                                                             |
+| CONSEQUENCE OF SKIPPING:                                    |
+| - Missing poetry.lock updates -> broken CI/CD               |
+| - System Python pollution -> unreproducible builds          |
+| - Incomplete documentation -> confused developers           |
++-------------------------------------------------------------+
+
+**ENFORCEMENT**: The `/dependency` skill checks for session initialization
+and validates all preconditions before proceeding.
+
+This ensures:
+- Virtual environment is created as `.venv/` inside the project directory
+- Easy to locate and manage project-specific dependencies
+- Consistent with pyenv and other Python version managers
+- Simpler IDE integration and debugging
+
+**Handling Existing External Virtual Environments:**
+
+If Poetry has already created a virtual environment outside the project (in a centralized cache location), you need to remove it and recreate it in-project:
+
+```bash
+# Check current venv location
+poetry env info --path
+
+# If it's outside the project, remove it
+poetry env remove --all
+
+# Configure for in-project venvs
+poetry config virtualenvs.in-project true --local
+
+# Recreate venv in project
+poetry install
+```
+
+The `/dependency` skill automatically handles this by:
+1. Detecting external venvs
+2. Removing them if found
+3. Configuring Poetry for in-project venvs
+4. Creating new venv in `.venv/`
 
 **CRITICAL EXAMPLES**:
 
@@ -180,13 +257,16 @@ python3.10 --version  # Or python3.11, python3.12, etc.
 # Install Poetry (if not installed)
 curl -sSL https://install.python-poetry.org | python3 -
 
+# Configure Poetry to use in-project virtualenvs (RECOMMENDED)
+poetry config virtualenvs.in-project true
+
 # Create new project
 poetry new project-name
 
 # Or initialise in existing directory
 poetry init --python=^3.10
 
-# Install all dependencies (creates virtual environment automatically)
+# Install all dependencies (creates virtual environment automatically in .venv/)
 poetry install
 
 # Install with development dependencies

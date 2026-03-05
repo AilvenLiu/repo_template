@@ -92,6 +92,42 @@ conan install . --build=missing   # CORRECT - Conan
 vcpkg install fmt                 # CORRECT - vcpkg (if Conan unsuitable)
 ```
 
+### 1.5 Skill Usage Requirement
+
+**CRITICAL**: When adding ANY C++/CUDA dependency, YOU MUST use the `/dependency` skill.
+
++-------------------------------------------------------------+
+| DEPENDENCY MANAGEMENT PROTOCOL                              |
+|                                                             |
+| WHEN: Adding a new library to the project                   |
+| USE: /dependency add <package> [version]                    |
+|                                                             |
+| CORRECT EXAMPLES:                                           |
+|   /dependency add fmt 9.1.0                                 |
+|   /dependency add eigen 3.4.0                               |
+|                                                             |
+| FORBIDDEN COMMANDS:                                         |
+|   apt install libfmt-dev        # WRONG - bypasses skill    |
+|   brew install eigen             # WRONG - bypasses skill   |
+|   conan install fmt              # WRONG - bypasses skill   |
+|   Manual conanfile.txt edit      # WRONG - bypasses skill   |
+|                                                             |
+| WHY USE THE SKILL:                                          |
+| - Ensures Conan/vcpkg configuration                         |
+| - Updates conanfile.txt/conanfile.py                        |
+| - Validates CMake integration                               |
+| - Provides documentation reminders                          |
+| - Prevents system package pollution                         |
+|                                                             |
+| CONSEQUENCE OF SKIPPING:                                    |
+| - Missing conanfile updates → broken builds                 |
+| - System package pollution → unreproducible builds          |
+| - Incomplete documentation → confused developers            |
++-------------------------------------------------------------+
+
+**ENFORCEMENT**: The `/dependency` skill checks for session initialization
+and validates all preconditions before proceeding.
+
 ## 2. Conan Project Structure
 
 ### 2.1 Required Files

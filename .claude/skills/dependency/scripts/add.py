@@ -7,6 +7,13 @@ from pathlib import Path
 # Add scripts directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent))
 
+# Add common utilities to path
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / 'common'))
+from check_session import check_session_initialized
+
+# Check session initialization before proceeding
+session_state = check_session_initialized('dependency')
+
 from utils import DependencyManager, ProjectType, PythonProjectType
 
 
@@ -82,6 +89,30 @@ def ensure_poetry_available(manager: DependencyManager) -> None:
         print("Or see: https://python-poetry.org/docs/#installation")
         print()
         sys.exit(1)
+
+    # Check if there's an existing external venv
+    is_in_project, venv_path = manager.check_poetry_venv_location()
+    if venv_path and not is_in_project:
+        print(f"[WARNING] Found external virtual environment at: {venv_path}")
+        print("          Poetry should use in-project venvs (.venv)")
+        print()
+        print("[ACTION] Removing external venv and reconfiguring...")
+        success, message = manager.remove_external_poetry_venv()
+        if success:
+            print(f"[OK] {message}")
+        else:
+            print(f"[WARNING] {message}")
+            print("          You may need to manually remove it:")
+            print(f"          poetry env remove --all")
+        print()
+
+    # Configure Poetry to use in-project virtualenvs
+    success, message = manager.configure_poetry_in_project()
+    if success:
+        print(f"[OK] {message}")
+    else:
+        print(f"[WARNING] Could not configure Poetry for in-project venv: {message}")
+        print("          Poetry may use centralized venv location")
 
 
 def ensure_poetry_project(manager: DependencyManager, python_exec: str) -> None:
