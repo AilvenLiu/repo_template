@@ -1,14 +1,23 @@
 {
-  "allow": [
-    "Read(**)",
-    "Bash(*)",
-    "LS(**)",
-    "Tree(**)",
-    "Grep(**)",
-    "Glob(**)",
-    "Python3(.claude/skills/init/scripts/init.py)",
-    "WebFetch",
-    "WebSearch",
-    "MCP"
-  ]
+  "permissions": {
+    "allow": [
+      "Bash(source:*)",
+      "Bash(python -m pytest:*)",
+      "Bash(python3 -m pytest:*)",
+      "Bash(python3 .claude/skills/init/scripts/init.py)",
+      "Bash(tree:*)",
+      "Bash(ls:*)",
+      "Bash(find:*)",
+      "Bash(wc:*)",
+      "Bash(grep:*)",
+      "Read(**)",
+      "LS(**)",
+      "Tree(**)",
+      "Grep(**)",
+      "Glob(**)",
+      "WebFetch",
+      "WebSearch",
+      "MCP"
+    ]
+  }
 }
