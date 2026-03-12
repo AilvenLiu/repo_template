@@ -1,7 +1,6 @@
 ---
 name: create-project
 description: Initialize new projects from the repo_template. Use when creating a new Python or C++/CUDA project. This skill is only available in the template repository itself, not in projects created from it.
-version: 1.0.0
 ---
 
 # Create Project Skill

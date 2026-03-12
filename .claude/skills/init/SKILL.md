@@ -1,7 +1,6 @@
 ---
 name: init
 description: MANDATORY session initialization. Run at the start of EVERY session to load context, check roadmaps, verify branch, and load constraints. THIS MUST BE THE FIRST ACTION IN EVERY SESSION.
-version: 1.0.0
 ---
 
 # Session Initialization Skill

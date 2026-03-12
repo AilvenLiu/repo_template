@@ -1,7 +1,6 @@
 ---
 name: roadmap
 description: Manage multi-session AI agent workflows using the agent_roadmaps system. Automatically checks for active roadmaps at session start. Use when starting a new session, creating roadmaps, or managing complex multi-phase tasks.
-version: 1.0.0
 ---
 
 # Agent Roadmaps Skill

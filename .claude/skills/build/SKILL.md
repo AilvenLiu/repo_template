@@ -1,7 +1,6 @@
 ---
 name: build
 description: Orchestrate build workflows for Python and C++/CUDA projects. Handles environment setup, dependency installation, compilation, and testing. Use when setting up projects or running full build cycles.
-version: 1.0.0
 ---
 
 # Build Orchestration Skill

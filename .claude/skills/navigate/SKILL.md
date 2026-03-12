@@ -1,7 +1,6 @@
 ---
 name: navigate
 description: Navigate and analyze code structure. Find definitions, trace dependencies, analyze call graphs, and understand repository architecture. Use when exploring unfamiliar code or understanding code relationships.
-version: 1.0.0
 ---
 
 # Code Navigation and Analysis Skill

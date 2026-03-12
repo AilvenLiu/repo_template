@@ -1,7 +1,6 @@
 ---
 name: context7
 description: Retrieve documentation and API references from Context7 MCP server. Use when you need official documentation for libraries, frameworks, or APIs. Automatically triggered when user asks about library documentation or API usage.
-version: 1.0.0
 ---
 
 # Context7 Documentation Retrieval Skill

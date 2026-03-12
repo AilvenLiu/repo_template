@@ -1,7 +1,6 @@
 ---
 name: python-env-setup
 description: Diagnose and fix pyenv+Poetry environment configuration issues. Detects VIRTUAL_ENV interference, Python version mismatches, and Poetry configuration problems. Use when poetry install fails, wrong Python version detected, or environment setup needed.
-version: 1.0.0
 ---
 
 # Python Environment Setup and Troubleshooting Skill
