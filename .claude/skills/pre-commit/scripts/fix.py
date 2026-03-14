@@ -78,7 +78,7 @@ def main():
     # Run appropriate fixes
     if project_type == ProjectType.PYTHON:
         fix_python_formatting(manager)
-    elif project_type == ProjectType.CPP_CUDA:
+    elif project_type == ProjectType.CPP:
         fix_cpp_formatting(manager)
     else:
         print("ERROR: Unknown project type")

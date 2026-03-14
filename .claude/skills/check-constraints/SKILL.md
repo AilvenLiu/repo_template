@@ -1,33 +1,23 @@
 ---
 name: check-constraints
-description: Validate constraint compliance at any time during development
+description: "Validate constraint compliance at any time during development."
 ---
 
-# Check Constraints Skill
+# /check-constraints
 
-This skill validates constraint compliance without running full pre-commit checks.
+Lightweight constraint compliance check without running full pre-commit.
 
 ## Usage
 
-```bash
-python3 .claude/skills/check-constraints/scripts/check.py
+```
+/check-constraints
 ```
 
-## What It Checks
+## Behaviour (guaranteed)
 
-- Dependency management compliance (Poetry, virtual environments)
-- Git workflow compliance (protected branches)
-- Python version requirements
-- Lock file synchronization
+- Checks dependency management compliance (Poetry, virtual environments)
+- Checks git workflow compliance (protected branches)
+- Checks Python version requirements
+- Checks lock file synchronisation
 
-## When to Use
-
-- During development to catch violations early
-- After making changes to verify compliance
-- Before running full pre-commit validation
-- When uncertain about constraint adherence
-
-## Exit Codes
-
-- 0: No critical violations
-- 1: Critical violations found
+Exit 0 = no critical violations, exit 1 = violations found.

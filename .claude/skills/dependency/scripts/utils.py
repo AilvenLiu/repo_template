@@ -8,12 +8,12 @@ from enum import Enum
 from pathlib import Path
 from typing import List, Optional, Tuple
 
+# Use shared detection
+_COMMON_DIR = Path(__file__).resolve().parents[2] / "common"
+if str(_COMMON_DIR) not in sys.path:
+    sys.path.insert(0, str(_COMMON_DIR))
 
-class ProjectType(Enum):
-    """Project type enumeration."""
-    PYTHON = "python"
-    CPP_CUDA = "cpp_cuda"
-    UNKNOWN = "unknown"
+from project_type import ProjectType, detect as _detect  # noqa: E402
 
 
 class PythonProjectType(Enum):
@@ -28,6 +28,10 @@ class DependencyManager:
 
     def __init__(self, repo_root: Optional[Path] = None):
         self.repo_root = repo_root or Path.cwd()
+
+    def detect_project_type(self) -> ProjectType:
+        """Detect project type using shared module."""
+        return _detect(self.repo_root)
 
     def check_python_version(self, min_version: Tuple[int, int] = (3, 10)) -> Tuple[bool, str, Tuple[int, int]]:
         """Check if Python version meets minimum requirement.
@@ -65,33 +69,6 @@ class DependencyManager:
 
         # No suitable Python found
         return False, "", (0, 0)
-
-    def detect_project_type(self) -> ProjectType:
-        """Detect project type based on files present."""
-        # Check for Python indicators
-        python_indicators = [
-            "pyproject.toml",
-            "setup.py",
-            "requirements.txt",
-        ]
-
-        cpp_indicators = [
-            "CMakeLists.txt",
-            "conanfile.txt",
-            "conanfile.py",
-        ]
-
-        # Check for C++/CUDA
-        for indicator in cpp_indicators:
-            if (self.repo_root / indicator).exists():
-                return ProjectType.CPP_CUDA
-
-        # Check for Python
-        for indicator in python_indicators:
-            if (self.repo_root / indicator).exists():
-                return ProjectType.PYTHON
-
-        return ProjectType.UNKNOWN
 
     def detect_python_project_type(self) -> PythonProjectType:
         """Detect Python project type (Poetry vs trivial)."""

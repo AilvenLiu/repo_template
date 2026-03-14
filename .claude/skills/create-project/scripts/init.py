@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Initialize a new project from the repo_template."""
+"""Initialize a new project from the repo_template.
+
+Copies the template, renames language-specific files to their generic
+names (CLAUDE.md, AGENTS.md, CONTRIBUTING.md, .gitignore), writes
+.ai/project.yml, and creates an initial git commit.
+"""
 
 import shutil
 import subprocess
@@ -8,12 +13,10 @@ from pathlib import Path
 
 
 def prompt_project_type() -> str:
-    """Prompt user for project type."""
     print("Select project type:")
     print("1. Python")
     print("2. C++/CUDA")
     print()
-
     while True:
         choice = input("Enter choice (1 or 2): ").strip()
         if choice == "1":
@@ -24,221 +27,140 @@ def prompt_project_type() -> str:
             print("Invalid choice. Please enter 1 or 2.")
 
 
+# Map of (template source, real-repo target) for each project type.
+_FILE_MAP = {
+    "python": [
+        ("AGENTS_PYTHON.md", "AGENTS.md"),
+        ("CLAUDE_PYTHON.md", "CLAUDE.md"),
+        ("CONTRIBUTING_PYTHON.md", "CONTRIBUTING.md"),
+        (".gitignore_python", ".gitignore"),
+        (".ai/project_python.yml", ".ai/project.yml"),
+    ],
+    "cpp": [
+        ("AGENTS_CPP.md", "AGENTS.md"),
+        ("CLAUDE_CPP.md", "CLAUDE.md"),
+        ("CONTRIBUTING_CPP.md", "CONTRIBUTING.md"),
+        (".gitignore_cpp", ".gitignore"),
+        (".ai/project_cpp.yml", ".ai/project.yml"),
+    ],
+}
+
+# Directories to copy verbatim
+_COPY_DIRS = [".ai/constraints", ".claude", "agent_roadmaps"]
+
+# Template-only files that must NOT appear in real repos
+_TEMPLATE_ONLY = {
+    "AGENTS_PYTHON.md", "AGENTS_CPP.md",
+    "CLAUDE_PYTHON.md", "CLAUDE_CPP.md",
+    "CONTRIBUTING_PYTHON.md", "CONTRIBUTING_CPP.md",
+    ".gitignore_python", ".gitignore_cpp",
+    ".ai/project_python.yml", ".ai/project_cpp.yml",
+}
+
+
 def create_project(template_root: Path, target_dir: Path, project_type: str) -> None:
-    """Create a new project from the template."""
     print(f"\nCreating {project_type.upper()} project at: {target_dir}")
     print("=" * 50)
 
-    # Create target directory
     target_dir.mkdir(parents=True, exist_ok=True)
 
-    # Copy .ai directory (vendor-neutral constraints)
-    print("[1/9] Copying .ai directory...")
-    shutil.copytree(
-        template_root / ".ai",
-        target_dir / ".ai",
-        dirs_exist_ok=True,
-    )
+    # 1. Copy directories
+    step = 1
+    for dirname in _COPY_DIRS:
+        src = template_root / dirname
+        if src.is_dir():
+            print(f"[{step}] Copying {dirname}/...")
+            shutil.copytree(src, target_dir / dirname, dirs_exist_ok=True)
+            step += 1
 
-    # Copy .claude directory
-    print("[2/9] Copying .claude directory...")
-    shutil.copytree(
-        template_root / ".claude",
-        target_dir / ".claude",
-        dirs_exist_ok=True,
-    )
+    # 2. Copy and rename language-specific files
+    print(f"[{step}] Renaming language-specific files...")
+    for src_name, dst_name in _FILE_MAP[project_type]:
+        src = template_root / src_name
+        if src.exists():
+            dst = target_dir / dst_name
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(src, dst)
+    step += 1
 
-    # Copy agent_roadmaps directory
-    print("[3/9] Copying agent_roadmaps directory...")
-    shutil.copytree(
-        template_root / "agent_roadmaps",
-        target_dir / "agent_roadmaps",
-        dirs_exist_ok=True,
-    )
+    # 3. Copy LICENSE if present
+    license_file = template_root / "LICENSE"
+    if license_file.exists():
+        shutil.copy2(license_file, target_dir / "LICENSE")
 
-    # Copy and rename language-specific files
-    print("[4/9] Copying language-specific files...")
-    if project_type == "python":
-        shutil.copy2(
-            template_root / "AGENT_PYTHON.md",
-            target_dir / "AGENT_PYTHON.md",
-        )
-        shutil.copy2(
-            template_root / "CLAUDE_PYTHON.md",
-            target_dir / "CLAUDE.md",
-        )
-        shutil.copy2(
-            template_root / "CONTRIBUTING_PYTHON.md",
-            target_dir / "CONTRIBUTING.md",
-        )
-        shutil.copy2(
-            template_root / ".gitignore_python",
-            target_dir / ".gitignore",
-        )
-    else:  # cpp
-        shutil.copy2(
-            template_root / "AGENT_CPP.md",
-            target_dir / "AGENT_CPP.md",
-        )
-        shutil.copy2(
-            template_root / "CLAUDE_CPP.md",
-            target_dir / "CLAUDE.md",
-        )
-        shutil.copy2(
-            template_root / "CONTRIBUTING_CPP.md",
-            target_dir / "CONTRIBUTING.md",
-        )
-        shutil.copy2(
-            template_root / ".gitignore_cpp",
-            target_dir / ".gitignore",
-        )
+    # 4. Remove template-only files that may have been copied via directory copy
+    for name in _TEMPLATE_ONLY:
+        leftover = target_dir / name
+        if leftover.exists():
+            leftover.unlink()
 
-    # Create directory structure
-    print("[5/9] Creating directory structure...")
+    # 5. Remove the .ai/project.yml template variants (keep only the correct one)
+    for variant in ("project_python.yml", "project_cpp.yml"):
+        leftover = target_dir / ".ai" / variant
+        if leftover.exists():
+            leftover.unlink()
+
+    # 6. Create directory structure
+    print(f"[{step}] Creating directory structure...")
     if project_type == "python":
         (target_dir / "src").mkdir(exist_ok=True)
         (target_dir / "tests").mkdir(exist_ok=True)
-        # Create empty requirements.txt
-        (target_dir / "requirements.txt").touch()
-    else:  # cpp
+    else:
         (target_dir / "src").mkdir(exist_ok=True)
         (target_dir / "include").mkdir(exist_ok=True)
         (target_dir / "tests").mkdir(exist_ok=True)
-        # Create basic CMakeLists.txt
-        cmake_content = """cmake_minimum_required(VERSION 3.20)
-project(MyProject VERSION 1.0.0 LANGUAGES CXX)
+        cmake = target_dir / "CMakeLists.txt"
+        if not cmake.exists():
+            cmake.write_text(
+                'cmake_minimum_required(VERSION 3.20)\n'
+                'project(MyProject VERSION 1.0.0 LANGUAGES CXX)\n\n'
+                'set(CMAKE_CXX_STANDARD 17)\n'
+                'set(CMAKE_CXX_STANDARD_REQUIRED ON)\n'
+                'set(CMAKE_CXX_EXTENSIONS OFF)\n\n'
+                '# Add your targets here\n'
+            )
+    step += 1
 
-# C++ standard
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
+    # 7. Create README.md
+    print(f"[{step}] Creating README.md...")
+    (target_dir / "README.md").write_text(
+        "# Project Name\n\nSee [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines.\n"
+    )
+    step += 1
 
-# Add your targets here
-"""
-        (target_dir / "CMakeLists.txt").write_text(cmake_content)
+    # 8. Remove create-project skill (template-only)
+    create_skill = target_dir / ".claude" / "skills" / "create-project"
+    if create_skill.is_dir():
+        shutil.rmtree(create_skill)
 
-    # Create README.md
-    print("[6/9] Creating README.md...")
-    readme_content = f"""# Project Name
-
-## Description
-
-[Add project description here]
-
-## Setup
-
-"""
-    if project_type == "python":
-        readme_content += """### Python Project
-
-1. Create virtual environment:
-   ```bash
-   python3 -m venv .venv
-   source .venv/bin/activate  # On Windows: .venv\\Scripts\\activate
-   ```
-
-2. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. Run tests:
-   ```bash
-   pytest
-   ```
-"""
-    else:  # cpp
-        readme_content += """### C++/CUDA Project
-
-1. Configure build:
-   ```bash
-   cmake -B build -DCMAKE_BUILD_TYPE=Release
-   ```
-
-2. Build:
-   ```bash
-   cmake --build build
-   ```
-
-3. Run tests:
-   ```bash
-   cd build && ctest
-   ```
-"""
-
-    readme_content += """
-## Development
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines.
-
-## License
-
-[Add license information here]
-"""
-    (target_dir / "README.md").write_text(readme_content)
-
-    # Initialize git repository
-    print("[7/9] Initializing git repository...")
+    # 9. Git init + initial commit
+    print(f"[{step}] Initializing git repository...")
     try:
+        subprocess.run(["git", "init"], cwd=target_dir, capture_output=True, check=True)
+        subprocess.run(["git", "add", "."], cwd=target_dir, capture_output=True, check=True)
         subprocess.run(
-            ["git", "init"],
-            cwd=target_dir,
-            capture_output=True,
-            check=True,
+            ["git", "commit", "-m", "chore: initialise project from repo_template"],
+            cwd=target_dir, capture_output=True, check=True,
         )
-        print("  Git repository initialized")
+        print("  Git repository initialized with initial commit")
     except subprocess.CalledProcessError:
-        print("  Warning: Failed to initialize git repository")
+        print("  Warning: git init/commit failed")
 
-    # Create initial commit
-    print("[8/9] Creating initial commit...")
-    try:
-        subprocess.run(
-            ["git", "add", "."],
-            cwd=target_dir,
-            capture_output=True,
-            check=True,
-        )
-        subprocess.run(
-            ["git", "commit", "-m", "Initial commit from repo_template"],
-            cwd=target_dir,
-            capture_output=True,
-            check=True,
-        )
-        print("  Initial commit created")
-    except subprocess.CalledProcessError:
-        print("  Warning: Failed to create initial commit")
-
-    # Final instructions
-    print("[9/9] Project created successfully!")
     print()
     print("=" * 50)
-    print("Next steps:")
-    print(f"1. cd {target_dir}")
-    print("2. Run: /init (to load constraints)")
-    if project_type == "python":
-        print("3. Create virtual environment: python3 -m venv .venv")
-        print("4. Activate: source .venv/bin/activate")
-    else:
-        print("3. Set up package manager (Conan or vcpkg)")
-        print("4. Configure build: cmake -B build")
-    print()
+    print("Done. Next steps:")
+    print(f"  cd {target_dir}")
+    print("  # Start a Claude Code session and run /init")
 
 
 def main():
-    """Main entry point."""
     if len(sys.argv) < 2:
         print("Usage: python3 init.py <target_directory>")
-        print()
-        print("Example:")
-        print("  python3 init.py /path/to/new/project")
         sys.exit(1)
 
-    # Get template root (3 levels up from this script)
-    template_root = Path(__file__).parent.parent.parent.parent
+    template_root = Path(__file__).resolve().parents[4]
     target_dir = Path(sys.argv[1]).resolve()
 
-    # Check if target directory already has files
     if target_dir.exists() and any(target_dir.iterdir()):
         print(f"Warning: {target_dir} already exists and is not empty")
         response = input("Continue anyway? (y/N): ").strip().lower()
@@ -246,11 +168,8 @@ def main():
             print("Aborted")
             sys.exit(0)
 
-    # Prompt for project type
     project_type = prompt_project_type()
-
-    # Create project
-    # create_project(template_root, target_dir, project_type)
+    create_project(template_root, target_dir, project_type)
 
 
 if __name__ == "__main__":

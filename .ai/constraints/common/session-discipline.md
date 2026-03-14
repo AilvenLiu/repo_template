@@ -71,7 +71,7 @@ The agent MUST:
 - Configuration files (`.toml`, `.yaml`, `.json`)
 
 **For constraints and rules:**
-- `AGENT.md` - Language-specific constraints
+- `AGENTS.md` - Language-specific constraints
 - `CONTRIBUTING.md` - Contribution guidelines
 - Code comments - Local constraints
 - Test files - Expected behavior
@@ -125,7 +125,7 @@ The agent MUST:
    - Read `roadmap.yml`
    - Read latest session handoff
 3. Read relevant constraint files:
-   - `AGENT.md`
+   - `AGENTS.md`
    - `CONTRIBUTING.md`
    - `.ai/constraints/common/*.md`
 4. Read relevant configuration files

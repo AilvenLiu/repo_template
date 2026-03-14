@@ -3,6 +3,8 @@
 # Receives raw JSON string as $1
 
 INPUT="$1"
+HOOK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+REPO_ROOT="$(cd "$HOOK_DIR/.." && pwd)"
 
 # Extract the command from tool_input.command
 COMMAND="$(echo "$INPUT" | python3 -c "
@@ -12,7 +14,22 @@ print(d.get('tool_input', {}).get('command', ''))
 " 2>/dev/null)"
 
 if [ -z "$COMMAND" ]; then
-    exit 0
+    echo "BLOCKED: bash_gate failed to parse command from hook input." >&2
+    echo "  This is a safety measure — please report this if it persists." >&2
+    exit 1
+fi
+
+# Detect project type from session state or project.yml
+PROJECT_TYPE=""
+if [ -f "$REPO_ROOT/.claude/session_state.json" ]; then
+    PROJECT_TYPE="$(python3 -c "
+import json, sys
+d = json.load(open('$REPO_ROOT/.claude/session_state.json'))
+print(d.get('project_type', ''))
+" 2>/dev/null)"
+fi
+if [ -z "$PROJECT_TYPE" ] && [ -f "$REPO_ROOT/.ai/project.yml" ]; then
+    PROJECT_TYPE="$(grep -m1 '^project_type:' "$REPO_ROOT/.ai/project.yml" 2>/dev/null | sed 's/project_type:[[:space:]]*//')"
 fi
 
 # ── 1. Protected branch commit gate ─────────────────────────────────────────
@@ -47,50 +64,53 @@ if echo "$COMMAND" | grep -qE 'git\s+reset\s+--hard'; then
     exit 1
 fi
 
-# ── 3. Direct pip install gate ───────────────────────────────────────────────
+# ── 3. Direct pip install gate (Python projects only) ────────────────────────
 # Block pip install / pip3 install not wrapped in poetry run
-if echo "$COMMAND" | grep -qE '^\s*(pip|pip3)\s+install'; then
-    # Allow: poetry run pip install (rare but valid for some tooling)
-    if echo "$COMMAND" | grep -q 'poetry run'; then
-        exit 0
+if [ "$PROJECT_TYPE" = "python" ] || [ -z "$PROJECT_TYPE" ]; then
+    if echo "$COMMAND" | grep -qE '^\s*(pip|pip3)\s+install'; then
+        # Allow: poetry run pip install (rare but valid for some tooling)
+        if echo "$COMMAND" | grep -q 'poetry run'; then
+            exit 0
+        fi
+        PKG="$(echo "$COMMAND" | sed -E 's/^\s*pip[0-9]* install //')"
+        echo "BLOCKED: Direct pip install detected." >&2
+        echo "" >&2
+        echo "  Use the /dependency skill instead:" >&2
+        echo "    /dependency add $PKG" >&2
+        echo "" >&2
+        echo "  This ensures Poetry manages the virtual environment and lock file." >&2
+        echo "  See .ai/constraints/python/dependencies.md" >&2
+        exit 1
     fi
-    PKG="$(echo "$COMMAND" | sed -E 's/^\s*pip[0-9]* install //')"
-    echo "BLOCKED: Direct pip install detected." >&2
-    echo "" >&2
-    echo "  Use the /dependency skill instead:" >&2
-    echo "    /dependency add $PKG" >&2
-    echo "" >&2
-    echo "  This ensures Poetry manages the virtual environment and lock file." >&2
-    echo "  See .ai/constraints/python/dependencies.md" >&2
-    exit 1
 fi
 
-# ── 4. Direct python/python3 execution gate ──────────────────────────────────
+# ── 4. Direct python/python3 execution gate (Python projects only) ───────────
 # Block: python script.py or python3 script.py not wrapped in poetry run
 # Allow: python3 .claude/skills/... (internal tooling)
 # Allow: poetry run python ...
-# Allow: python3 -m pytest (common CI pattern, warn only)
-if echo "$COMMAND" | grep -qE '^\s*(python|python3)\s+'; then
-    # Allow internal skill scripts
-    if echo "$COMMAND" | grep -qE '\.claude/skills/|\.claude/hooks/'; then
-        exit 0
+if [ "$PROJECT_TYPE" = "python" ] || [ -z "$PROJECT_TYPE" ]; then
+    if echo "$COMMAND" | grep -qE '^\s*(python|python3)\s+'; then
+        # Allow internal skill scripts
+        if echo "$COMMAND" | grep -qE '\.claude/skills/|\.claude/hooks/'; then
+            exit 0
+        fi
+        # Allow poetry run wrapping
+        if echo "$COMMAND" | grep -q 'poetry run'; then
+            exit 0
+        fi
+        # Allow pyenv / python version checks
+        if echo "$COMMAND" | grep -qE 'python[0-9.]* --version|python[0-9.]* -V'; then
+            exit 0
+        fi
+        echo "BLOCKED: Direct python/python3 usage detected." >&2
+        echo "" >&2
+        SCRIPT="$(echo "$COMMAND" | sed -E 's/^\s*python[0-9.]* //')"
+        echo "  Use Poetry instead:" >&2
+        echo "    poetry run python $SCRIPT" >&2
+        echo "" >&2
+        echo "  See .ai/constraints/python/dependencies.md" >&2
+        exit 1
     fi
-    # Allow poetry run wrapping
-    if echo "$COMMAND" | grep -q 'poetry run'; then
-        exit 0
-    fi
-    # Allow pyenv / python version checks
-    if echo "$COMMAND" | grep -qE 'python[0-9.]* --version|python[0-9.]* -V'; then
-        exit 0
-    fi
-    echo "BLOCKED: Direct python/python3 usage detected." >&2
-    echo "" >&2
-    SCRIPT="$(echo "$COMMAND" | sed -E 's/^\s*python[0-9.]* //')"
-    echo "  Use Poetry instead:" >&2
-    echo "    poetry run python $SCRIPT" >&2
-    echo "" >&2
-    echo "  See .ai/constraints/python/dependencies.md" >&2
-    exit 1
 fi
 
 # ── 5. System package manager gate (C++ library installs) ────────────────────

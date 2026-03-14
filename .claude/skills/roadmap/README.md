@@ -87,7 +87,7 @@ See [SKILL.md](SKILL.md) for comprehensive documentation including:
 
 ## Requirements
 
-- Python 3.9+
+- Python 3.10+
 - PyYAML >= 6.0
 
 ## Version

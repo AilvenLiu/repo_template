@@ -59,7 +59,7 @@ This skill will:
 - Load only relevant constraints based on your current work
 - Warn if you're on a protected branch
 
-See AGENT.md for details on the constraint system and authority hierarchy.
+See AGENTS.md for details on the constraint system and authority hierarchy.
 
 ## 3. Branching and Commits
 
@@ -363,7 +363,7 @@ If this repository uses `agent_roadmaps/`:
     - Phase / task identifier
     - Link to roadmap documentation
 
-AI agents MUST follow the agent instruction files (`AGENT.md`) and roadmap constraints at all times.
+AI agents MUST follow the agent instruction files (`AGENTS.md`) and roadmap constraints at all times.
 
 ## 12. Skills and Tools
 
@@ -390,4 +390,4 @@ When in doubt, ask for clarification before proceeding.
 For detailed technical requirements, see:
 - `.ai/constraints/cpp/` - C++/CUDA-specific constraints
 - `.ai/constraints/common/` - Common constraints
-- AGENT.md - Agent operating constraints and authority hierarchy
+- AGENTS.md - Agent operating constraints and authority hierarchy

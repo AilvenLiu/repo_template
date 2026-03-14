@@ -3,16 +3,15 @@
 
 import subprocess
 import sys
-from enum import Enum
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
+# Use shared detection
+_COMMON_DIR = Path(__file__).resolve().parents[2] / "common"
+if str(_COMMON_DIR) not in sys.path:
+    sys.path.insert(0, str(_COMMON_DIR))
 
-class ProjectType(Enum):
-    """Project type enumeration."""
-    PYTHON = "python"
-    CPP_CUDA = "cpp_cuda"
-    UNKNOWN = "unknown"
+from project_type import ProjectType, detect as detect_project_type  # noqa: E402
 
 
 class ValidationResult:
@@ -36,33 +35,8 @@ class PreCommitManager:
         self.repo_root = repo_root or Path.cwd()
 
     def detect_project_type(self) -> ProjectType:
-        """Detect project type based on files present."""
-        # Check for Python indicators
-        python_indicators = [
-            "setup.py",
-            "pyproject.toml",
-            "requirements.txt",
-            "CLAUDE.md",
-        ]
-
-        cpp_indicators = [
-            "CMakeLists.txt",
-            "conanfile.txt",
-            "conanfile.py",
-            "CLAUDE.md",
-        ]
-
-        # Check for Python
-        for indicator in python_indicators:
-            if (self.repo_root / indicator).exists():
-                return ProjectType.PYTHON
-
-        # Check for C++/CUDA
-        for indicator in cpp_indicators:
-            if (self.repo_root / indicator).exists():
-                return ProjectType.CPP_CUDA
-
-        return ProjectType.UNKNOWN
+        """Detect project type using shared module."""
+        return detect_project_type(self.repo_root)
 
     def run_command(
         self, cmd: List[str], cwd: Optional[Path] = None

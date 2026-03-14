@@ -20,18 +20,19 @@ which AI agent platform is used.
 
 1. **This directory is the source of truth** for all constraint content.
 2. **Vendor-specific wrappers** (e.g. `.claude/`, `.cursor/`) import from here.
-3. **Agent instruction file** (`AGENT.md`) provides the vendor-neutral
+3. **Agent instruction file** (`AGENTS.md`) provides the vendor-neutral
    operating instructions that reference these constraints.
-4. **Vendor-specific files** (`CLAUDE.md`, etc.) are thin wrappers that
-   include the agent instruction file plus any platform-specific configuration.
+4. **Vendor-specific files** (`CLAUDE.md`, etc.) are self-sufficient
+   entrypoints that embed critical rules inline and reference `AGENTS.md`
+   for the full constraint system.
 
 ## Adding a New AI Agent Platform
 
 To support a new agent platform:
 
 1. Create the platform's config directory (e.g. `.newagent/`)
-2. Create a thin wrapper instruction file (e.g. `NEWAGENT.md`) that:
-   - References `AGENT.md` for constraints
+2. Create an instruction file (e.g. `NEWAGENT.md`) that:
+   - References `AGENTS.md` for constraints
    - Adds any platform-specific skill mappings
 3. Map platform-specific skills to the generic procedures described in
    the constraint files (session init, pre-commit validation, dependency

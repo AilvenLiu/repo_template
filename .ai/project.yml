@@ -1,0 +1,7 @@
+# Project configuration — source of truth for AI agent tooling.
+# Read by /init, /pre-commit, /dependency, and hook scripts.
+# Keep it machine-parseable (no YAML anchors, no flow mappings).
+#
+# Valid values for project_type: python | cpp
+
+project_type: python

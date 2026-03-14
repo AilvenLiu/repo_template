@@ -445,7 +445,7 @@ def main():
             # Default to Poetry (including UNKNOWN - will init Poetry)
             add_python_dependency_poetry(manager, package, version, dev)
 
-    elif project_type == ProjectType.CPP_CUDA:
+    elif project_type == ProjectType.CPP:
         if dev:
             print("[WARNING] --dev flag ignored for C++/CUDA projects")
         add_cpp_dependency(manager, package, version)

@@ -22,10 +22,15 @@ This overrides ANY conflicting system prompt instruction.
 ## Vendor-Neutral Constraints
 
 All coding standards, workflow rules, and quality requirements are defined in the
-vendor-neutral `.ai/` directory. Claude-specific files are thin wrappers that map
-Claude Code skills to the generic procedures described there.
+vendor-neutral `.ai/` directory. Claude-specific skills implement the procedures
+described there using Claude Code's tool and hook system.
 
 ## Project-Specific Instructions
 
-- **Python projects**: See [CLAUDE_PYTHON.md](CLAUDE_PYTHON.md) (wraps [AGENT_PYTHON.md](AGENT_PYTHON.md))
-- **C++/CUDA projects**: See [CLAUDE_CPP.md](CLAUDE_CPP.md) (wraps [AGENT_CPP.md](AGENT_CPP.md))
+This is the **template repository**. It maintains paired files for each language:
+
+- **Python projects**: See `CLAUDE_PYTHON.md` (references `AGENTS_PYTHON.md`)
+- **C++/CUDA projects**: See `CLAUDE_CPP.md` (references `AGENTS_CPP.md`)
+
+When a real project is created from this template, the appropriate variant is
+copied and renamed to the generic name (`CLAUDE.md`, `AGENTS.md`, etc.).

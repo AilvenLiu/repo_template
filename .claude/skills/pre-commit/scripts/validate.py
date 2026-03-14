@@ -389,7 +389,7 @@ def main():
     results = []
     if project_type == ProjectType.PYTHON:
         results = validate_python(manager)
-    elif project_type == ProjectType.CPP_CUDA:
+    elif project_type == ProjectType.CPP:
         results = validate_cpp(manager)
     else:
         print("ERROR: Unknown project type")
