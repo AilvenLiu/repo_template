@@ -25,7 +25,7 @@ class SessionInitializer:
     def __init__(self, repo_root: Path, verbose: bool = False):
         self.repo_root = repo_root
         self.verbose = verbose
-        self.constraints_dir = repo_root / ".claude" / "constraints"
+        self.constraints_dir = repo_root / ".ai" / "constraints"
         self.project_type = None
         self.needed_constraints: Set[str] = set()
 
@@ -393,11 +393,11 @@ def main() -> int:
     # Find repository root
     repo_root = Path.cwd()
     while repo_root != repo_root.parent:
-        if (repo_root / ".git").exists() or (repo_root / ".claude").exists():
+        if (repo_root / ".git").exists() or (repo_root / ".ai").exists() or (repo_root / ".claude").exists():
             break
         repo_root = repo_root.parent
     else:
-        print("Error: Could not find repository root (.git or .claude directory)", file=sys.stderr)
+        print("Error: Could not find repository root (.git, .ai, or .claude directory)", file=sys.stderr)
         return 1
 
     # Run initialization

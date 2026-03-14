@@ -419,7 +419,7 @@ std::vector<int> data;
 ## 13. Pre-Commit Formatting Requirements
 
 ### 13.1 Before Every Commit
-Before EVERY commit operation, Claude Code MUST:
+Before EVERY commit operation, the agent MUST:
 1. Run `clang-format` on modified files
 2. Verify no formatting warnings
 3. Check for trailing whitespace

@@ -40,16 +40,20 @@ python3 .claude/skills/create-project/scripts/init.py /path/to/new/project
 ## What Gets Copied
 
 ### For Python Projects
-- `.claude/` directory (all skills and constraints)
+- `.ai/` directory (vendor-neutral constraints)
+- `.claude/` directory (skills and hooks)
 - `agent_roadmaps/` directory
+- `AGENT_PYTHON.md` -> `AGENT.md`
 - `CLAUDE_PYTHON.md` -> `CLAUDE.md`
 - `CONTRIBUTING_PYTHON.md` -> `CONTRIBUTING.md`
 - `.gitignore_python` -> `.gitignore`
 - `LICENSE`
 
 ### For C++/CUDA Projects
-- `.claude/` directory (all skills and constraints)
+- `.ai/` directory (vendor-neutral constraints)
+- `.claude/` directory (skills and hooks)
 - `agent_roadmaps/` directory
+- `AGENT_CPP.md` (vendor-neutral agent instructions)
 - `CLAUDE_CPP.md` -> `CLAUDE.md`
 - `CONTRIBUTING_CPP.md` -> `CONTRIBUTING.md`
 - `.gitignore_cpp` -> `.gitignore`
@@ -60,10 +64,12 @@ python3 .claude/skills/create-project/scripts/init.py /path/to/new/project
 ### Python Projects
 ```
 project/
+|-- .ai/
 |-- .claude/
 |-- agent_roadmaps/
 |-- src/
 |-- tests/
+|-- AGENT.md
 |-- CLAUDE.md
 |-- CONTRIBUTING.md
 |-- .gitignore
@@ -74,11 +80,13 @@ project/
 ### C++/CUDA Projects
 ```
 project/
+|-- .ai/
 |-- .claude/
 |-- agent_roadmaps/
 |-- src/
 |-- include/
 |-- tests/
+|-- AGENT.md
 |-- CLAUDE.md
 |-- CONTRIBUTING.md
 |-- .gitignore

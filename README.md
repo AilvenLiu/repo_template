@@ -1,23 +1,25 @@
 # Repository Template
 
-A comprehensive repository template with specialized documentation and configuration for C++/CUDA and Python projects. This template provides AI-agent-friendly guidelines and development standards to ensure consistent, high-quality codebases.
+A comprehensive repository template with specialized documentation and configuration for C++/CUDA and Python projects. This template provides vendor-neutral AI agent guidelines and development standards to ensure consistent, high-quality codebases.
 
 ## Overview
 
-This template contains language-specific documentation and configuration files that can be copied to new repositories during initialization. It includes formal operating constraints for AI coding agents (like Claude Code) and detailed contribution guidelines for both human and AI developers.
+This template contains language-specific documentation and configuration files that can be copied to new repositories during initialization. It uses a vendor-neutral `.ai/constraints/` architecture for AI agent operating constraints, with thin vendor-specific wrappers (e.g. `CLAUDE.md`) that delegate to the shared `AGENT_*.md` files. Detailed contribution guidelines are provided for both human and AI developers.
 
 ## Contents
 
 ### Documentation Files
 
 #### For C++/CUDA Projects
-- **CLAUDE_CPP.md** - Agent operating constraints for C++/CUDA development
+- **AGENT_CPP.md** - Vendor-neutral agent operating constraints for C++/CUDA development
   - C++17+ standards and compiler requirements
   - CUDA-specific guidelines (memory management, kernel documentation, error handling)
   - CMake build system requirements
   - Static analysis tools (clang-tidy, cppcheck)
   - Testing with Google Test/Catch2
   - Memory safety and RAII principles
+
+- **CLAUDE_CPP.md** - Thin wrapper that delegates to `AGENT_CPP.md` (Claude Code compatibility)
 
 - **CONTRIBUTING_CPP.md** - Contribution guidelines for C++/CUDA projects
   - Commit and PR conventions
@@ -28,13 +30,15 @@ This template contains language-specific documentation and configuration files t
   - Code formatting (clang-format)
 
 #### For Python Projects
-- **CLAUDE_PYTHON.md** - Agent operating constraints for Python development
+- **AGENT_PYTHON.md** - Vendor-neutral agent operating constraints for Python development
   - Python 3.9+ requirements
   - Virtual environment management
   - Dependency management (pip, poetry)
   - Type hints and mypy configuration
   - Code formatting (black, ruff)
   - Testing with pytest
+
+- **CLAUDE_PYTHON.md** - Thin wrapper that delegates to `AGENT_PYTHON.md` (Claude Code compatibility)
 
 - **CONTRIBUTING_PYTHON.md** - Contribution guidelines for Python projects
   - Commit and PR conventions
@@ -89,13 +93,13 @@ This template contains language-specific documentation and configuration files t
 
 ### Constraint Files
 
-- **.claude/constraints/** - Topic-specific constraint files for on-demand loading
+- **.ai/constraints/** - Vendor-neutral, topic-specific constraint files for on-demand loading
   - **python/** - Python-specific constraints (testing, formatting, type-checking, dependencies, documentation, error-handling, security)
   - **cpp/** - C++/CUDA-specific constraints (testing, formatting, cmake, cuda, memory-safety, static-analysis, documentation)
-  - **common/** - Language-agnostic constraints (git-workflow, roadmap-awareness, session-discipline)
+  - **common/** - Language-agnostic constraints (git-workflow, roadmap-awareness, session-discipline, ascii-only, mcp-integration)
   - Loaded automatically by `/init` skill based on context
   - Each file is self-contained and focused on a single topic (150-700 lines)
-  - See [.claude/constraints/python/README.md](.claude/constraints/python/README.md) and [.claude/constraints/cpp/README.md](.claude/constraints/cpp/README.md) for details
+  - See [.ai/constraints/python/README.md](.ai/constraints/python/README.md) and [.ai/constraints/cpp/README.md](.ai/constraints/cpp/README.md) for details
 
 ### General Files
 
@@ -105,7 +109,7 @@ This template contains language-specific documentation and configuration files t
   - Share-alike for derivatives
   - Encourages forking and contributions
 
-- **CLAUDE.md** - Original general agent constraints (reference)
+- **CLAUDE.md** - Claude Code thin wrapper with vendor-specific configuration
 - **CONTRIBUTING.md** - Original general contribution guidelines (reference)
 
 ## Usage
@@ -117,7 +121,11 @@ This template contains language-specific documentation and configuration files t
 mkdir my-cpp-project && cd my-cpp-project
 git init
 
-# Copy template files
+# Copy vendor-neutral constraints and agent instructions
+cp -r /path/to/repo_template/.ai ./.ai
+cp /path/to/repo_template/AGENT_CPP.md ./AGENT_CPP.md
+
+# Copy template files (CLAUDE_CPP.md becomes CLAUDE.md for Claude Code compatibility)
 cp /path/to/repo_template/CLAUDE_CPP.md ./CLAUDE.md
 cp /path/to/repo_template/CONTRIBUTING_CPP.md ./CONTRIBUTING.md
 cp /path/to/repo_template/.gitignore_cpp ./.gitignore
@@ -147,7 +155,11 @@ git commit -m "chore: initialise project from template"
 mkdir my-python-project && cd my-python-project
 git init
 
-# Copy template files
+# Copy vendor-neutral constraints and agent instructions
+cp -r /path/to/repo_template/.ai ./.ai
+cp /path/to/repo_template/AGENT_PYTHON.md ./AGENT_PYTHON.md
+
+# Copy template files (CLAUDE_PYTHON.md becomes CLAUDE.md for Claude Code compatibility)
 cp /path/to/repo_template/CLAUDE_PYTHON.md ./CLAUDE.md
 cp /path/to/repo_template/CONTRIBUTING_PYTHON.md ./CONTRIBUTING.md
 cp /path/to/repo_template/.gitignore_python ./.gitignore
@@ -207,7 +219,8 @@ $ # Make changes, run tests, commit, etc.
 ## Key Features
 
 ### AI Agent Integration
-- Formal operating constraints for AI coding agents
+- Vendor-neutral constraint architecture (`.ai/constraints/`)
+- Vendor-specific thin wrappers (`CLAUDE.md` delegates to `AGENT_*.md`)
 - Session initialization with context-aware constraint loading (`/init` skill)
 - Roadmap-based development workflow
 - Context7 MCP integration for external knowledge

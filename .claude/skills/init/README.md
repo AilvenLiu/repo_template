@@ -70,7 +70,7 @@ python3 .claude/skills/init/scripts/init.py --verbose
 
 ## Constraint Files
 
-Constraints are organized by topic in `.claude/constraints/`:
+Constraints are organized by topic in `.ai/constraints/`:
 
 ### Python Constraints
 - `python/testing.md` - pytest, coverage, test organization
@@ -200,7 +200,7 @@ If `/init` is not recognized:
 
 The skill defaults to Python if detection fails. You can:
 - Add project indicators (requirements.txt for Python, CMakeLists.txt for C++)
-- Manually read constraint files from `.claude/constraints/`
+- Manually read constraint files from `.ai/constraints/`
 
 ### Roadmap Check Fails
 
@@ -238,7 +238,7 @@ The main documentation files remain as comprehensive references. The `/init` ski
 To improve the `/init` skill:
 1. Modify `.claude/skills/init/scripts/init.py` for detection logic
 2. Update `.claude/skills/init/SKILL.md` for documentation
-3. Add new constraint files to `.claude/constraints/` as needed
+3. Add new constraint files to `.ai/constraints/` as needed
 4. Test with both Python and C++/CUDA projects
 
 ## License

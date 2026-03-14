@@ -29,13 +29,13 @@ ruff>=0.0.272
 [tool.black]
 line-length = 100
 target-version = ['py39', 'py310', 'py311', 'py312']
-include = '\\.pyi?$'
+include = '\.pyi?$'
 extend-exclude = '''
 /(
   # directories
-  \\.eggs
-  | \\.git
-  | \\.venv
+  \.eggs
+  | \.git
+  | \.venv
   | build
   | dist
 )/
@@ -312,7 +312,7 @@ f.close()
 ## 8. Pre-Commit Formatting
 
 ### 8.1 Mandatory Pre-Commit Checks
-Before committing, Claude Code MUST run:
+Before committing, the agent MUST run:
 
 ```bash
 # Format code with black

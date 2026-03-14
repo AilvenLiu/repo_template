@@ -57,7 +57,7 @@ if [ "$IS_POETRY_PROJECT" = true ]; then
         echo "    # Ubuntu: sudo apt install python3.10 python3.10-venv" >&2
         echo "    # Fedora: sudo dnf install python3.10" >&2
         echo "" >&2
-        echo "  See .claude/constraints/python/dependencies.md for details" >&2
+        echo "  See .ai/constraints/python/dependencies.md for details" >&2
         echo "" >&2
         exit 1
     fi
@@ -81,7 +81,7 @@ if echo "$COMMAND" | grep -qE "^(python|python3|pip|pip3)\s"; then
         fi
 
         echo "" >&2
-        echo "  See .claude/constraints/python/dependencies.md for details" >&2
+        echo "  See .ai/constraints/python/dependencies.md for details" >&2
         echo "" >&2
 
         # Return non-zero to block the command

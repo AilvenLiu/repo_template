@@ -25,7 +25,7 @@ if echo "$COMMAND" | grep -qE '^\s*git\s+commit'; then
         echo "  You MUST create a feature branch first:" >&2
         echo "    git checkout -b feat/<description>" >&2
         echo "" >&2
-        echo "  See .claude/constraints/common/git-workflow.md" >&2
+        echo "  See .ai/constraints/common/git-workflow.md" >&2
         exit 1
     fi
 fi
@@ -61,7 +61,7 @@ if echo "$COMMAND" | grep -qE '^\s*(pip|pip3)\s+install'; then
     echo "    /dependency add $PKG" >&2
     echo "" >&2
     echo "  This ensures Poetry manages the virtual environment and lock file." >&2
-    echo "  See .claude/constraints/python/dependencies.md" >&2
+    echo "  See .ai/constraints/python/dependencies.md" >&2
     exit 1
 fi
 
@@ -89,7 +89,7 @@ if echo "$COMMAND" | grep -qE '^\s*(python|python3)\s+'; then
     echo "  Use Poetry instead:" >&2
     echo "    poetry run python $SCRIPT" >&2
     echo "" >&2
-    echo "  See .claude/constraints/python/dependencies.md" >&2
+    echo "  See .ai/constraints/python/dependencies.md" >&2
     exit 1
 fi
 
@@ -105,7 +105,7 @@ if echo "$COMMAND" | grep -qE '^\s*(sudo\s+)?(apt|apt-get)\s+install'; then
         echo "    /dependency add <package>" >&2
         echo "" >&2
         echo "  This ensures Conan manages reproducible builds." >&2
-        echo "  See .claude/constraints/cpp/dependencies.md" >&2
+        echo "  See .ai/constraints/cpp/dependencies.md" >&2
         exit 1
     fi
 fi
@@ -123,7 +123,7 @@ if echo "$COMMAND" | grep -qE '^\s*brew\s+install'; then
     echo "    /dependency add $PKG" >&2
     echo "" >&2
     echo "  If this is a legitimate toolchain install, proceed manually." >&2
-    echo "  See .claude/constraints/cpp/dependencies.md" >&2
+    echo "  See .ai/constraints/cpp/dependencies.md" >&2
     exit 1
 fi
 

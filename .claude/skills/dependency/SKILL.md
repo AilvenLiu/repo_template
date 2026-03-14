@@ -427,7 +427,7 @@ If you expect a `.venv/` directory but don't see it:
 
 ## Integration with Constraints
 
-This skill follows constraints from `.claude/constraints/python/dependencies.md`:
+This skill follows constraints from `.ai/constraints/python/dependencies.md`:
 
 **Python projects:**
 - Enforces Poetry as the default tool

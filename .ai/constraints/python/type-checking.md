@@ -416,7 +416,7 @@ def process_user(user: Optional[User]) -> str:
 ## 8. Pre-Commit Type Checking
 
 ### 8.1 Mandatory Pre-Commit Checks
-Before EVERY commit, Claude Code MUST run:
+Before EVERY commit, the agent MUST run:
 
 ```bash
 # Run mypy on source code

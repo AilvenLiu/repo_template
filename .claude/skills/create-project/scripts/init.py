@@ -32,8 +32,16 @@ def create_project(template_root: Path, target_dir: Path, project_type: str) -> 
     # Create target directory
     target_dir.mkdir(parents=True, exist_ok=True)
 
+    # Copy .ai directory (vendor-neutral constraints)
+    print("[1/9] Copying .ai directory...")
+    shutil.copytree(
+        template_root / ".ai",
+        target_dir / ".ai",
+        dirs_exist_ok=True,
+    )
+
     # Copy .claude directory
-    print("[1/8] Copying .claude directory...")
+    print("[2/9] Copying .claude directory...")
     shutil.copytree(
         template_root / ".claude",
         target_dir / ".claude",
@@ -41,7 +49,7 @@ def create_project(template_root: Path, target_dir: Path, project_type: str) -> 
     )
 
     # Copy agent_roadmaps directory
-    print("[2/8] Copying agent_roadmaps directory...")
+    print("[3/9] Copying agent_roadmaps directory...")
     shutil.copytree(
         template_root / "agent_roadmaps",
         target_dir / "agent_roadmaps",
@@ -49,8 +57,12 @@ def create_project(template_root: Path, target_dir: Path, project_type: str) -> 
     )
 
     # Copy and rename language-specific files
-    print("[3/8] Copying language-specific files...")
+    print("[4/9] Copying language-specific files...")
     if project_type == "python":
+        shutil.copy2(
+            template_root / "AGENT_PYTHON.md",
+            target_dir / "AGENT_PYTHON.md",
+        )
         shutil.copy2(
             template_root / "CLAUDE_PYTHON.md",
             target_dir / "CLAUDE.md",
@@ -65,6 +77,10 @@ def create_project(template_root: Path, target_dir: Path, project_type: str) -> 
         )
     else:  # cpp
         shutil.copy2(
+            template_root / "AGENT_CPP.md",
+            target_dir / "AGENT_CPP.md",
+        )
+        shutil.copy2(
             template_root / "CLAUDE_CPP.md",
             target_dir / "CLAUDE.md",
         )
@@ -78,7 +94,7 @@ def create_project(template_root: Path, target_dir: Path, project_type: str) -> 
         )
 
     # Create directory structure
-    print("[4/8] Creating directory structure...")
+    print("[5/9] Creating directory structure...")
     if project_type == "python":
         (target_dir / "src").mkdir(exist_ok=True)
         (target_dir / "tests").mkdir(exist_ok=True)
@@ -102,7 +118,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
         (target_dir / "CMakeLists.txt").write_text(cmake_content)
 
     # Create README.md
-    print("[5/8] Creating README.md...")
+    print("[6/9] Creating README.md...")
     readme_content = f"""# Project Name
 
 ## Description
@@ -162,7 +178,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines.
     (target_dir / "README.md").write_text(readme_content)
 
     # Initialize git repository
-    print("[6/8] Initializing git repository...")
+    print("[7/9] Initializing git repository...")
     try:
         subprocess.run(
             ["git", "init"],
@@ -175,7 +191,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines.
         print("  Warning: Failed to initialize git repository")
 
     # Create initial commit
-    print("[7/8] Creating initial commit...")
+    print("[8/9] Creating initial commit...")
     try:
         subprocess.run(
             ["git", "add", "."],
@@ -194,7 +210,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines.
         print("  Warning: Failed to create initial commit")
 
     # Final instructions
-    print("[8/8] Project created successfully!")
+    print("[9/9] Project created successfully!")
     print()
     print("=" * 50)
     print("Next steps:")

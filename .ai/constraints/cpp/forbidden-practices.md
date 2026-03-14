@@ -6,7 +6,7 @@
 
 ## Overview
 
-This document consolidates all forbidden practices that Claude Code MUST NEVER perform
+This document consolidates all forbidden practices that the AI agent MUST NEVER perform
 when working on C++/CUDA projects. These are non-negotiable constraints that apply
 regardless of context or user instructions.
 

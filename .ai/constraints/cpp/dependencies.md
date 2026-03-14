@@ -84,7 +84,7 @@ conan install . --build=missing   # CORRECT
 
 ```bash
 # FORBIDDEN: Direct system installation
-sudo apt install libfmt-dev       # WRONG - system Python
+sudo apt install libfmt-dev       # WRONG - system-wide
 brew install nlohmann-json        # WRONG - not reproducible
 
 # REQUIRED: Always use Conan or vcpkg
@@ -92,27 +92,27 @@ conan install . --build=missing   # CORRECT - Conan
 vcpkg install fmt                 # CORRECT - vcpkg (if Conan unsuitable)
 ```
 
-### 1.5 Skill Usage Requirement
+### 1.5 Dependency Addition Protocol
 
-**CRITICAL**: When adding ANY C++/CUDA dependency, YOU MUST use the `/dependency` skill.
+**CRITICAL**: When adding ANY C++/CUDA dependency, the agent MUST follow the full dependency addition workflow:
 
 +-------------------------------------------------------------+
 | DEPENDENCY MANAGEMENT PROTOCOL                              |
 |                                                             |
 | WHEN: Adding a new library to the project                   |
-| USE: /dependency add <package> [version]                    |
-|                                                             |
-| CORRECT EXAMPLES:                                           |
-|   /dependency add fmt 9.1.0                                 |
-|   /dependency add eigen 3.4.0                               |
+| STEPS:                                                      |
+|   1. Add to conanfile.txt (or vcpkg.json)                   |
+|   2. Run conan install . --build=missing                    |
+|   3. Update CMakeLists.txt with find_package()              |
+|   4. Update CMakeLists.txt with target_link_libraries()     |
+|   5. Document in README.md                                  |
 |                                                             |
 | FORBIDDEN COMMANDS:                                         |
-|   apt install libfmt-dev        # WRONG - bypasses skill    |
-|   brew install eigen             # WRONG - bypasses skill   |
-|   conan install fmt              # WRONG - bypasses skill   |
-|   Manual conanfile.txt edit      # WRONG - bypasses skill   |
+|   apt install libfmt-dev        # WRONG - system install    |
+|   brew install eigen             # WRONG - system install   |
+|   Manual conanfile.txt edit without full workflow            |
 |                                                             |
-| WHY USE THE SKILL:                                          |
+| WHY FOLLOW THE PROTOCOL:                                    |
 | - Ensures Conan/vcpkg configuration                         |
 | - Updates conanfile.txt/conanfile.py                        |
 | - Validates CMake integration                               |
@@ -120,13 +120,10 @@ vcpkg install fmt                 # CORRECT - vcpkg (if Conan unsuitable)
 | - Prevents system package pollution                         |
 |                                                             |
 | CONSEQUENCE OF SKIPPING:                                    |
-| - Missing conanfile updates → broken builds                 |
-| - System package pollution → unreproducible builds          |
-| - Incomplete documentation → confused developers            |
+| - Missing conanfile updates -> broken builds                |
+| - System package pollution -> unreproducible builds         |
+| - Incomplete documentation -> confused developers           |
 +-------------------------------------------------------------+
-
-**ENFORCEMENT**: The `/dependency` skill checks for session initialization
-and validates all preconditions before proceeding.
 
 ## 2. Conan Project Structure
 
@@ -272,7 +269,7 @@ cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE=/path/to/vcpkg/scripts/buildsystems/v
 
 ### 5.1 Critical Requirement
 
-**CRITICAL**: When adding ANY new C++ library, Claude Code MUST:
+**CRITICAL**: When adding ANY new C++ library, the agent MUST:
 
 1. Add the dependency to conanfile.txt (or vcpkg.json)
 2. Run `conan install . --build=missing` to install
@@ -348,7 +345,7 @@ cub/1.17.2
 
 ### 7.1 Mandatory Setup Steps
 
-When starting work on a C++/CUDA project, Claude Code MUST:
+When starting work on a C++/CUDA project, the agent MUST:
 
 1. Check for `conanfile.txt` or `conanfile.py` (Conan project indicator)
 2. Check for `vcpkg.json` (vcpkg project indicator)

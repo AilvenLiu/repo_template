@@ -9,11 +9,11 @@ Before making any changes:
 
 1. **Run `/init` at session start** - Loads relevant constraints based on your work
 2. **Create a feature branch** - Never commit directly to protected branches
-3. **Follow loaded constraints** - Technical requirements are in `.claude/constraints/`
+3. **Follow loaded constraints** - Technical requirements are in `.ai/constraints/`
 4. **Run `/pre-commit validate`** - Before committing to check formatting, linting, build, tests
 5. **Open a pull request** - Follow the PR template below
 
-For detailed technical requirements, see `.claude/constraints/cpp/` and run `/init`.
+For detailed technical requirements, see `.ai/constraints/cpp/` and run `/init`.
 
 ## 1. General Principles
 
@@ -28,7 +28,7 @@ If unsure, ask before acting.
 
 ## 2. Constraint System
 
-This repository uses a modular constraint system. Instead of duplicating all technical requirements here, detailed constraints are organised in `.claude/constraints/`:
+This repository uses a modular constraint system. Instead of duplicating all technical requirements here, detailed constraints are organised in `.ai/constraints/`:
 
 ### C++/CUDA-Specific Constraints
 - `cpp/testing.md` - Google Test, Catch2, coverage (70%+)
@@ -59,7 +59,7 @@ This skill will:
 - Load only relevant constraints based on your current work
 - Warn if you're on a protected branch
 
-See CLAUDE.md for details on the constraint system and authority hierarchy.
+See AGENT.md for details on the constraint system and authority hierarchy.
 
 ## 3. Branching and Commits
 
@@ -89,7 +89,7 @@ Rules:
 - ASCII-only characters
 - British English spelling
 
-See `.claude/constraints/common/git-workflow.md` for detailed commit conventions.
+See `.ai/constraints/common/git-workflow.md` for detailed commit conventions.
 
 ## 4. Pull Request Guidelines
 
@@ -211,7 +211,7 @@ Review for:
 
 ## 6. Technical Standards Quick Reference
 
-For detailed requirements, see `.claude/constraints/cpp/` and run `/init`.
+For detailed requirements, see `.ai/constraints/cpp/` and run `/init`.
 
 ### C++ Version
 - **Minimum**: C++17
@@ -289,7 +289,7 @@ cudaMalloc(&ptr, size);  // Memory leak risk
 cudaFree(ptr);  // May not be called if exception thrown
 ```
 
-See `.claude/constraints/cpp/cuda.md` for comprehensive CUDA requirements.
+See `.ai/constraints/cpp/cuda.md` for comprehensive CUDA requirements.
 
 ## 8. Versioning and Releases
 
@@ -363,7 +363,7 @@ If this repository uses `agent_roadmaps/`:
     - Phase / task identifier
     - Link to roadmap documentation
 
-AI agents MUST follow CLAUDE.md and roadmap constraints at all times.
+AI agents MUST follow the agent instruction files (`AGENT.md`) and roadmap constraints at all times.
 
 ## 12. Skills and Tools
 
@@ -388,6 +388,6 @@ When in doubt, ask for clarification before proceeding.
 **Remember**: These guidelines exist to maintain code quality, safety, and maintainability. Following them ensures a healthy, sustainable codebase.
 
 For detailed technical requirements, see:
-- `.claude/constraints/cpp/` - C++/CUDA-specific constraints
-- `.claude/constraints/common/` - Common constraints
-- CLAUDE.md - Agent operating constraints and authority hierarchy
+- `.ai/constraints/cpp/` - C++/CUDA-specific constraints
+- `.ai/constraints/common/` - Common constraints
+- AGENT.md - Agent operating constraints and authority hierarchy

@@ -56,7 +56,7 @@ std::string read_config(const std::string& path) {
     if (!file.is_open()) {
         throw std::runtime_error("Failed to open config file: " + path);
     }
-    
+
     std::string content;
     try {
         std::getline(file, content, '\0');
@@ -94,12 +94,12 @@ public:
 class ResourceManager {
 private:
     std::unique_ptr<Resource> resource_;
-    
+
 public:
     void update(const Data& new_data) {
         // Create new resource first (may throw)
         auto new_resource = std::make_unique<Resource>(new_data);
-        
+
         // Only update if creation succeeded (no-throw)
         resource_ = std::move(new_resource);
     }
@@ -111,7 +111,7 @@ void process_file(const std::string& path) {
     if (!file.is_open()) {
         throw std::runtime_error("Cannot open file");
     }
-    
+
     // RAII ensures file is closed even if exception thrown
     std::string line;
     while (std::getline(file, line)) {
@@ -147,11 +147,11 @@ public:
 class DatabaseError : public ApplicationError {
 private:
     int error_code_;
-    
+
 public:
     DatabaseError(const std::string& message, int code)
         : ApplicationError(message), error_code_(code) {}
-    
+
     int error_code() const noexcept { return error_code_; }
 };
 ```
@@ -163,23 +163,23 @@ class FileOperationError : public std::runtime_error {
 private:
     std::string file_path_;
     std::string operation_;
-    
+
 public:
-    FileOperationError(const std::string& path, 
+    FileOperationError(const std::string& path,
                       const std::string& operation,
                       const std::string& reason)
         : std::runtime_error(format_message(path, operation, reason)),
           file_path_(path),
           operation_(operation) {}
-    
+
     const std::string& file_path() const noexcept { return file_path_; }
     const std::string& operation() const noexcept { return operation_; }
-    
+
 private:
     static std::string format_message(const std::string& path,
                                      const std::string& operation,
                                      const std::string& reason) {
-        return "File operation '" + operation + "' failed for '" + 
+        return "File operation '" + operation + "' failed for '" +
                path + "': " + reason;
     }
 };
@@ -193,7 +193,7 @@ private:
 class FileHandler {
 private:
     FILE* file_;
-    
+
 public:
     explicit FileHandler(const char* path, const char* mode) {
         file_ = fopen(path, mode);
@@ -201,22 +201,22 @@ public:
             throw std::runtime_error("Failed to open file");
         }
     }
-    
+
     ~FileHandler() {
         if (file_) {
             fclose(file_);
         }
     }
-    
+
     // Delete copy operations
     FileHandler(const FileHandler&) = delete;
     FileHandler& operator=(const FileHandler&) = delete;
-    
+
     // Allow move operations
     FileHandler(FileHandler&& other) noexcept : file_(other.file_) {
         other.file_ = nullptr;
     }
-    
+
     FILE* get() const noexcept { return file_; }
 };
 
@@ -235,14 +235,14 @@ class DataProcessor {
 private:
     std::unique_ptr<Database> db_;
     std::unique_ptr<Cache> cache_;
-    
+
 public:
     DataProcessor() {
         // If cache construction throws, db_ is automatically cleaned up
         db_ = std::make_unique<Database>();
         cache_ = std::make_unique<Cache>();
     }
-    
+
     void process(const Data& data) {
         auto temp = std::make_unique<ProcessedData>(data);
         // If processing throws, temp is automatically cleaned up
@@ -262,20 +262,20 @@ class Container {
 private:
     int* data_;
     size_t size_;
-    
+
 public:
     // Destructors should be noexcept (implicit)
     ~Container() noexcept {
         delete[] data_;
     }
-    
+
     // Move operations should be noexcept
     Container(Container&& other) noexcept
         : data_(other.data_), size_(other.size_) {
         other.data_ = nullptr;
         other.size_ = 0;
     }
-    
+
     Container& operator=(Container&& other) noexcept {
         if (this != &other) {
             delete[] data_;
@@ -286,11 +286,11 @@ public:
         }
         return *this;
     }
-    
+
     // Getters are typically noexcept
     size_t size() const noexcept { return size_; }
     bool empty() const noexcept { return size_ == 0; }
-    
+
     // Swap should be noexcept
     void swap(Container& other) noexcept {
         std::swap(data_, other.data_);
@@ -306,12 +306,12 @@ template<typename T>
 class Wrapper {
 private:
     T value_;
-    
+
 public:
     // noexcept if T's move constructor is noexcept
     Wrapper(Wrapper&& other) noexcept(std::is_nothrow_move_constructible<T>::value)
         : value_(std::move(other.value_)) {}
-    
+
     // noexcept if T's swap is noexcept
     void swap(Wrapper& other) noexcept(noexcept(std::swap(value_, other.value_))) {
         std::swap(value_, other.value_);
@@ -351,13 +351,13 @@ void copy_to_device(void* dst, const void* src, size_t size) {
 void launch_kernel(const float* input, float* output, size_t n) {
     dim3 block(256);
     dim3 grid((n + block.x - 1) / block.x);
-    
+
     // Launch kernel
     my_kernel<<<grid, block>>>(input, output, n);
-    
+
     // Check for launch errors
     CUDA_CHECK(cudaGetLastError());
-    
+
     // Wait for kernel to complete and check for execution errors
     CUDA_CHECK(cudaDeviceSynchronize());
 }
@@ -371,39 +371,39 @@ class CudaMemory {
 private:
     T* device_ptr_;
     size_t size_;
-    
+
 public:
     explicit CudaMemory(size_t count) : size_(count * sizeof(T)) {
         CUDA_CHECK(cudaMalloc(&device_ptr_, size_));
     }
-    
+
     ~CudaMemory() {
         if (device_ptr_) {
             cudaFree(device_ptr_);  // Don't throw in destructor
         }
     }
-    
+
     // Delete copy operations
     CudaMemory(const CudaMemory&) = delete;
     CudaMemory& operator=(const CudaMemory&) = delete;
-    
+
     // Allow move operations
     CudaMemory(CudaMemory&& other) noexcept
         : device_ptr_(other.device_ptr_), size_(other.size_) {
         other.device_ptr_ = nullptr;
         other.size_ = 0;
     }
-    
+
     T* get() const noexcept { return device_ptr_; }
     size_t size() const noexcept { return size_; }
-    
+
     void copy_from_host(const T* host_ptr) {
-        CUDA_CHECK(cudaMemcpy(device_ptr_, host_ptr, size_, 
+        CUDA_CHECK(cudaMemcpy(device_ptr_, host_ptr, size_,
                              cudaMemcpyHostToDevice));
     }
-    
+
     void copy_to_host(T* host_ptr) const {
-        CUDA_CHECK(cudaMemcpy(host_ptr, device_ptr_, size_, 
+        CUDA_CHECK(cudaMemcpy(host_ptr, device_ptr_, size_,
                              cudaMemcpyDeviceToHost));
     }
 };
@@ -418,15 +418,15 @@ class DatabaseConnection {
 private:
     void* connection_;
     bool connected_;
-    
+
 public:
-    explicit DatabaseConnection(const std::string& connection_string) 
+    explicit DatabaseConnection(const std::string& connection_string)
         : connection_(nullptr), connected_(false) {
         connection_ = create_connection(connection_string.c_str());
         if (!connection_) {
             throw DatabaseError("Failed to create connection", 0);
         }
-        
+
         try {
             if (!connect(connection_)) {
                 throw DatabaseError("Failed to connect to database", 0);
@@ -438,7 +438,7 @@ public:
             throw;
         }
     }
-    
+
     ~DatabaseConnection() {
         if (connected_) {
             disconnect(connection_);
@@ -457,20 +457,20 @@ class ComplexObject {
 private:
     bool initialised_;
     std::unique_ptr<Resource> resource_;
-    
+
 public:
     ComplexObject() : initialised_(false) {}
-    
+
     void initialise(const Config& config) {
         if (initialised_) {
             throw std::logic_error("Already initialised");
         }
-        
+
         resource_ = std::make_unique<Resource>(config);
         resource_->setup();
         initialised_ = true;
     }
-    
+
     void process() {
         if (!initialised_) {
             throw std::logic_error("Not initialised");
@@ -491,12 +491,12 @@ public:
     ~Container() noexcept {
         // Cleanup code that doesn't throw
     }
-    
+
     // Move operations should not throw
     Container(Container&& other) noexcept {
         // Move implementation
     }
-    
+
     // Swap should not throw
     void swap(Container& other) noexcept {
         // Swap implementation
@@ -510,25 +510,25 @@ public:
 class DataStore {
 private:
     std::vector<Data> data_;
-    
+
 public:
     void add(const Data& item) {
         // Create copy first (may throw)
         std::vector<Data> new_data = data_;
         new_data.push_back(item);  // May throw
-        
+
         // Only update if successful (no-throw)
         data_ = std::move(new_data);
     }
-    
+
     void update(size_t index, const Data& item) {
         if (index >= data_.size()) {
             throw std::out_of_range("Index out of range");
         }
-        
+
         // Create copy first
         Data old_data = data_[index];
-        
+
         try {
             data_[index] = item;  // May throw
         } catch (...) {
@@ -550,7 +550,7 @@ public:
         if (!file.is_open()) {
             throw std::runtime_error("Cannot open file");
         }
-        
+
         std::string line;
         while (std::getline(file, line)) {
             process_line(line);  // May throw, but file is cleaned up
@@ -573,15 +573,15 @@ void process_request(const Request& request) {
         validate_request(request);
         execute_request(request);
     } catch (const ValidationError& e) {
-        std::cerr << "Validation failed for request " 
+        std::cerr << "Validation failed for request "
                   << request.id() << ": " << e.what() << std::endl;
         throw;
     } catch (const ExecutionError& e) {
-        std::cerr << "Execution failed for request " 
+        std::cerr << "Execution failed for request "
                   << request.id() << ": " << e.what() << std::endl;
         throw;
     } catch (const std::exception& e) {
-        std::cerr << "Unexpected error processing request " 
+        std::cerr << "Unexpected error processing request "
                   << request.id() << ": " << e.what() << std::endl;
         throw;
     }
@@ -594,15 +594,15 @@ void process_request(const Request& request) {
 class ContextualError : public std::runtime_error {
 private:
     std::vector<std::string> context_;
-    
+
 public:
     explicit ContextualError(const std::string& message)
         : std::runtime_error(message) {}
-    
+
     void add_context(const std::string& context) {
         context_.push_back(context);
     }
-    
+
     std::string full_message() const {
         std::ostringstream oss;
         oss << what();

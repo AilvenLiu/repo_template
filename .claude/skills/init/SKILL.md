@@ -174,10 +174,10 @@ You see exactly which constraints are active for your current session.
 
 ## Constraint File Organization
 
-Constraints are organized in `.claude/constraints/`:
+Constraints are organized in `.ai/constraints/`:
 
 ```
-.claude/constraints/
+.ai/constraints/
 |-- python/
 |   |-- testing.md
 |   |-- formatting.md
@@ -204,7 +204,7 @@ Each file is self-contained and focused on a single topic, making them easy to r
 
 ## Relationship to Main Documentation
 
-The constraint files in `.claude/constraints/` are extracted from:
+The constraint files in `.ai/constraints/` are extracted from:
 - `CLAUDE.md`
 - `CONTRIBUTING.md`
 
@@ -214,7 +214,7 @@ The main documentation files remain as comprehensive references. The `/init` ski
 
 ### "Could not detect project type"
 
-The skill defaults to Python if it can't detect the project type. You can manually specify constraints by reading the appropriate files from `.claude/constraints/`.
+The skill defaults to Python if it can't detect the project type. You can manually specify constraints by reading the appropriate files from `.ai/constraints/`.
 
 ### "Roadmap check script not found"
 

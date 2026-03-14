@@ -319,7 +319,7 @@ Check for:
 5. **Follow commit message conventions**
    - Use conventional commit format: `type(scope): description`
    - Commit message policy is defined in `CLAUDE.md`
-   - See `.claude/constraints/common/git-workflow.md` for full conventions
+   - See `.ai/constraints/common/git-workflow.md` for full conventions
 
 ---
 

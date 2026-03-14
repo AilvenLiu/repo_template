@@ -287,7 +287,7 @@ addopts = [
 ## 7. Pre-Commit Testing Requirements
 
 ### 7.1 Mandatory Pre-Commit Checks
-Before EVERY commit, Claude Code MUST run:
+Before EVERY commit, the agent MUST run:
 
 ```bash
 # Run all tests

@@ -25,7 +25,7 @@ This means:
 
 ### 1.2 The Solution: Externalize Everything
 
-Claude Code MUST:
+The agent MUST:
 
 - **Assume no memory across sessions**
   - Never rely on previous conversations
@@ -71,7 +71,7 @@ Claude Code MUST:
 - Configuration files (`.toml`, `.yaml`, `.json`)
 
 **For constraints and rules:**
-- `CLAUDE.md` - Language-specific constraints
+- `AGENT.md` - Language-specific constraints
 - `CONTRIBUTING.md` - Contribution guidelines
 - Code comments - Local constraints
 - Test files - Expected behavior
@@ -116,7 +116,7 @@ Claude Code MUST:
 
 ### 1.5 Starting a New Session
 
-**At the beginning of EVERY session, Claude Code MUST:**
+**At the beginning of EVERY session, the agent MUST:**
 
 1. Check for active roadmaps (see roadmap-awareness.md)
 2. If active roadmap exists:
@@ -125,9 +125,9 @@ Claude Code MUST:
    - Read `roadmap.yml`
    - Read latest session handoff
 3. Read relevant constraint files:
-   - `CLAUDE.md`
+   - `AGENT.md`
    - `CONTRIBUTING.md`
-   - `.claude/constraints/common/*.md`
+   - `.ai/constraints/common/*.md`
 4. Read relevant configuration files
 5. Understand current state before proceeding
 
@@ -143,7 +143,7 @@ Without proper decision hygiene:
 
 ### 2.2 Avoiding Re-Discussion
 
-Claude Code MUST:
+The agent MUST:
 
 - **Avoid re-discussing previously settled decisions**
   - Check for existing decisions before proposing changes
@@ -201,7 +201,7 @@ We will use PostgreSQL 14+ as our primary database.
 
 ### 2.4 When to Ask Before Changing
 
-Claude Code MUST ask before changing:
+The agent MUST ask before changing:
 
 **For Python projects:**
 - Public API interfaces
@@ -233,7 +233,7 @@ Claude Code MUST ask before changing:
 
 ### 2.5 Silent Reinterpretation is Forbidden
 
-Claude Code MUST NOT:
+The agent MUST NOT:
 - Reinterpret requirements without asking
 - Change scope without approval
 - Redesign architecture without discussion
@@ -246,14 +246,14 @@ Claude Code MUST NOT:
 
 ### 3.1 The Safety Rule
 
-> **If Claude Code is unsure whether an action is allowed,**
+> **If the agent is unsure whether an action is allowed,**
 > **it MUST stop and ask the user.**
 
 Guessing, inferring intent, or "doing what seems reasonable" is not acceptable.
 
 ### 3.2 Situations Requiring User Confirmation
 
-Claude Code MUST stop and ask when:
+The agent MUST stop and ask when:
 
 **Uncertainty about requirements:**
 - Ambiguous specifications
@@ -290,7 +290,7 @@ Claude Code MUST stop and ask when:
 
 ### 3.3 How to Ask
 
-When stopping to ask, Claude Code SHOULD:
+When stopping to ask, the agent SHOULD:
 
 1. **Explain the situation clearly**
    - What is being attempted

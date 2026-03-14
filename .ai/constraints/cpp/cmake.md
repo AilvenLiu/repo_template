@@ -510,7 +510,7 @@ configure_file(
 ## 12. Dependency Documentation
 
 ### 12.1 Mandatory Documentation
-When adding ANY dependency, Claude Code MUST:
+When adding ANY dependency, the agent MUST:
 1. Update root `README.md` with:
     - Library name and version
     - Purpose and usage
@@ -541,7 +541,7 @@ When adding ANY dependency, Claude Code MUST:
 ## 13. Pre-Commit CMake Requirements
 
 ### 13.1 Before Committing
-Before EVERY commit operation, Claude Code MUST:
+Before EVERY commit operation, the agent MUST:
 1. Verify CMakeLists.txt syntax is correct
 2. Ensure project builds successfully
 3. Check that all dependencies are documented

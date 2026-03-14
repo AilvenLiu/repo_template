@@ -282,7 +282,7 @@ add_test(NAME CudaTests COMMAND cuda_tests)
 ## 9. Pre-Commit Test Requirements
 
 ### 9.1 Before Every Commit
-Before EVERY commit operation, Claude Code MUST:
+Before EVERY commit operation, the agent MUST:
 1. Ensure all tests pass
 2. Verify no compiler warnings
 3. Check test coverage meets minimum threshold

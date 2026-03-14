@@ -98,26 +98,26 @@ poetry config virtualenvs.in-project true --local
 poetry config virtualenvs.in-project true
 ```
 
-### 1.5 Skill Usage Requirement
+### 1.5 Dependency Management Procedure
 
-**CRITICAL**: When adding ANY dependency, YOU MUST use the `/dependency` skill.
+**CRITICAL**: When adding ANY dependency, the agent MUST use the dependency management procedure provided by the agent platform.
 
 +-------------------------------------------------------------+
 | DEPENDENCY MANAGEMENT PROTOCOL                              |
 |                                                             |
 | WHEN: Adding a new package to the project                   |
-| USE: /dependency add <package> [version] [--dev]            |
+| USE: The dependency management procedure                    |
+|      (the specific command depends on the agent platform)   |
 |                                                             |
 | CORRECT EXAMPLES:                                           |
-|   /dependency add requests 2.31.0                           |
-|   /dependency add pytest 7.3.0 --dev                        |
+|   poetry add requests                                       |
+|   poetry add pytest --group dev                             |
 |                                                             |
 | FORBIDDEN COMMANDS:                                         |
-|   pip install requests          # WRONG - bypasses skill    |
-|   poetry add requests            # WRONG - bypasses skill   |
-|   Manual requirements.txt edit   # WRONG - bypasses skill   |
+|   pip install requests          # WRONG - bypasses protocol |
+|   Manual requirements.txt edit  # WRONG - bypasses protocol |
 |                                                             |
-| WHY USE THE SKILL:                                          |
+| WHY USE THE PROCEDURE:                                      |
 | - Ensures Poetry configuration                              |
 | - Updates pyproject.toml and poetry.lock                    |
 | - Validates virtual environment                             |
@@ -130,7 +130,7 @@ poetry config virtualenvs.in-project true
 | - Incomplete documentation -> confused developers           |
 +-------------------------------------------------------------+
 
-**ENFORCEMENT**: The `/dependency` skill checks for session initialization
+**ENFORCEMENT**: The dependency management procedure checks for session initialization
 and validates all preconditions before proceeding.
 
 This ensures:
@@ -157,7 +157,7 @@ poetry config virtualenvs.in-project true --local
 poetry install
 ```
 
-The `/dependency` skill automatically handles this by:
+The dependency management procedure automatically handles this by:
 1. Detecting external venvs
 2. Removing them if found
 3. Configuring Poetry for in-project venvs
@@ -336,7 +336,7 @@ poetry export -f requirements.txt --output requirements.txt
 
 ### 4.1 Critical Requirement
 
-**CRITICAL**: When installing ANY new package, Claude Code MUST:
+**CRITICAL**: When installing ANY new package, the agent MUST:
 
 1. Use `poetry add` to install the package
 2. Verify both `pyproject.toml` and `poetry.lock` are updated
@@ -384,7 +384,7 @@ numpy = ">=1.24.0,<2.0.0"  # Explicit range
 
 ### 5.1 Mandatory Setup Steps
 
-When starting work on a project, Claude Code MUST:
+When starting work on a project, the agent MUST:
 
 1. **Verify Python 3.10+ is available** (CRITICAL)
 2. Check for `pyproject.toml` (Poetry project indicator)
