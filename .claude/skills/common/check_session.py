@@ -92,6 +92,6 @@ if __name__ == '__main__':
         print("✓ Session initialized")
         print(f"  Project type: {state.get('project_type')}")
         print(f"  Initialized: {state.get('timestamp')}")
-        print(f"  Constraints loaded: {len(state.get('constraints_loaded', []))}")
+        print(f"  Constraints loaded: {len(state.get('loaded_constraints', []))}")
     except SystemExit:
         sys.exit(1)

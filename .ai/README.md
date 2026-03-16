@@ -38,6 +38,32 @@ To support a new agent platform:
    the constraint files (session init, pre-commit validation, dependency
    management, etc.)
 
+### Example: Codex Integration
+
+For Google's Codex agent:
+
+1. **Codex discovers `AGENTS.md` automatically** as a standard instruction file
+2. **AGENTS.md is self-sufficient** — contains all mandatory constraints inline
+3. **Codex reads `.ai/constraints/` files** when referenced by AGENTS.md
+4. **No Codex-specific wrapper needed** — the vendor-neutral architecture works directly
+
+Key differences from Claude Code:
+- **Claude Code**: Uses `CLAUDE.md` as entrypoint → references `AGENTS.md` → loads `.ai/constraints/` via `/init` skill
+- **Codex**: Uses `AGENTS.md` as entrypoint → reads `.ai/constraints/` files directly when needed
+- **Other agents**: Can use either pattern depending on their file discovery mechanism
+
+### Platform-Specific Skill Mappings
+
+Different platforms have different ways to invoke procedures:
+
+| Procedure | Claude Code | Codex | Generic |
+|-----------|-------------|-------|---------|
+| Session init | `/init` | Read AGENTS.md + constraints | Platform-specific |
+| Pre-commit | `/pre-commit validate` | Run validation script | `python3 .claude/skills/pre-commit/scripts/validate.py` |
+| Add dependency | `/dependency add <pkg>` | Run dependency script | `python3 .claude/skills/dependency/scripts/add.py` |
+
+The constraint files describe **what** must be done; platform-specific skills implement **how** to do it.
+
 ## Constraint Categories
 
 ### Common (all languages)

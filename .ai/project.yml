@@ -1,7 +1,9 @@
 # Project configuration — source of truth for AI agent tooling.
 # Read by /init, /pre-commit, /dependency, and hook scripts.
-# Keep it machine-parseable (no YAML anchors, no flow mappings).
 #
-# Valid values for project_type: python | cpp
+# NOTE: This is the TEMPLATE repository. The project_type value here is
+# arbitrary (used for template development/testing). Real projects created
+# from this template will have their own .ai/project.yml with the correct
+# project_type written by the create-project script.
 
 project_type: python

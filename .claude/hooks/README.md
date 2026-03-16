@@ -10,6 +10,8 @@ This directory contains PreToolUse hooks that enforce project constraints at the
 ├── checks/
 │   ├── bash_gate.sh         # Gates on Bash tool calls
 │   └── write_gate.sh        # Gates on Write/Edit/MultiEdit tool calls
+├── tests/
+│   └── test_security_bypasses.sh   # Regression tests for all security gates
 ├── check_poetry_usage.sh    # Legacy: before_bash hook (kept for compatibility)
 └── README.md
 ```
@@ -27,6 +29,30 @@ The dispatcher receives a JSON payload on stdin:
 - Exit 1 → block the tool call (stderr message shown to agent)
 
 ## Gates Implemented
+
+### Pre-init Gate (in pre_tool_use.sh)
+
+Before session initialization (`session_state.json` does not exist):
+
+| Trigger | Action | Reason |
+|---------|--------|--------|
+| Any `Write`/`Edit`/`MultiEdit` tool | BLOCK | No mutations before init |
+| Any `Bash` command that is not exactly the init invocation | BLOCK | Fail-closed before init |
+| `python3 .claude/skills/init/scripts/init.py` | ALLOW | Exact init invocation |
+| `python3 .claude/skills/init/scripts/init.py --verbose` | ALLOW | Exact init invocation with verbose |
+| `python .claude/skills/init/scripts/init.py` (± `--verbose`) | ALLOW | Same, without the `3` suffix |
+
+**Security note**: The allowlist enforces a two-stage check:
+1. Reject any command containing shell metacharacters (`; & | < > $ \` \``)
+2. Require the remaining command to match exactly one of the approved forms
+
+This prevents prefix-match bypass attacks such as:
+
+```
+python3 .claude/skills/init/scripts/init.py && echo hacked > .claude/session_state.json
+```
+
+The above is blocked by stage 1 (detects `&`).
 
 ### bash_gate.sh
 
@@ -72,3 +98,18 @@ These limitations are documented in CLAUDE.md as policy rules.
 2. Follow the pattern: detect → emit clear message → exit 1
 3. Add an entry to the gates table in this README
 4. Test with: `echo '{"tool_name":"Bash","tool_input":{"command":"<cmd>"}}' | .claude/hooks/pre_tool_use.sh`
+
+## Running Tests
+
+The regression test suite covers all security policies, including pre-init bypass attempts:
+
+```bash
+bash .claude/hooks/tests/test_security_bypasses.sh
+```
+
+This runs 38 tests across 5 policies:
+1. Write/Edit/MultiEdit tools blocked before init
+2. Only init script allowed via Bash before init
+3. All other Bash commands blocked before init
+4. Generic shell bypass attempts blocked
+5. Init-prefix bypass attempts blocked (the specific vulnerability class)

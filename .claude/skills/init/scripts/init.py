@@ -226,8 +226,17 @@ def main() -> None:
     ptype = detect(_REPO_ROOT)
     if ptype == ProjectType.UNKNOWN:
         print("[WARN] Could not detect project type — defaulting to python")
+        print("       To fix: create .ai/project.yml with 'project_type: python' or 'project_type: cpp'")
+        print("       Or add project indicators (requirements.txt, CMakeLists.txt, etc.)")
         ptype = ProjectType.PYTHON
-    print(f"[OK] Project type: {ptype.value.upper()}")
+
+    # Check if detection was from config or heuristic
+    yml_path = _REPO_ROOT / ".ai" / "project.yml"
+    if yml_path.exists():
+        print(f"[OK] Project type: {ptype.value.upper()} (from .ai/project.yml)")
+    else:
+        print(f"[OK] Project type: {ptype.value.upper()} (heuristic)")
+        print("       Note: Create .ai/project.yml for deterministic detection")
 
     # 2. Roadmap
     roadmap_dir = find_active_roadmap()
@@ -283,6 +292,23 @@ def main() -> None:
     print(sep)
     print()
 
+    # 5.5. Warn loudly if no constraints loaded
+    if len(loaded) == 0:
+        print("╔" + "═" * 68 + "╗")
+        print("║" + " " * 20 + "⚠️  WARNING: NO CONSTRAINTS LOADED  ⚠️" + " " * 9 + "║")
+        print("╚" + "═" * 68 + "╝")
+        print()
+        print("This session will operate WITHOUT coding standards enforcement.")
+        print("This usually means .ai/constraints/ is missing or empty.")
+        print()
+        print("RECOMMENDED:")
+        print("  1. Verify .ai/constraints/ exists and contains .md files")
+        print("  2. If this is a new repo, copy constraints from repo_template")
+        print("  3. Re-run /init after fixing")
+        print()
+        print(sep)
+        print()
+
     # 6. Next steps
     print("NEXT STEPS:")
     if roadmap_dir:
@@ -293,6 +319,15 @@ def main() -> None:
         print("2. Proceed with your work following the loaded constraints")
     else:
         print("1. Proceed with your work following the loaded constraints above")
+
+    # Suggest verification if detection was heuristic
+    if not yml_path.exists():
+        print()
+        print("RECOMMENDATION:")
+        print("  Project type was detected heuristically. To verify:")
+        print("  - Check that the loaded constraints match your project")
+        print("  - Run /check-constraints to validate compliance")
+        print("  - Create .ai/project.yml for deterministic detection")
     print()
 
 
