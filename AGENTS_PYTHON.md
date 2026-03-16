@@ -5,6 +5,25 @@
 FIRST ACTION every session — run the platform's session initialization procedure.
 Skipping is a critical failure.
 
+### Capability Audit
+
+Session initialization includes a deterministic capability audit that verifies
+required plugins, skills, and integrations are available. The audit:
+
+1. Reads `.ai/capabilities.yml` — the canonical manifest of required capabilities
+2. Checks for installed plugins, project skills, plugin skills, and integrations
+3. Records the audit result in `.claude/session_state.json`
+4. Hard-fails the session if required capabilities are missing
+
+**For non-Claude agents**: If your platform lacks certain capabilities listed in
+the manifest, the audit will report missing items. You may continue with partial
+capabilities unless existing constraints explicitly forbid it. Report missing
+capabilities precisely to the user so they understand limitations.
+
+**Audit enforcement**: After a failed audit, mutation operations (Write/Edit/Bash)
+are blocked until the audit passes. Read-only operations (Read/Glob/Grep) remain
+available for exploration.
+
 ---
 
 ## Authority Hierarchy

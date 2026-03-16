@@ -13,8 +13,24 @@ which AI agent platform is used.
     common/          # Cross-language constraints (git, sessions, roadmaps)
     python/          # Python-specific constraints
     cpp/             # C++/CUDA-specific constraints
+  capabilities.yml   # Capability manifest for session audits
   README.md          # This file
 ```
+
+## Capability Audits
+
+The `capabilities.yml` file is the canonical manifest of required plugins,
+skills, and integrations for this project. At session start, agents should:
+
+1. Read `capabilities.yml` to understand required capabilities
+2. Check which capabilities are available on the current machine
+3. Report missing capabilities to the user
+4. Hard-fail if required capabilities are missing (Claude Code enforces this)
+
+For Claude Code, the `/init` skill runs this audit automatically and locks
+down the session if required capabilities are missing. Non-Claude agents
+should implement similar checks or report missing capabilities and continue
+with partial functionality where constraints allow.
 
 ## How It Works
 

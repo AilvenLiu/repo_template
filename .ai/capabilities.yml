@@ -1,0 +1,147 @@
+# Capability Manifest — canonical source of truth for session capability audits.
+#
+# This file defines the plugins, skills, and integrations that must be
+# available at session start. The /init skill reads this manifest and runs
+# a deterministic audit before unlocking the session.
+#
+# Structure:
+#   claude_plugins        — Claude Code plugins (checked via `claude plugins list`)
+#   claude_marketplaces   — Required marketplace sources
+#   claude_plugin_skills  — Skills provided by installed plugins
+#   project_skills        — Local skills under .claude/skills/
+#   integrations          — External integrations with special health checks
+#
+# Each entry has:
+#   id          — unique identifier (plugin name@source, skill name, etc.)
+#   required    — whether the session must hard-fail without it
+#   template_only — if true, only required in the template repo (not generated projects)
+#   notes       — human-readable explanation
+
+claude_plugins:
+  - id: context7@claude-plugins-official
+    required: true
+    notes: Context7 documentation lookup via MCP
+
+  - id: superpowers@claude-plugins-official
+    required: true
+    notes: Provides all superpowers:* plugin skills
+
+  - id: skill-creator@claude-plugins-official
+    required: true
+    notes: Skill authoring and evaluation tooling
+
+  - id: frontend-design@claude-plugins-official
+    required: true
+    notes: Frontend design capabilities
+
+  - id: pua@pua-skills
+    required: true
+    notes: PUA skills (marketplace source tanweai/pua)
+
+claude_marketplaces:
+  - id: claude-plugins-official
+    source: anthropics/claude-plugins-official
+    required: true
+    notes: Official Anthropic plugin marketplace
+
+claude_plugin_skills:
+  - id: skill-creator:skill-creator
+    required: true
+    plugin: skill-creator@claude-plugins-official
+
+  - id: superpowers:verification-before-completion
+    required: true
+    plugin: superpowers@claude-plugins-official
+
+  - id: superpowers:receiving-code-review
+    required: true
+    plugin: superpowers@claude-plugins-official
+
+  - id: superpowers:finishing-a-development-branch
+    required: true
+    plugin: superpowers@claude-plugins-official
+
+  - id: superpowers:using-git-worktrees
+    required: true
+    plugin: superpowers@claude-plugins-official
+
+  - id: superpowers:brainstorming
+    required: true
+    plugin: superpowers@claude-plugins-official
+
+  - id: superpowers:using-superpowers
+    required: true
+    plugin: superpowers@claude-plugins-official
+
+  - id: superpowers:dispatching-parallel-agents
+    required: true
+    plugin: superpowers@claude-plugins-official
+
+  - id: superpowers:requesting-code-review
+    required: true
+    plugin: superpowers@claude-plugins-official
+
+  - id: superpowers:executing-plans
+    required: true
+    plugin: superpowers@claude-plugins-official
+
+  - id: superpowers:writing-skills
+    required: true
+    plugin: superpowers@claude-plugins-official
+
+  - id: superpowers:subagent-driven-development
+    required: true
+    plugin: superpowers@claude-plugins-official
+
+  - id: superpowers:systematic-debugging
+    required: true
+    plugin: superpowers@claude-plugins-official
+
+  - id: superpowers:test-driven-development
+    required: true
+    plugin: superpowers@claude-plugins-official
+
+  - id: superpowers:writing-plans
+    required: true
+    plugin: superpowers@claude-plugins-official
+
+project_skills:
+  - id: python-env-setup
+    required: true
+
+  - id: roadmap
+    required: true
+
+  - id: navigate
+    required: true
+
+  - id: pre-commit
+    required: true
+
+  - id: context7
+    required: true
+
+  - id: init
+    required: true
+
+  - id: check-constraints
+    required: true
+
+  - id: dependency
+    required: true
+
+  - id: build
+    required: true
+
+  - id: create-project
+    required: true
+    template_only: true
+    notes: Removed by the project generator; must not be required in generated projects
+
+integrations:
+  - id: context7-mcp
+    required: true
+    check: mcp
+    notes: >
+      Context7 MCP server must be configured and healthy.
+      Checked via `claude mcp list` — the output must contain "context7".

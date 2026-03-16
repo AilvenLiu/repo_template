@@ -16,7 +16,7 @@ import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 
 # ---------------------------------------------------------------------------
@@ -28,6 +28,7 @@ if str(_COMMON_DIR) not in sys.path:
     sys.path.insert(0, str(_COMMON_DIR))
 
 from project_type import ProjectType, detect  # noqa: E402
+from capability_audit import run_audit, print_audit_report, AuditResult  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
@@ -193,8 +194,9 @@ def write_session_state(
     branch: Optional[str],
     loaded_constraints: List[str],
     roadmap_dir: Optional[Path],
+    audit_result: Optional[AuditResult] = None,
 ) -> None:
-    state = {
+    state: Dict[str, Any] = {
         "initialized": True,
         "timestamp": datetime.now().isoformat(),
         "project_type": project_type.value,
@@ -202,6 +204,8 @@ def write_session_state(
         "loaded_constraints": loaded_constraints,
         "active_roadmap": str(roadmap_dir) if roadmap_dir else None,
     }
+    if audit_result is not None:
+        state["capability_audit"] = audit_result.to_dict()
     SESSION_STATE.parent.mkdir(parents=True, exist_ok=True)
     SESSION_STATE.write_text(json.dumps(state, indent=2) + "\n")
 
@@ -264,7 +268,30 @@ def main() -> None:
         print(f"[OK] {len(modified)} modified file(s)")
     print()
 
-    # 4. Resolve and load constraints
+    # 4. Run capability audit
+    print(sep)
+    print("CAPABILITY AUDIT")
+    print(sep)
+    print()
+    print("Checking required plugins, skills, and integrations...")
+    print()
+
+    audit_result = run_audit(_REPO_ROOT, is_claude=True, verbose=args.verbose)
+    print_audit_report(audit_result)
+
+    if not audit_result.passed:
+        print()
+        print("╔" + "═" * 68 + "╗")
+        print("║" + " " * 15 + "⚠️  CAPABILITY AUDIT FAILED  ⚠️" + " " * 16 + "║")
+        print("╚" + "═" * 68 + "╝")
+        print()
+        print("The session is BLOCKED. Fix the missing capabilities above and re-run /init.")
+        print()
+        print("Session state will NOT be written until the audit passes.")
+        print()
+        sys.exit(1)
+
+    # 5. Resolve and load constraints
     keys = resolve_constraints(ptype, modified, roadmap_dir is not None)
 
     print(sep)
@@ -284,15 +311,15 @@ def main() -> None:
         print(body)
         print()
 
-    # 5. Write session state
-    write_session_state(ptype, branch, loaded, roadmap_dir)
+    # 6. Write session state
+    write_session_state(ptype, branch, loaded, roadmap_dir, audit_result)
 
     print(sep)
     print(f"Total constraints loaded: {len(loaded)}")
     print(sep)
     print()
 
-    # 5.5. Warn loudly if no constraints loaded
+    # 6.5. Warn loudly if no constraints loaded
     if len(loaded) == 0:
         print("╔" + "═" * 68 + "╗")
         print("║" + " " * 20 + "⚠️  WARNING: NO CONSTRAINTS LOADED  ⚠️" + " " * 9 + "║")
@@ -309,7 +336,7 @@ def main() -> None:
         print(sep)
         print()
 
-    # 6. Next steps
+    # 7. Next steps
     print("NEXT STEPS:")
     if roadmap_dir:
         print("1. Read roadmap files in authority order:")

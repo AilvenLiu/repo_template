@@ -90,6 +90,47 @@ print(d.get('tool_input', {}).get('command', ''))
     esac
 fi
 
+# ── 1. Post-init capability audit gate ───────────────────────────────────────
+# After init, check if capability audit failed
+# If audit failed, block all mutation operations (Write/Edit/Bash)
+# Allow read-only operations (Read/Glob/Grep) to continue
+if [ -f "$SESSION_STATE" ]; then
+    AUDIT_PASSED="$(python3 -c "
+import sys, json
+try:
+    with open('$SESSION_STATE') as f:
+        state = json.load(f)
+    audit = state.get('capability_audit')
+    if audit is None:
+        # No audit recorded - assume pass for backwards compatibility
+        print('true')
+    else:
+        print('true' if audit.get('passed', True) else 'false')
+except:
+    # If we can't read state, fail closed
+    print('false')
+" 2>/dev/null)"
+
+    if [ "$AUDIT_PASSED" = "false" ]; then
+        case "$TOOL_NAME" in
+            Write|Edit|MultiEdit|Bash)
+                echo "BLOCKED: Capability audit failed." >&2
+                echo "" >&2
+                echo "  The session capability audit failed during /init." >&2
+                echo "  Mutation operations are blocked until the audit passes." >&2
+                echo "" >&2
+                echo "  REQUIRED ACTION:" >&2
+                echo "    1. Review the audit failures from /init output" >&2
+                echo "    2. Install missing plugins, skills, or integrations" >&2
+                echo "    3. Re-run /init to pass the audit" >&2
+                echo "" >&2
+                echo "  Read-only operations (Read, Glob, Grep) remain available." >&2
+                exit 1
+                ;;
+        esac
+    fi
+fi
+
 # ── Dispatch to specific gates ────────────────────────────────────────────────
 case "$TOOL_NAME" in
     Bash)
