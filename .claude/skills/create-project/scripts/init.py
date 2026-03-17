@@ -46,7 +46,7 @@ _FILE_MAP = {
 }
 
 # Directories to copy verbatim
-_COPY_DIRS = [".ai/constraints", ".claude", "agent_roadmaps"]
+_COPY_DIRS = [".ai", ".claude", "agent_roadmaps"]
 
 # Template-only files that must NOT appear in real repos
 _TEMPLATE_ONLY = {

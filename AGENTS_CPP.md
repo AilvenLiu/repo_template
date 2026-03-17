@@ -12,8 +12,8 @@ required plugins, skills, and integrations are available. The audit:
 
 1. Reads `.ai/capabilities.yml` — the canonical manifest of required capabilities
 2. Checks for installed plugins, project skills, plugin skills, and integrations
-3. Records the audit result in `.claude/session_state.json`
-4. Hard-fails the session if required capabilities are missing
+3. Records the audit result in `.claude/session_state.json` (regardless of pass/fail)
+4. Exits with failure if required capabilities are missing (after writing state)
 
 **For non-Claude agents**: If your platform lacks certain capabilities listed in
 the manifest, the audit will report missing items. You may continue with partial

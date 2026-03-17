@@ -158,3 +158,136 @@ def test_audit_all_capabilities_present(temp_repo):
 
     assert result.passed
     assert len(result.errors) == 0
+
+
+def test_audit_plugin_skill_discovery_with_json(temp_repo):
+    """Test plugin-skill discovery using JSON metadata."""
+    manifest = {
+        "claude_plugins": [
+            {"id": "superpowers@claude-plugins-official", "required": True}
+        ],
+        "claude_plugin_skills": [
+            {
+                "id": "superpowers:brainstorming",
+                "plugin": "superpowers@claude-plugins-official",
+                "required": True,
+            }
+        ],
+    }
+    manifest_path = temp_repo / ".ai" / "capabilities.yml"
+    with open(manifest_path, "w") as f:
+        yaml.dump(manifest, f)
+
+    import capability_audit
+    with patch.object(capability_audit, "_claude_plugins_list_json") as mock_json:
+        # Mock JSON response with install path
+        mock_json.return_value = [
+            {
+                "id": "superpowers@claude-plugins-official",
+                "enabled": True,
+                "installPath": "/fake/path/superpowers/5.0.2",
+            }
+        ]
+
+        # Mock filesystem scan to find the skill
+        with patch.object(capability_audit, "_discover_plugin_skills") as mock_discover:
+            mock_discover.return_value = ["superpowers:brainstorming", "superpowers:other-skill"]
+            result = run_audit(temp_repo, is_claude=True, verbose=False)
+
+    assert result.passed
+    plugin_skill_entries = [e for e in result.entries if e.category == "claude_plugin_skill"]
+    assert len(plugin_skill_entries) == 1
+    assert plugin_skill_entries[0].available
+    assert "filesystem scan" in plugin_skill_entries[0].method
+
+
+def test_audit_plugin_skill_missing_from_plugin(temp_repo):
+    """Test detection when plugin is installed but skill is not provided."""
+    manifest = {
+        "claude_plugins": [
+            {"id": "superpowers@claude-plugins-official", "required": True}
+        ],
+        "claude_plugin_skills": [
+            {
+                "id": "superpowers:nonexistent-skill",
+                "plugin": "superpowers@claude-plugins-official",
+                "required": True,
+            }
+        ],
+    }
+    manifest_path = temp_repo / ".ai" / "capabilities.yml"
+    with open(manifest_path, "w") as f:
+        yaml.dump(manifest, f)
+
+    import capability_audit
+    with patch.object(capability_audit, "_claude_plugins_list_json") as mock_json:
+        mock_json.return_value = [
+            {
+                "id": "superpowers@claude-plugins-official",
+                "enabled": True,
+                "installPath": "/fake/path/superpowers/5.0.2",
+            }
+        ]
+
+        with patch.object(capability_audit, "_discover_plugin_skills") as mock_discover:
+            # Plugin exists but doesn't provide the requested skill
+            mock_discover.return_value = ["superpowers:brainstorming", "superpowers:other-skill"]
+            result = run_audit(temp_repo, is_claude=True, verbose=False)
+
+    assert not result.passed
+    plugin_skill_entries = [e for e in result.entries if e.category == "claude_plugin_skill"]
+    assert len(plugin_skill_entries) == 1
+    assert not plugin_skill_entries[0].available
+    assert "not provided by plugin" in plugin_skill_entries[0].message
+
+
+def test_generated_project_has_capabilities_manifest():
+    """Test that create-project generator copies capabilities.yml to generated projects."""
+    # This test verifies the template generator includes capabilities.yml
+    # We check the generator's _COPY_DIRS includes .ai/ directory
+    generator_path = Path(__file__).parent.parent / ".claude" / "skills" / "create-project" / "scripts" / "init.py"
+
+    if not generator_path.exists():
+        pytest.skip("create-project skill not found (template-only)")
+
+    generator_code = generator_path.read_text()
+
+    # Verify that .ai/ is in the copy list
+    assert '".ai"' in generator_code or "'.ai'" in generator_code, \
+        "Generator must copy .ai/ directory to include capabilities.yml"
+
+
+def test_generated_project_audit_excludes_template_only_skills():
+    """Test that generated projects skip template_only skills during audit."""
+    # Create a mock generated project (no create-project skill)
+    with tempfile.TemporaryDirectory() as tmpdir:
+        repo = Path(tmpdir)
+        (repo / ".ai").mkdir()
+        (repo / ".claude" / "skills").mkdir(parents=True)
+
+        # Create manifest with template_only skill
+        manifest = {
+            "project_skills": [
+                {"id": "init", "required": True},
+                {"id": "create-project", "required": True, "template_only": True},
+            ],
+        }
+        manifest_path = repo / ".ai" / "capabilities.yml"
+        with open(manifest_path, "w") as f:
+            yaml.dump(manifest, f)
+
+        # Create init skill (but NOT create-project)
+        init_dir = repo / ".claude" / "skills" / "init"
+        init_dir.mkdir(parents=True)
+        (init_dir / "SKILL.md").write_text("# Init Skill")
+
+        # Run audit
+        result = run_audit(repo, is_claude=False, verbose=False)
+
+        # Should pass because template_only skills are skipped in generated projects
+        # and init skill exists
+        assert result.passed
+
+        # Verify create-project was skipped
+        create_project_entries = [e for e in result.entries if e.capability_id == "create-project"]
+        assert len(create_project_entries) == 0

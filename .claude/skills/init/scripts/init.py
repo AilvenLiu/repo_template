@@ -279,18 +279,6 @@ def main() -> None:
     audit_result = run_audit(_REPO_ROOT, is_claude=True, verbose=args.verbose)
     print_audit_report(audit_result)
 
-    if not audit_result.passed:
-        print()
-        print("╔" + "═" * 68 + "╗")
-        print("║" + " " * 15 + "⚠️  CAPABILITY AUDIT FAILED  ⚠️" + " " * 16 + "║")
-        print("╚" + "═" * 68 + "╝")
-        print()
-        print("The session is BLOCKED. Fix the missing capabilities above and re-run /init.")
-        print()
-        print("Session state will NOT be written until the audit passes.")
-        print()
-        sys.exit(1)
-
     # 5. Resolve and load constraints
     keys = resolve_constraints(ptype, modified, roadmap_dir is not None)
 
@@ -319,7 +307,24 @@ def main() -> None:
     print(sep)
     print()
 
-    # 6.5. Warn loudly if no constraints loaded
+    # 6.5. Fail loudly if audit failed (after writing state)
+    if not audit_result.passed:
+        print("╔" + "═" * 68 + "╗")
+        print("║" + " " * 15 + "⚠️  CAPABILITY AUDIT FAILED  ⚠️" + " " * 16 + "║")
+        print("╚" + "═" * 68 + "╝")
+        print()
+        print("The session is BLOCKED. Mutation operations are disabled.")
+        print()
+        print("REQUIRED ACTION:")
+        print("  1. Review the audit failures above")
+        print("  2. Install missing plugins, skills, or integrations")
+        print("  3. Re-run /init to pass the audit")
+        print()
+        print("Read-only operations (Read, Glob, Grep) remain available for exploration.")
+        print()
+        sys.exit(1)
+
+    # 6.6. Warn loudly if no constraints loaded
     if len(loaded) == 0:
         print("╔" + "═" * 68 + "╗")
         print("║" + " " * 20 + "⚠️  WARNING: NO CONSTRAINTS LOADED  ⚠️" + " " * 9 + "║")

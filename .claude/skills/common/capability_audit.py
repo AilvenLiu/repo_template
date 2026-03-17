@@ -192,9 +192,43 @@ def _claude_plugins_list() -> Optional[str]:
     return _run(["claude", "plugins", "list"])
 
 
+def _claude_plugins_list_json() -> Optional[List[Dict[str, Any]]]:
+    """Return parsed JSON output of `claude plugins list --json`."""
+    raw = _run(["claude", "plugins", "list", "--json"])
+    if raw is None:
+        return None
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError:
+        return None
+
+
 def _claude_mcp_list() -> Optional[str]:
     """Return raw output of `claude mcp list`."""
     return _run(["claude", "mcp", "list"])
+
+
+def _discover_plugin_skills(plugin_id: str, install_path: str) -> List[str]:
+    """Discover skills provided by a plugin by scanning its install directory.
+
+    Returns list of skill IDs in the format "plugin-name:skill-name".
+    """
+    skills_dir = Path(install_path) / "skills"
+    if not skills_dir.is_dir():
+        return []
+
+    discovered = []
+    plugin_name = plugin_id.split("@")[0]  # Extract name from "name@source"
+
+    for skill_dir in skills_dir.iterdir():
+        if not skill_dir.is_dir():
+            continue
+        skill_md = skill_dir / "SKILL.md"
+        if skill_md.is_file():
+            skill_name = skill_dir.name
+            discovered.append(f"{plugin_name}:{skill_name}")
+
+    return discovered
 
 
 def _is_template_repo(repo_root: Path) -> bool:
@@ -354,34 +388,83 @@ def _audit_claude_plugin_skills(
 ) -> None:
     """Check that required plugin-provided skills are available.
 
-    Plugin skills are available if and only if their parent plugin is
-    installed and enabled.  We derive availability from the plugin
-    audit entries already recorded.
+    Plugin skills are discovered by scanning the plugin's install directory
+    for skills/*/SKILL.md files. This is deterministic and does not assume
+    all declared skills are available just because the plugin is installed.
     """
-    # Build lookup of available plugins from prior audit entries
-    available_plugins: set = set()
-    for e in result.entries:
-        if e.category == "claude_plugin" and e.available:
-            available_plugins.add(e.capability_id)
+    # Get plugin metadata with install paths
+    plugins_json = _claude_plugins_list_json()
+    if plugins_json is None:
+        # Fall back to checking if parent plugin is available
+        available_plugins: set = set()
+        for e in result.entries:
+            if e.category == "claude_plugin" and e.available:
+                available_plugins.add(e.capability_id)
 
+        for entry in manifest.get("claude_plugin_skills", []):
+            skill_id = entry["id"]
+            required = entry.get("required", False)
+            parent_plugin = entry.get("plugin", "")
+            available = parent_plugin in available_plugins
+            msg = ""
+            if not available:
+                msg = (
+                    f"Plugin skill '{skill_id}' is unavailable because its parent "
+                    f"plugin '{parent_plugin}' is not installed/enabled.\n"
+                    f"  Install the plugin: claude plugin install {parent_plugin}"
+                )
+            result.add(AuditEntry(
+                category="claude_plugin_skill",
+                capability_id=skill_id,
+                required=required,
+                available=available,
+                method=f"derived from plugin '{parent_plugin}' availability (fallback)",
+                message=msg,
+            ))
+        return
+
+    # Build map of plugin_id -> discovered skills
+    plugin_skills_map: Dict[str, List[str]] = {}
+    for plugin_data in plugins_json:
+        if not plugin_data.get("enabled", False):
+            continue
+        plugin_id = plugin_data.get("id", "")
+        install_path = plugin_data.get("installPath", "")
+        if plugin_id and install_path:
+            discovered = _discover_plugin_skills(plugin_id, install_path)
+            plugin_skills_map[plugin_id] = discovered
+
+    # Check each required plugin skill
     for entry in manifest.get("claude_plugin_skills", []):
         skill_id = entry["id"]
         required = entry.get("required", False)
         parent_plugin = entry.get("plugin", "")
-        available = parent_plugin in available_plugins
+
+        # Check if skill is actually discovered
+        discovered_skills = plugin_skills_map.get(parent_plugin, [])
+        available = skill_id in discovered_skills
+
         msg = ""
         if not available:
-            msg = (
-                f"Plugin skill '{skill_id}' is unavailable because its parent "
-                f"plugin '{parent_plugin}' is not installed/enabled.\n"
-                f"  Install the plugin: claude plugin install {parent_plugin}"
-            )
+            if parent_plugin not in plugin_skills_map:
+                msg = (
+                    f"Plugin skill '{skill_id}' is unavailable because its parent "
+                    f"plugin '{parent_plugin}' is not installed/enabled.\n"
+                    f"  Install the plugin: claude plugin install {parent_plugin}"
+                )
+            else:
+                msg = (
+                    f"Plugin skill '{skill_id}' is not provided by plugin '{parent_plugin}'.\n"
+                    f"  The plugin is installed but does not expose this skill.\n"
+                    f"  Discovered skills: {', '.join(discovered_skills) if discovered_skills else '(none)'}"
+                )
+
         result.add(AuditEntry(
             category="claude_plugin_skill",
             capability_id=skill_id,
             required=required,
             available=available,
-            method=f"derived from plugin '{parent_plugin}' availability",
+            method=f"filesystem scan of plugin '{parent_plugin}' install directory",
             message=msg,
         ))
 
