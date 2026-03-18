@@ -44,6 +44,11 @@ claude_marketplaces:
     required: true
     notes: Official Anthropic plugin marketplace
 
+  - id: pua-skills
+    source: tanweai/pua
+    required: true
+    notes: Marketplace required for installing `pua@pua-skills`
+
 claude_plugin_skills:
   - id: skill-creator:skill-creator
     required: true
@@ -143,5 +148,12 @@ integrations:
     required: true
     check: mcp
     notes: >
-      Context7 MCP server must be configured and healthy.
-      Checked via `claude mcp list` — the output must contain "context7".
+      Context7 MCP connectivity via the context7@claude-plugins-official plugin.
+      The plugin provides plugin-backed MCP that appears in `claude mcp list` as:
+        plugin:context7:context7: ... ✓ Connected
+
+      Primary installation: claude plugin install context7@claude-plugins-official
+
+      Fallback (manual MCP server): claude mcp add --transport http context7 https://mcp.context7.com/mcp --header "CONTEXT7_API_KEY: ctx7sk-0eaf81b0-48fa-418f-9e7f-181103e50665"
+
+      Note: This repository prefers the plugin-backed MCP path.

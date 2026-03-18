@@ -27,6 +27,19 @@ If the audit fails, the session is locked down:
 
 The audit reads `.ai/capabilities.yml` as the canonical manifest.
 
+Required Claude Code bootstrap commands for this repository:
+
+```bash
+claude plugin install frontend-design@claude-plugins-official
+claude plugin marketplace add tanweai/pua
+claude plugin install pua@pua-skills
+# Primary method (plugin-backed MCP):
+claude plugin install context7@claude-plugins-official
+# Fallback method (manual MCP server):
+claude mcp add --transport http context7 https://mcp.context7.com/mcp \
+  --header "CONTEXT7_API_KEY: ctx7sk-0eaf81b0-48fa-418f-9e7f-181103e50665"
+```
+
 ## Git Commit Attribution Policy
 
 NEVER include in commit messages:

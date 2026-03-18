@@ -291,3 +291,133 @@ def test_generated_project_audit_excludes_template_only_skills():
         # Verify create-project was skipped
         create_project_entries = [e for e in result.entries if e.capability_id == "create-project"]
         assert len(create_project_entries) == 0
+
+
+def test_audit_context7_plugin_backed_mcp(temp_repo):
+    """Test Context7 audit with plugin-backed MCP (primary method)."""
+    manifest = {
+        "integrations": [
+            {"id": "context7-mcp", "required": True, "check": "mcp"}
+        ],
+    }
+    manifest_path = temp_repo / ".ai" / "capabilities.yml"
+    with open(manifest_path, "w") as f:
+        yaml.dump(manifest, f)
+
+    import capability_audit
+    with patch.object(capability_audit, "_run") as mock_run:
+        def mock_command(cmd):
+            if "plugins list" in " ".join(cmd):
+                return (
+                    "Installed plugins:\n\n"
+                    "  ❯ context7@claude-plugins-official\n"
+                    "    Status: ✔ enabled\n"
+                )
+            elif "mcp list" in " ".join(cmd):
+                return "plugin:context7:context7: npx -y @upstash/context7-mcp - ✓ Connected\n"
+            return ""
+
+        mock_run.side_effect = mock_command
+        result = run_audit(temp_repo, is_claude=True, verbose=False)
+
+    assert result.passed
+    integration_entries = [e for e in result.entries if e.category == "integration"]
+    assert len(integration_entries) == 1
+    assert integration_entries[0].available
+    assert "plugin-backed MCP" in integration_entries[0].method
+
+
+def test_audit_context7_manual_mcp_server(temp_repo):
+    """Test Context7 audit with manual MCP server (fallback method)."""
+    manifest = {
+        "integrations": [
+            {"id": "context7-mcp", "required": True, "check": "mcp"}
+        ],
+    }
+    manifest_path = temp_repo / ".ai" / "capabilities.yml"
+    with open(manifest_path, "w") as f:
+        yaml.dump(manifest, f)
+
+    import capability_audit
+    with patch.object(capability_audit, "_run") as mock_run:
+        def mock_command(cmd):
+            if "plugins list" in " ".join(cmd):
+                # Plugin not installed
+                return "Installed plugins:\n\n(none)\n"
+            elif "mcp list" in " ".join(cmd):
+                # But manual MCP server is configured
+                return "context7: http://mcp.context7.com/mcp - ✓ Connected\n"
+            return ""
+
+        mock_run.side_effect = mock_command
+        result = run_audit(temp_repo, is_claude=True, verbose=False)
+
+    assert result.passed
+    integration_entries = [e for e in result.entries if e.category == "integration"]
+    assert len(integration_entries) == 1
+    assert integration_entries[0].available
+    assert "manual MCP server" in integration_entries[0].method
+
+
+def test_audit_context7_plugin_not_enabled(temp_repo):
+    """Test Context7 audit fails when plugin is installed but not enabled."""
+    manifest = {
+        "integrations": [
+            {"id": "context7-mcp", "required": True, "check": "mcp"}
+        ],
+    }
+    manifest_path = temp_repo / ".ai" / "capabilities.yml"
+    with open(manifest_path, "w") as f:
+        yaml.dump(manifest, f)
+
+    import capability_audit
+    with patch.object(capability_audit, "_run") as mock_run:
+        def mock_command(cmd):
+            if "plugins list" in " ".join(cmd):
+                return (
+                    "Installed plugins:\n\n"
+                    "  ❯ context7@claude-plugins-official\n"
+                    "    Status: ✘ disabled\n"
+                )
+            elif "mcp list" in " ".join(cmd):
+                return ""
+            return ""
+
+        mock_run.side_effect = mock_command
+        result = run_audit(temp_repo, is_claude=True, verbose=False)
+
+    assert not result.passed
+    integration_entries = [e for e in result.entries if e.category == "integration"]
+    assert len(integration_entries) == 1
+    assert not integration_entries[0].available
+    assert "not enabled" in integration_entries[0].message.lower()
+
+
+def test_audit_context7_missing(temp_repo):
+    """Test Context7 audit fails when neither plugin nor manual MCP is configured."""
+    manifest = {
+        "integrations": [
+            {"id": "context7-mcp", "required": True, "check": "mcp"}
+        ],
+    }
+    manifest_path = temp_repo / ".ai" / "capabilities.yml"
+    with open(manifest_path, "w") as f:
+        yaml.dump(manifest, f)
+
+    import capability_audit
+    with patch.object(capability_audit, "_run") as mock_run:
+        def mock_command(cmd):
+            if "plugins list" in " ".join(cmd):
+                return "Installed plugins:\n\n(none)\n"
+            elif "mcp list" in " ".join(cmd):
+                return ""
+            return ""
+
+        mock_run.side_effect = mock_command
+        result = run_audit(temp_repo, is_claude=True, verbose=False)
+
+    assert not result.passed
+    integration_entries = [e for e in result.entries if e.category == "integration"]
+    assert len(integration_entries) == 1
+    assert not integration_entries[0].available
+    assert "not installed" in integration_entries[0].message.lower()

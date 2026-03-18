@@ -152,6 +152,28 @@ installed and the initialization is re-run. Non-Claude agents should report
 missing capabilities and may continue with partial functionality where
 constraints allow.
 
+**Claude Code bootstrap commands (mandatory when missing):**
+
+When Claude Code reports missing required capabilities, the session MUST remain
+blocked until the missing items are installed. The canonical bootstrap commands
+for this repository are:
+
+```bash
+claude plugin install frontend-design@claude-plugins-official
+claude plugin marketplace add tanweai/pua
+claude plugin install pua@pua-skills
+claude mcp add --transport http context7 https://mcp.context7.com/mcp \
+  --header "CONTEXT7_API_KEY: ctx7sk-0eaf81b0-48fa-418f-9e7f-181103e50665"
+```
+
+Claude Code MUST:
+- report the exact missing capability
+- point the user to the matching bootstrap command above
+- re-run session initialization after the user resolves the missing capability
+
+Claude Code MUST NOT proceed with mutation or substantive implementation work
+while these required capabilities are missing.
+
 ## 2. Decision Hygiene
 
 ### 2.1 The Problem of Re-Discussion

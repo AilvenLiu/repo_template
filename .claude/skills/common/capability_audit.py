@@ -321,10 +321,18 @@ def _audit_claude_plugins(
         msg = ""
         if not available:
             if not found:
-                msg = (
-                    f"Plugin '{plugin_id}' is not installed.\n"
-                    f"  Install it: claude plugin install {plugin_id}"
-                )
+                install_cmd = f"claude plugin install {plugin_id}"
+                if plugin_id == "pua@pua-skills":
+                    msg = (
+                        f"Plugin '{plugin_id}' is not installed.\n"
+                        "  Add marketplace: claude plugin marketplace add tanweai/pua\n"
+                        f"  Install it: {install_cmd}"
+                    )
+                else:
+                    msg = (
+                        f"Plugin '{plugin_id}' is not installed.\n"
+                        f"  Install it: {install_cmd}"
+                    )
             else:
                 msg = (
                     f"Plugin '{plugin_id}' is installed but not enabled.\n"
@@ -519,35 +527,107 @@ def _audit_integrations(
     result: AuditResult,
     verbose: bool,
 ) -> None:
-    """Check special integrations (e.g. Context7 MCP health)."""
+    """Check special integrations (e.g. Context7 MCP health).
+
+    For Context7 MCP, uses an ordered verification strategy:
+    1. Check if context7@claude-plugins-official plugin is installed and enabled
+    2. Verify MCP connectivity via `claude mcp list` (checks for plugin-backed MCP)
+    3. Report detailed status based on which checks pass
+    """
     for entry in manifest.get("integrations", []):
         integration_id = entry["id"]
         required = entry.get("required", False)
         check_type = entry.get("check", "")
 
         if check_type == "mcp":
-            raw = _claude_mcp_list()
+            # Ordered verification strategy for Context7 MCP
             available = False
+            method = ""
             msg = ""
-            if raw is None:
+
+            # Step 1: Check if context7 plugin is installed and enabled
+            # First check if it's already in result.entries (from explicit plugin requirement)
+            plugin_installed = False
+            plugin_enabled = False
+            for e in result.entries:
+                if e.category == "claude_plugin" and e.capability_id == "context7@claude-plugins-official":
+                    plugin_installed = True
+                    plugin_enabled = e.available
+                    break
+
+            # If not in result.entries, check directly via claude plugins list
+            if not plugin_installed:
+                raw_plugins = _claude_plugins_list()
+                if raw_plugins:
+                    raw_lower = raw_plugins.lower()
+                    if "context7@claude-plugins-official" in raw_lower:
+                        plugin_installed = True
+                        # Check if enabled by looking in the block after the plugin name
+                        idx = raw_lower.find("context7@claude-plugins-official")
+                        block = raw_lower[idx:idx + 300]
+                        plugin_enabled = "enabled" in block
+
+            if not plugin_installed:
+                # Check if manual MCP server is configured as fallback
+                raw_mcp = _claude_mcp_list()
+                if raw_mcp and "context7" in raw_mcp.lower():
+                    available = True
+                    method = "MCP check (manual MCP server)"
+                    msg = ""
+                else:
+                    method = "plugin check (context7@claude-plugins-official not found)"
+                    msg = (
+                        "Context7 plugin is not installed.\n"
+                        "  Install it with:\n"
+                        "    claude plugin install context7@claude-plugins-official"
+                    )
+            elif not plugin_enabled:
+                method = "plugin check (context7@claude-plugins-official disabled)"
                 msg = (
-                    "Could not run `claude mcp list`.\n"
-                    "  Ensure Claude Code is installed and the MCP subsystem is available."
+                    "Context7 plugin is installed but not enabled.\n"
+                    "  Enable it with:\n"
+                    "    claude plugin enable context7@claude-plugins-official"
                 )
-            elif "context7" in raw.lower():
-                available = True
             else:
-                msg = (
-                    "Context7 MCP server is not configured.\n"
-                    "  Add it with:\n"
-                    "    claude mcp add context7 -- npx -y @anthropic-ai/context7-mcp@latest"
-                )
+                # Step 2: Verify MCP connectivity
+                raw = _claude_mcp_list()
+                if raw is None:
+                    method = "plugin check (enabled) + MCP check (failed to run)"
+                    msg = (
+                        "Context7 plugin is enabled but MCP connectivity check failed.\n"
+                        "  Could not run `claude mcp list`.\n"
+                        "  This may indicate a Claude Code installation issue."
+                    )
+                elif "plugin:context7:context7" in raw:
+                    # Success: plugin-backed MCP found
+                    available = True
+                    method = "plugin check (enabled) + MCP check (plugin-backed MCP)"
+                elif "context7" in raw.lower():
+                    # Success: standalone MCP found
+                    available = True
+                    method = "plugin check (enabled) + MCP check (manual MCP server)"
+                else:
+                    # Plugin enabled but MCP not showing up
+                    method = "plugin check (enabled) + MCP check (not connected)"
+                    msg = (
+                        "Context7 plugin is enabled but MCP server is not connected.\n"
+                        "  The plugin-backed MCP should appear in `claude mcp list` as:\n"
+                        "    plugin:context7:context7: ... ✓ Connected\n"
+                        "  \n"
+                        "  If you see this error:\n"
+                        "  1. Try restarting Claude Code\n"
+                        "  2. Check if the plugin is actually enabled: claude plugins list\n"
+                        "  3. If the issue persists, reinstall the plugin:\n"
+                        "       claude plugin uninstall context7@claude-plugins-official\n"
+                        "       claude plugin install context7@claude-plugins-official"
+                    )
+
             result.add(AuditEntry(
                 category="integration",
                 capability_id=integration_id,
                 required=required,
                 available=available,
-                method="claude mcp list",
+                method=method,
                 message=msg,
             ))
         else:
