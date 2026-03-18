@@ -9,7 +9,36 @@ FIRST ACTION every session, no exceptions:
 ```
 
 Skipping `/init` is a critical failure. It loads project constraints,
-detects project type, checks roadmaps, and writes session state.
+detects project type, checks roadmaps, runs capability audit, and writes
+session state.
+
+### Capability Audit
+
+The `/init` skill runs a deterministic capability audit that verifies:
+- Required Claude Code plugins are installed and enabled
+- Required project skills exist under `.claude/skills/`
+- Required plugin skills are available
+- Context7 MCP server is configured and healthy
+
+If the audit fails, the session is locked down:
+- Mutation operations (Write/Edit/Bash) are blocked
+- Read-only operations (Read/Glob/Grep) remain available
+- You must install missing capabilities and re-run `/init` to unlock
+
+The audit reads `.ai/capabilities.yml` as the canonical manifest.
+
+Required Claude Code bootstrap commands for this repository:
+
+```bash
+claude plugin install frontend-design@claude-plugins-official
+claude plugin marketplace add tanweai/pua
+claude plugin install pua@pua-skills
+# Primary method (plugin-backed MCP):
+claude plugin install context7@claude-plugins-official
+# Fallback method (manual MCP server):
+claude mcp add --transport http context7 https://mcp.context7.com/mcp \
+  --header "CONTEXT7_API_KEY: ctx7sk-0eaf81b0-48fa-418f-9e7f-181103e50665"
+```
 
 ## Git Commit Attribution Policy
 

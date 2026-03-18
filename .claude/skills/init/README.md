@@ -17,6 +17,7 @@ At the start of every Claude Code session, run:
 That's it! The skill will:
 - Detect your project type (Python or C++/CUDA)
 - Check for active roadmaps
+- Run the capability audit from `.ai/capabilities.yml`
 - Analyze your git status
 - Load only relevant constraints based on what you're working on
 
@@ -52,6 +53,20 @@ The skill is included in the repository template. When you copy the template to 
 ```bash
 # The skill is already included in .claude/skills/init/
 # No additional installation needed
+```
+
+Claude Code still needs the required global capabilities installed on the machine.
+The audit will block the session until they are available. The main setup commands are:
+
+```bash
+claude plugin install frontend-design@claude-plugins-official
+claude plugin marketplace add tanweai/pua
+claude plugin install pua@pua-skills
+# Primary method (plugin-backed MCP):
+claude plugin install context7@claude-plugins-official
+# Fallback method (manual MCP server):
+claude mcp add --transport http context7 https://mcp.context7.com/mcp \
+  --header "CONTEXT7_API_KEY: ctx7sk-0eaf81b0-48fa-418f-9e7f-181103e50665"
 ```
 
 ## Usage

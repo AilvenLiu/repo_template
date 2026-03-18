@@ -21,7 +21,7 @@ def check_session_initialized(skill_name: str) -> dict:
         Session state dict if initialized
 
     Raises:
-        SystemExit: If session not initialized
+        SystemExit: If session not initialized or capability audit failed
     """
     state_file = Path('.claude/session_state.json')
 
@@ -40,6 +40,7 @@ def check_session_initialized(skill_name: str) -> dict:
         print("  - Detects project type (Python vs C++/CUDA)")
         print("  - Checks for active roadmaps")
         print("  - Validates git branch status")
+        print("  - Audits required capabilities")
         print()
         print("=" * 70)
         sys.exit(1)
@@ -55,6 +56,34 @@ def check_session_initialized(skill_name: str) -> dict:
     if not state.get('initialized'):
         print("ERROR: Session initialization incomplete")
         print("REQUIRED: Run /init to complete initialization")
+        sys.exit(1)
+
+    # Check capability audit result
+    audit = state.get('capability_audit')
+    if audit is not None and not audit.get('passed', True):
+        print("=" * 70)
+        print("ERROR: Capability audit failed")
+        print("=" * 70)
+        print()
+        print(f"The '{skill_name}' skill cannot run because the session capability")
+        print("audit failed during /init.")
+        print()
+        print("REQUIRED ACTION:")
+        print("  1. Review the audit failures from /init output")
+        print("  2. Install missing plugins, skills, or integrations")
+        print("  3. Re-run /init to pass the audit")
+        print()
+        print("AUDIT SUMMARY:")
+        entries = audit.get('entries', [])
+        failed = [e for e in entries if e.get('required') and not e.get('available')]
+        for e in failed:
+            print(f"  [FAIL] {e.get('id', 'unknown')}")
+            msg = e.get('message', '')
+            if msg:
+                for line in msg.strip().splitlines()[:2]:  # first 2 lines only
+                    print(f"         {line}")
+        print()
+        print("=" * 70)
         sys.exit(1)
 
     # Check if session is stale (>24 hours old)
@@ -92,6 +121,6 @@ if __name__ == '__main__':
         print("✓ Session initialized")
         print(f"  Project type: {state.get('project_type')}")
         print(f"  Initialized: {state.get('timestamp')}")
-        print(f"  Constraints loaded: {len(state.get('constraints_loaded', []))}")
+        print(f"  Constraints loaded: {len(state.get('loaded_constraints', []))}")
     except SystemExit:
         sys.exit(1)

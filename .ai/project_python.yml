@@ -1,4 +1,4 @@
 # Project configuration — source of truth for AI agent tooling.
-# Copied as .ai/project.yml in real Python repos.
+# This file is read by session initialization to determine project type.
 
 project_type: python

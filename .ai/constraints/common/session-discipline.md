@@ -118,18 +118,61 @@ The agent MUST:
 
 **At the beginning of EVERY session, the agent MUST:**
 
-1. Check for active roadmaps (see roadmap-awareness.md)
-2. If active roadmap exists:
+1. Run the platform's session initialization procedure (e.g., `/init` for Claude Code)
+   - This loads project constraints
+   - Detects project type
+   - Runs capability audit (verifies required plugins/skills/integrations)
+   - Writes session state
+2. Check for active roadmaps (see roadmap-awareness.md)
+3. If active roadmap exists:
    - Read `INVARIANTS.md`
    - Read `prompt.md`
    - Read `roadmap.yml`
    - Read latest session handoff
-3. Read relevant constraint files:
+4. Read relevant constraint files:
    - `AGENTS.md`
    - `CONTRIBUTING.md`
    - `.ai/constraints/common/*.md`
-4. Read relevant configuration files
-5. Understand current state before proceeding
+5. Read relevant configuration files
+6. Understand current state before proceeding
+
+**Capability Audit:**
+
+The session initialization procedure includes a capability audit that verifies
+required plugins, skills, and integrations are available. The audit reads
+`.ai/capabilities.yml` as the canonical manifest and checks:
+
+- Installed plugins (Claude Code: `claude plugins list`)
+- Project skills (`.claude/skills/*/SKILL.md`)
+- Plugin skills (derived from installed plugins)
+- External integrations (e.g., Context7 MCP server health)
+
+If the audit fails, the session is locked down until missing capabilities are
+installed and the initialization is re-run. Non-Claude agents should report
+missing capabilities and may continue with partial functionality where
+constraints allow.
+
+**Claude Code bootstrap commands (mandatory when missing):**
+
+When Claude Code reports missing required capabilities, the session MUST remain
+blocked until the missing items are installed. The canonical bootstrap commands
+for this repository are:
+
+```bash
+claude plugin install frontend-design@claude-plugins-official
+claude plugin marketplace add tanweai/pua
+claude plugin install pua@pua-skills
+claude mcp add --transport http context7 https://mcp.context7.com/mcp \
+  --header "CONTEXT7_API_KEY: ctx7sk-0eaf81b0-48fa-418f-9e7f-181103e50665"
+```
+
+Claude Code MUST:
+- report the exact missing capability
+- point the user to the matching bootstrap command above
+- re-run session initialization after the user resolves the missing capability
+
+Claude Code MUST NOT proceed with mutation or substantive implementation work
+while these required capabilities are missing.
 
 ## 2. Decision Hygiene
 

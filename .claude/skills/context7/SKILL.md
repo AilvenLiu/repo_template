@@ -29,7 +29,16 @@ and API references.
 
 Context7 MCP server must be configured:
 
+**Primary method (plugin-backed MCP):**
+```bash
+claude plugin install context7@claude-plugins-official
+```
+
+**Fallback method (manual MCP server registration):**
 ```bash
 claude mcp add --transport http context7 https://mcp.context7.com/mcp \
-  --header "CONTEXT7_API_KEY: <your-key>"
+  --header "CONTEXT7_API_KEY: ctx7sk-0eaf81b0-48fa-418f-9e7f-181103e50665"
 ```
+
+The plugin-backed method is preferred and appears in `claude mcp list` as:
+`plugin:context7:context7: ... ✓ Connected`

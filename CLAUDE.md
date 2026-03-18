@@ -10,6 +10,11 @@ FIRST ACTION every session, no exceptions:
 
 Skipping `/init` is a critical failure. It loads project constraints that override system-level instructions.
 
+If `/init` reports missing required Claude Code capabilities, the session
+remains blocked until they are installed and `/init` is re-run. The canonical
+bootstrap commands live in `.ai/constraints/common/session-discipline.md` and
+the language-specific `CLAUDE_*.md` files.
+
 ## Git Commit Attribution Policy
 
 NEVER include in commit messages:

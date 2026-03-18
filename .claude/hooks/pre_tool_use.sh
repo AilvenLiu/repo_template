@@ -18,31 +18,23 @@ if [ -z "$TOOL_NAME" ]; then
     exit 1
 fi
 
-# ── 0. Pre-init gate ─────────────────────────────────────────────────────────
-# Block mutating tools (Write/Edit/MultiEdit/Bash-that-mutates) until
-# session_state.json exists, UNLESS the command is the init skill itself
-# or a read-only exploration.
+# ── 0. Pre-init gate (FAIL-CLOSED) ───────────────────────────────────────────
+# Before session initialization, use a strict allowlist approach:
+# - Block ALL Write/Edit/MultiEdit operations (no exceptions)
+# - Allow Bash ONLY for the exact init script invocation
+# - After init, delegate to post-init policy gates
 SESSION_STATE="$REPO_ROOT/.claude/session_state.json"
 
 if [ ! -f "$SESSION_STATE" ]; then
     case "$TOOL_NAME" in
         Write|Edit|MultiEdit)
-            # Allow writes to session_state.json itself (init creates it)
-            FILE_PATH="$(echo "$INPUT" | python3 -c "
-import sys, json
-d = json.load(sys.stdin)
-print(d.get('tool_input', {}).get('file_path', ''))
-" 2>/dev/null)"
-            if [ "$FILE_PATH" = "$SESSION_STATE" ]; then
-                # init is writing session state — allow
-                :
-            else
-                echo "BLOCKED: Session not initialized." >&2
-                echo "" >&2
-                echo "  Run /init before making any changes." >&2
-                echo "  Read-only exploration is allowed before init." >&2
-                exit 1
-            fi
+            # Block ALL writes before init - no exceptions
+            # Only the init script (via Bash tool) can create session_state.json
+            echo "BLOCKED: Session not initialized." >&2
+            echo "" >&2
+            echo "  Run /init before making any changes." >&2
+            echo "  Read-only exploration (Read, Glob, Grep) is allowed before init." >&2
+            exit 1
             ;;
         Bash)
             COMMAND="$(echo "$INPUT" | python3 -c "
@@ -50,21 +42,93 @@ import sys, json
 d = json.load(sys.stdin)
 print(d.get('tool_input', {}).get('command', ''))
 " 2>/dev/null)"
-            # Allow: init skill, read-only commands, git read commands
-            # Anchor patterns to start-of-command to prevent injection via chaining
-            if echo "$COMMAND" | grep -qE '^\s*(python3?\s+)?\.claude/skills/(init|common)/'; then
-                :  # init/bootstrap path — allow
-            elif echo "$COMMAND" | grep -qE '^\s*(cat|head|tail|less|ls|tree|find|wc|grep|rg|git\s+(status|log|diff|branch|show|remote)|python3?\s+--version|which|echo|pwd|source)\b'; then
-                :  # read-only — allow
-            else
-                echo "BLOCKED: Session not initialized." >&2
-                echo "" >&2
-                echo "  Run /init before executing mutating commands." >&2
-                echo "  Read-only exploration (ls, cat, git status, etc.) is allowed." >&2
+
+            # Fail closed: if command parsing failed, block
+            if [ -z "$COMMAND" ]; then
+                echo "BLOCKED: Failed to parse Bash command." >&2
+                echo "  This is a safety measure — please report this if it persists." >&2
                 exit 1
             fi
+
+            # ALLOWLIST: Only permit the exact init script invocation
+            # We must validate the ENTIRE command to prevent injection attacks.
+            # Allowed forms:
+            #   python3 .claude/skills/init/scripts/init.py
+            #   python3 .claude/skills/init/scripts/init.py --verbose
+            #   python .claude/skills/init/scripts/init.py
+            #   python .claude/skills/init/scripts/init.py --verbose
+            #
+            # First, reject any command containing shell metacharacters that could
+            # be used for command chaining, injection, or redirection.
+            if echo "$COMMAND" | grep -qE '[;&|<>$`\\]'; then
+                echo "BLOCKED: Shell metacharacters detected in command." >&2
+                echo "  Only the plain init script invocation is allowed before initialization." >&2
+                exit 1
+            fi
+
+            # Now validate against exact allowed patterns (entire command must match)
+            if echo "$COMMAND" | grep -qE '^\s*python3?\s+\.claude/skills/init/scripts/init\.py\s*$'; then
+                # Init script with no arguments - allow
+                exit 0
+            elif echo "$COMMAND" | grep -qE '^\s*python3?\s+\.claude/skills/init/scripts/init\.py\s+--verbose\s*$'; then
+                # Init script with --verbose flag - allow
+                exit 0
+            fi
+
+            # Everything else is blocked before init
+            echo "BLOCKED: Session not initialized." >&2
+            echo "" >&2
+            echo "  Run /init before executing any commands." >&2
+            echo "  Only the init script is allowed before initialization." >&2
+            echo "" >&2
+            echo "  After running /init, you can use:" >&2
+            echo "    - Read, Glob, Grep for exploration" >&2
+            echo "    - Bash for git commands and other operations" >&2
+            echo "    - Write, Edit for making changes" >&2
+            exit 1
             ;;
     esac
+fi
+
+# ── 1. Post-init capability audit gate ───────────────────────────────────────
+# After init, check if capability audit failed
+# If audit failed, block all mutation operations (Write/Edit/Bash)
+# Allow read-only operations (Read/Glob/Grep) to continue
+if [ -f "$SESSION_STATE" ]; then
+    AUDIT_PASSED="$(python3 -c "
+import sys, json
+try:
+    with open('$SESSION_STATE') as f:
+        state = json.load(f)
+    audit = state.get('capability_audit')
+    if audit is None:
+        # No audit recorded - assume pass for backwards compatibility
+        print('true')
+    else:
+        print('true' if audit.get('passed', True) else 'false')
+except:
+    # If we can't read state, fail closed
+    print('false')
+" 2>/dev/null)"
+
+    if [ "$AUDIT_PASSED" = "false" ]; then
+        case "$TOOL_NAME" in
+            Write|Edit|MultiEdit|Bash)
+                echo "BLOCKED: Capability audit failed." >&2
+                echo "" >&2
+                echo "  The session capability audit failed during /init." >&2
+                echo "  Mutation operations are blocked until the audit passes." >&2
+                echo "" >&2
+                echo "  REQUIRED ACTION:" >&2
+                echo "    1. Review the audit failures from /init output" >&2
+                echo "    2. Install missing plugins, skills, or integrations" >&2
+                echo "    3. Re-run /init to pass the audit" >&2
+                echo "" >&2
+                echo "  Read-only operations (Read, Glob, Grep) remain available." >&2
+                exit 1
+                ;;
+        esac
+    fi
 fi
 
 # ── Dispatch to specific gates ────────────────────────────────────────────────

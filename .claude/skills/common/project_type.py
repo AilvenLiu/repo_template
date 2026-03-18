@@ -46,7 +46,15 @@ def _read_project_yml(repo_root: Path) -> Optional[str]:
 
 
 def _heuristic(repo_root: Path) -> Optional[str]:
-    """Walk top-level entries (ignoring infra dirs) for language markers."""
+    """Walk top-level entries (ignoring infra dirs) for language markers.
+
+    Returns:
+        "python", "cpp", or None if no markers found
+
+    Note: When scores are equal, defaults to Python. This can happen in
+    mixed projects (e.g., C++ with Python build scripts). To override,
+    create .ai/project.yml with the correct project_type.
+    """
     python_score = 0
     cpp_score = 0
 
@@ -82,6 +90,9 @@ def _heuristic(repo_root: Path) -> Optional[str]:
 
     if python_score == 0 and cpp_score == 0:
         return None
+
+    # Tie-breaker: favor Python when scores are equal
+    # This handles mixed projects (e.g., C++ with conanfile.py)
     return "python" if python_score >= cpp_score else "cpp"
 
 

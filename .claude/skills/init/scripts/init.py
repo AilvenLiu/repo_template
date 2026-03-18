@@ -16,7 +16,7 @@ import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 
 # ---------------------------------------------------------------------------
@@ -28,6 +28,7 @@ if str(_COMMON_DIR) not in sys.path:
     sys.path.insert(0, str(_COMMON_DIR))
 
 from project_type import ProjectType, detect  # noqa: E402
+from capability_audit import run_audit, print_audit_report, AuditResult  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
@@ -193,8 +194,9 @@ def write_session_state(
     branch: Optional[str],
     loaded_constraints: List[str],
     roadmap_dir: Optional[Path],
+    audit_result: Optional[AuditResult] = None,
 ) -> None:
-    state = {
+    state: Dict[str, Any] = {
         "initialized": True,
         "timestamp": datetime.now().isoformat(),
         "project_type": project_type.value,
@@ -202,6 +204,8 @@ def write_session_state(
         "loaded_constraints": loaded_constraints,
         "active_roadmap": str(roadmap_dir) if roadmap_dir else None,
     }
+    if audit_result is not None:
+        state["capability_audit"] = audit_result.to_dict()
     SESSION_STATE.parent.mkdir(parents=True, exist_ok=True)
     SESSION_STATE.write_text(json.dumps(state, indent=2) + "\n")
 
@@ -226,8 +230,17 @@ def main() -> None:
     ptype = detect(_REPO_ROOT)
     if ptype == ProjectType.UNKNOWN:
         print("[WARN] Could not detect project type — defaulting to python")
+        print("       To fix: create .ai/project.yml with 'project_type: python' or 'project_type: cpp'")
+        print("       Or add project indicators (requirements.txt, CMakeLists.txt, etc.)")
         ptype = ProjectType.PYTHON
-    print(f"[OK] Project type: {ptype.value.upper()}")
+
+    # Check if detection was from config or heuristic
+    yml_path = _REPO_ROOT / ".ai" / "project.yml"
+    if yml_path.exists():
+        print(f"[OK] Project type: {ptype.value.upper()} (from .ai/project.yml)")
+    else:
+        print(f"[OK] Project type: {ptype.value.upper()} (heuristic)")
+        print("       Note: Create .ai/project.yml for deterministic detection")
 
     # 2. Roadmap
     roadmap_dir = find_active_roadmap()
@@ -255,7 +268,18 @@ def main() -> None:
         print(f"[OK] {len(modified)} modified file(s)")
     print()
 
-    # 4. Resolve and load constraints
+    # 4. Run capability audit
+    print(sep)
+    print("CAPABILITY AUDIT")
+    print(sep)
+    print()
+    print("Checking required plugins, skills, and integrations...")
+    print()
+
+    audit_result = run_audit(_REPO_ROOT, is_claude=True, verbose=args.verbose)
+    print_audit_report(audit_result)
+
+    # 5. Resolve and load constraints
     keys = resolve_constraints(ptype, modified, roadmap_dir is not None)
 
     print(sep)
@@ -275,15 +299,49 @@ def main() -> None:
         print(body)
         print()
 
-    # 5. Write session state
-    write_session_state(ptype, branch, loaded, roadmap_dir)
+    # 6. Write session state
+    write_session_state(ptype, branch, loaded, roadmap_dir, audit_result)
 
     print(sep)
     print(f"Total constraints loaded: {len(loaded)}")
     print(sep)
     print()
 
-    # 6. Next steps
+    # 6.5. Fail loudly if audit failed (after writing state)
+    if not audit_result.passed:
+        print("╔" + "═" * 68 + "╗")
+        print("║" + " " * 15 + "⚠️  CAPABILITY AUDIT FAILED  ⚠️" + " " * 16 + "║")
+        print("╚" + "═" * 68 + "╝")
+        print()
+        print("The session is BLOCKED. Mutation operations are disabled.")
+        print()
+        print("REQUIRED ACTION:")
+        print("  1. Review the audit failures above")
+        print("  2. Install missing plugins, skills, or integrations")
+        print("  3. Re-run /init to pass the audit")
+        print()
+        print("Read-only operations (Read, Glob, Grep) remain available for exploration.")
+        print()
+        sys.exit(1)
+
+    # 6.6. Warn loudly if no constraints loaded
+    if len(loaded) == 0:
+        print("╔" + "═" * 68 + "╗")
+        print("║" + " " * 20 + "⚠️  WARNING: NO CONSTRAINTS LOADED  ⚠️" + " " * 9 + "║")
+        print("╚" + "═" * 68 + "╝")
+        print()
+        print("This session will operate WITHOUT coding standards enforcement.")
+        print("This usually means .ai/constraints/ is missing or empty.")
+        print()
+        print("RECOMMENDED:")
+        print("  1. Verify .ai/constraints/ exists and contains .md files")
+        print("  2. If this is a new repo, copy constraints from repo_template")
+        print("  3. Re-run /init after fixing")
+        print()
+        print(sep)
+        print()
+
+    # 7. Next steps
     print("NEXT STEPS:")
     if roadmap_dir:
         print("1. Read roadmap files in authority order:")
@@ -293,6 +351,15 @@ def main() -> None:
         print("2. Proceed with your work following the loaded constraints")
     else:
         print("1. Proceed with your work following the loaded constraints above")
+
+    # Suggest verification if detection was heuristic
+    if not yml_path.exists():
+        print()
+        print("RECOMMENDATION:")
+        print("  Project type was detected heuristically. To verify:")
+        print("  - Check that the loaded constraints match your project")
+        print("  - Run /check-constraints to validate compliance")
+        print("  - Create .ai/project.yml for deterministic detection")
     print()
 
 

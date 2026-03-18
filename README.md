@@ -31,6 +31,11 @@ template-only artifacts, and creates an initial git commit.
 
 ### Documentation Files (Template Pairs)
 
+#### Template-Only Files
+- `AGENTS.md` -- template documentation (explains the architecture)
+- `CLAUDE.md` -- template documentation (references language-specific variants)
+- `CODEX_INTEGRATION.md` -- guide for using this template with Codex/other agents
+
 #### C++/CUDA Variant
 - `AGENTS_CPP.md` -- vendor-neutral agent constraints (becomes `AGENTS.md`)
 - `CLAUDE_CPP.md` -- self-sufficient Claude Code entrypoint (becomes `CLAUDE.md`)
@@ -78,6 +83,16 @@ In a real (non-template) repo, the key entrypoints are:
 
 `CLAUDE.md` and `AGENTS.md` are both first-class, self-sufficient entrypoints.
 Neither is a thin wrapper for the other.
+
+## Vendor-Neutral Support
+
+This template is designed to work with multiple AI agent platforms:
+
+- **Claude Code**: Uses `CLAUDE.md` as entrypoint, loads constraints via `/init` skill
+- **Codex**: Uses `AGENTS.md` as entrypoint, reads constraints directly
+- **Other agents**: Can use either pattern depending on file discovery mechanism
+
+See `CODEX_INTEGRATION.md` for details on using this template with non-Claude agents.
 
 ## License
 

@@ -65,14 +65,15 @@ if echo "$COMMAND" | grep -qE 'git\s+reset\s+--hard'; then
 fi
 
 # ── 3. Direct pip install gate (Python projects only) ────────────────────────
-# Block pip install / pip3 install not wrapped in poetry run
+# Block pip install / pip3 install / python -m pip install not wrapped in poetry run
 if [ "$PROJECT_TYPE" = "python" ] || [ -z "$PROJECT_TYPE" ]; then
-    if echo "$COMMAND" | grep -qE '^\s*(pip|pip3)\s+install'; then
+    if echo "$COMMAND" | grep -qE '^\s*(pip|pip3|python[0-9.]*\s+-m\s+pip)\s+install'; then
         # Allow: poetry run pip install (rare but valid for some tooling)
         if echo "$COMMAND" | grep -q 'poetry run'; then
             exit 0
         fi
-        PKG="$(echo "$COMMAND" | sed -E 's/^\s*pip[0-9]* install //')"
+        # Extract package name (handle both "pip install" and "python -m pip install")
+        PKG="$(echo "$COMMAND" | sed -E 's/^\s*(pip[0-9]*|python[0-9.]*\s+-m\s+pip)\s+install\s+//')"
         echo "BLOCKED: Direct pip install detected." >&2
         echo "" >&2
         echo "  Use the /dependency skill instead:" >&2
