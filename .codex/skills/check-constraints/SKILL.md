@@ -8,5 +8,7 @@ description: Run lightweight policy checks without full pre-commit.
 Run:
 
 ```bash
-python3 .ai/tools/constraints_check.py --project-type auto
+bin/agent-check-constraints
 ```
+
+This command uses repository guardrails and shared `.ai/tools` checks.

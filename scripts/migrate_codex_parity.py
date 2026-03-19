@@ -2,7 +2,7 @@
 """Migrate an existing repository to Codex parity-plus layout.
 
 Usage:
-    python3 scripts/migrate_codex_parity.py /path/to/repo [--force]
+    python3 scripts/migrate_codex_parity.py /path/to/repo [--force] [--backup]
 """
 
 from __future__ import annotations
@@ -11,6 +11,26 @@ import argparse
 import shutil
 from pathlib import Path
 from typing import List, Tuple
+
+
+CLAUDE_MIGRATION_PATHS = [
+    Path(".claude/hooks"),
+    Path(".claude/skills/common"),
+    Path(".claude/skills/init"),
+    Path(".claude/skills/check-constraints"),
+    Path(".claude/skills/pre-commit"),
+    Path(".claude/skills/dependency"),
+]
+
+
+def _should_skip_relpath(rel: Path) -> bool:
+    if any(part == "__pycache__" for part in rel.parts):
+        return True
+    if rel.suffix in {".pyc", ".pyo"}:
+        return True
+    if rel.name in {".DS_Store"}:
+        return True
+    return False
 
 
 def read_project_type(target: Path) -> str:
@@ -33,6 +53,8 @@ def copy_tree(src: Path, dst: Path, force: bool, changed: List[str], skipped: Li
     dst.mkdir(parents=True, exist_ok=True)
     for src_file in src.rglob("*"):
         rel = src_file.relative_to(src)
+        if _should_skip_relpath(rel):
+            continue
         dst_file = dst / rel
         if src_file.is_dir():
             dst_file.mkdir(parents=True, exist_ok=True)
@@ -56,13 +78,15 @@ def copy_file(src: Path, dst: Path, force: bool, changed: List[str], skipped: Li
     changed.append(str(dst))
 
 
-def migrate(source_root: Path, target_root: Path, force: bool) -> Tuple[List[str], List[str]]:
+def migrate(source_root: Path, target_root: Path, force: bool, backup: bool) -> Tuple[List[str], List[str]]:
     changed: List[str] = []
     skipped: List[str] = []
 
     copy_tree(source_root / ".ai" / "tools", target_root / ".ai" / "tools", force, changed, skipped)
     copy_tree(source_root / ".codex", target_root / ".codex", force, changed, skipped)
     copy_tree(source_root / "bin", target_root / "bin", force, changed, skipped)
+    for rel_path in CLAUDE_MIGRATION_PATHS:
+        copy_tree(source_root / rel_path, target_root / rel_path, force, changed, skipped)
 
     project_type = read_project_type(target_root)
     codex_variant = "CODEX_PYTHON.md" if project_type == "python" else "CODEX_CPP.md"
@@ -73,10 +97,10 @@ def migrate(source_root: Path, target_root: Path, force: bool) -> Tuple[List[str
     if target_manifest.exists():
         text = target_manifest.read_text()
         if "platform_requirements:" not in text:
-            backup = target_manifest.with_suffix(".yml.bak")
-            if not backup.exists() or force:
-                shutil.copy2(target_manifest, backup)
-                changed.append(str(backup))
+            backup_path = target_manifest.with_suffix(".yml.bak")
+            if backup and (not backup_path.exists() or force):
+                shutil.copy2(target_manifest, backup_path)
+                changed.append(str(backup_path))
             shutil.copy2(source_root / ".ai" / "capabilities.yml", target_manifest)
             changed.append(str(target_manifest))
     else:
@@ -89,12 +113,17 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Migrate repository to Codex parity-plus layout")
     parser.add_argument("target", nargs="?", default=".", help="Repository to migrate")
     parser.add_argument("--force", action="store_true", help="Overwrite existing files")
+    parser.add_argument(
+        "--backup",
+        action="store_true",
+        help="Create .ai/capabilities.yml.bak before legacy-manifest upgrade",
+    )
     args = parser.parse_args()
 
     source_root = Path(__file__).resolve().parents[1]
     target_root = Path(args.target).resolve()
 
-    changed, skipped = migrate(source_root, target_root, args.force)
+    changed, skipped = migrate(source_root, target_root, args.force, args.backup)
 
     print("Codex parity migration complete.")
     print(f"Changed files: {len(changed)}")
@@ -111,7 +140,8 @@ def main() -> None:
     print("Manual follow-up:")
     print("  1. Run: bin/agent-init --platform codex")
     print("  2. Run: bin/agent-precommit")
-    print("  3. Review AGENTS.md/CLAUDE.md/CODEX.md alignment in your repo")
+    print("  3. If stale behavior persists, re-run migration with --force")
+    print("  4. Review AGENTS.md/CLAUDE.md/CODEX.md alignment in your repo")
 
 
 if __name__ == "__main__":

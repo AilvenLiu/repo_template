@@ -28,7 +28,11 @@ def _assert_common_generated_assets(target: Path) -> None:
     assert (target / ".codex" / "skills" / "init" / "SKILL.md").exists()
     assert (target / "bin" / "agent-init").exists()
     assert (target / "bin" / "agent-precommit").exists()
+    assert (target / "bin" / "agent-check-constraints").exists()
+    assert (target / "bin" / "_agent_common.sh").exists()
     assert (target / "CODEX.md").exists()
+    assert not any(target.rglob("__pycache__"))
+    assert not any(target.rglob("*.pyc"))
 
 
 def _assert_template_only_removed(target: Path) -> None:

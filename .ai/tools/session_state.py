@@ -13,7 +13,7 @@ STATE_RELATIVE_PATHS = (
 
 
 def read_state(repo_root: Path) -> Optional[Dict[str, Any]]:
-    """Read the newest available session state, if present."""
+    """Read the first available state in canonical lookup order."""
     for rel_path in STATE_RELATIVE_PATHS:
         candidate = repo_root / rel_path
         if not candidate.exists():

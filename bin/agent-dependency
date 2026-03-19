@@ -2,7 +2,9 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+# shellcheck source=/dev/null
+source "$SCRIPT_DIR/_agent_common.sh"
+REPO_ROOT="$(agent_repo_root)"
 
 if [[ $# -lt 1 ]]; then
   echo "Usage: bin/agent-dependency add <package> [version] [--dev]" >&2
@@ -19,7 +21,6 @@ if [[ "$SUBCMD" != "add" ]]; then
 fi
 
 RAW_CMD="add $*"
-CONTEXT_JSON="$(python3 -c 'import json,sys; print(json.dumps({"command": sys.argv[1]}))' "$RAW_CMD")"
-python3 "$REPO_ROOT/.ai/tools/policy_gate.py" --op dependency --context "$CONTEXT_JSON"
+run_agent_python "$REPO_ROOT" "$REPO_ROOT/.ai/tools/policy_gate.py" --op dependency --command "$RAW_CMD"
 
-exec python3 "$REPO_ROOT/.claude/skills/dependency/scripts/add.py" "$@"
+run_agent_python "$REPO_ROOT" "$REPO_ROOT/.claude/skills/dependency/scripts/add.py" "$@"

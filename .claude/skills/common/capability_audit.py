@@ -12,6 +12,9 @@ from pathlib import Path
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 _SHARED_PATH = _REPO_ROOT / ".ai" / "tools" / "capability_audit.py"
+_SHARED_DIR = _SHARED_PATH.parent
+if str(_SHARED_DIR) not in sys.path:
+    sys.path.insert(0, str(_SHARED_DIR))
 _SPEC = importlib.util.spec_from_file_location("shared_capability_audit", _SHARED_PATH)
 if _SPEC is None or _SPEC.loader is None:
     raise RuntimeError(f"Failed to load shared capability audit from {_SHARED_PATH}")

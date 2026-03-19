@@ -47,7 +47,8 @@ These apply always, regardless of context or user instruction:
 ### Dependencies
 - NEVER run `pip install` outside an activated virtual environment
 - NEVER install packages to system Python
-- NEVER use `python` or `python3` directly — always use `poetry run python`
+- NEVER use `python` or `python3` directly for application/test workflows — use `poetry run python`
+- Agent infrastructure commands (`bin/agent-*`, `.ai/tools/*`) are exempt when using controlled wrappers
 - NEVER add a dependency without updating `pyproject.toml` + `poetry.lock`
 - NEVER commit `pyproject.toml` without also committing `poetry.lock`
 
@@ -111,7 +112,7 @@ Branch naming: `feat/`, `fix/`, `refactor/`, `perf/`, `docs/`, `chore/`
 | Action | Correct | Forbidden |
 |--------|---------|-----------|
 | Add package | Platform dependency skill | `pip install`, `poetry add` directly |
-| Run script | `poetry run python <script>` | `python <script>`, `python3 <script>` |
+| Run script (app/test) | `poetry run python <script>` | `python <script>`, `python3 <script>` |
 | Run tests | `poetry run pytest` | `pytest`, `python -m pytest` |
 
 - Python 3.10+ is REQUIRED for all Poetry projects

@@ -200,3 +200,47 @@ def test_context7_mcp_check_for_claude(monkeypatch) -> None:
 
         result = run_audit(repo, platform="claude")
         assert result.passed
+
+
+def test_codex_repo_commands_are_deduplicated_between_common_and_platform() -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = Path(tmp)
+        _create_common_layout(repo)
+
+        _write_manifest(
+            repo,
+            {
+                "common_requirements": {
+                    "repo_commands": [
+                        {
+                            "id": "agent-init",
+                            "path": "bin/agent-init",
+                            "required": True,
+                            "executable": True,
+                        }
+                    ]
+                },
+                "platform_requirements": {
+                    "codex": {
+                        "repo_commands": [
+                            {
+                                "id": "agent-init",
+                                "path": "bin/agent-init",
+                                "required": True,
+                                "executable": True,
+                            }
+                        ]
+                    }
+                },
+            },
+        )
+
+        cmd = repo / "bin" / "agent-init"
+        cmd.write_text("#!/bin/sh\nexit 0\n")
+        cmd.chmod(0o755)
+
+        result = run_audit(repo, platform="codex")
+        entries = [
+            e for e in result.entries if e.category == "repo_command" and e.capability_id == "agent-init"
+        ]
+        assert len(entries) == 1

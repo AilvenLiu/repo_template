@@ -5,11 +5,20 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import subprocess
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
+
+Dict = dict
+List = list
+
+try:
+    from .paths import resolve_repo_root
+except ImportError:
+    from paths import resolve_repo_root
 
 
 @dataclass
@@ -78,11 +87,26 @@ def _load_manifest(path: Path) -> Dict[str, Any]:
         loaded = yaml.safe_load(text)
         return loaded if isinstance(loaded, dict) else {}
     except ImportError:
+        if "common_requirements:" in text or "platform_requirements:" in text:
+            raise RuntimeError(
+                "PyYAML is required to parse capabilities manifest v2. "
+                "Install with: pip install pyyaml"
+            )
+        if re.search(r"^\s*[^#\n]+:\s*[>|]", text, re.MULTILINE):
+            print(
+                "[WARN] PyYAML unavailable and manifest contains advanced YAML scalars; "
+                "fallback parser may be incomplete.",
+                file=sys.stderr,
+            )
         return _parse_simple_yaml(text)
 
 
 def _parse_simple_yaml(text: str) -> Dict[str, Any]:
-    """Fallback parser for a subset of YAML used by the manifest."""
+    """Fallback parser for a subset of YAML used by the manifest.
+
+    This parser supports flat list/dict structures only and is intended
+    for constrained legacy compatibility when PyYAML is unavailable.
+    """
     result: Dict[str, Any] = {}
     current_top: Optional[str] = None
     current_list: List[Dict[str, Any]] = []
@@ -176,6 +200,29 @@ def _entry_enabled_for_repo(entry: Dict[str, Any], is_template: bool) -> bool:
     if entry.get("template_only", False) and not is_template:
         return False
     return True
+
+
+def _dedupe_entries_by_id(entries: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Deduplicate manifest entries by id, preferring later overrides."""
+    ordered: List[Dict[str, Any]] = []
+    index_by_id: Dict[str, int] = {}
+
+    for raw_entry in entries:
+        entry = raw_entry if isinstance(raw_entry, dict) else {}
+        entry_id = str(entry.get("id", "")).strip()
+
+        if not entry_id:
+            ordered.append(entry)
+            continue
+
+        existing_idx = index_by_id.get(entry_id)
+        if existing_idx is None:
+            index_by_id[entry_id] = len(ordered)
+            ordered.append(entry)
+        else:
+            ordered[existing_idx] = entry
+
+    return ordered
 
 
 def _audit_project_skills(
@@ -568,7 +615,12 @@ def run_audit(
         result.errors.append(f"Capability manifest not found: {manifest}")
         return result
 
-    raw_manifest = _load_manifest(manifest)
+    try:
+        raw_manifest = _load_manifest(manifest)
+    except Exception as exc:
+        result = AuditResult(passed=False, platform=platform)
+        result.errors.append(f"Failed to parse capability manifest: {exc}")
+        return result
     normalized = _normalize_manifest(raw_manifest)
 
     common = normalized.get("common_requirements", {}) or {}
@@ -580,7 +632,13 @@ def run_audit(
     is_template = _is_template_repo(repo_root)
 
     _audit_project_skills(common.get("project_skills", []), repo_root, is_template, result)
-    _audit_repo_commands(common.get("repo_commands", []), repo_root, is_template, result)
+    repo_commands = _dedupe_entries_by_id(
+        [
+            *common.get("repo_commands", []),
+            *platform_req.get("repo_commands", []),
+        ]
+    )
+    _audit_repo_commands(repo_commands, repo_root, is_template, result)
 
     if platform == "claude":
         _audit_claude_plugins(platform_req.get("claude_plugins", []), result)
@@ -589,7 +647,6 @@ def run_audit(
 
     if platform == "codex":
         _audit_codex_skills(platform_req.get("codex_skills", []), repo_root, is_template, result)
-        _audit_repo_commands(platform_req.get("repo_commands", []), repo_root, is_template, result)
 
     _audit_integrations(common.get("integrations", []), result, platform)
     _audit_integrations(platform_req.get("integrations", []), result, platform)
@@ -640,7 +697,7 @@ def print_audit_report(result: AuditResult) -> None:
 
 
 def _repo_root_from_here() -> Path:
-    return Path(__file__).resolve().parents[2]
+    return resolve_repo_root(Path(__file__).resolve())
 
 
 def main() -> None:

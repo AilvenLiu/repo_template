@@ -20,7 +20,12 @@ def test_migration_script_upgrades_legacy_repo() -> None:
         )
 
         result = subprocess.run(
-            ["python3", str(template_root / "scripts" / "migrate_codex_parity.py"), str(target)],
+            [
+                "python3",
+                str(template_root / "scripts" / "migrate_codex_parity.py"),
+                str(target),
+                "--backup",
+            ],
             capture_output=True,
             text=True,
         )
@@ -29,5 +34,8 @@ def test_migration_script_upgrades_legacy_repo() -> None:
         assert (target / ".ai" / "tools" / "session_init.py").exists()
         assert (target / ".codex" / "skills" / "init" / "SKILL.md").exists()
         assert (target / "bin" / "agent-init").exists()
+        assert (target / ".claude" / "skills" / "pre-commit" / "scripts" / "validate.py").exists()
         assert (target / "CODEX.md").exists()
         assert (target / ".ai" / "capabilities.yml.bak").exists()
+        assert not any(target.rglob("__pycache__"))
+        assert not any(target.rglob("*.pyc"))

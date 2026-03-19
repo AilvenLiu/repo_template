@@ -39,7 +39,10 @@ class PreCommitManager:
         return detect_project_type(self.repo_root)
 
     def run_command(
-        self, cmd: List[str], cwd: Optional[Path] = None
+        self,
+        cmd: List[str],
+        cwd: Optional[Path] = None,
+        timeout: int = 300,
     ) -> Tuple[int, str, str]:
         """Run a command and return exit code, stdout, stderr."""
         try:
@@ -48,11 +51,11 @@ class PreCommitManager:
                 cwd=cwd or self.repo_root,
                 capture_output=True,
                 text=True,
-                timeout=300,  # 5 minute timeout
+                timeout=timeout,
             )
             return result.returncode, result.stdout, result.stderr
         except subprocess.TimeoutExpired:
-            return 1, "", "Command timed out after 5 minutes"
+            return 1, "", f"Command timed out after {timeout // 60} minutes"
         except FileNotFoundError:
             return 1, "", f"Command not found: {cmd[0]}"
         except Exception as e:
@@ -70,13 +73,46 @@ class PreCommitManager:
             python_files.extend(self.repo_root.glob(pattern))
 
         # Filter out common exclusions
-        exclusions = {".venv", "venv", "__pycache__", ".git", "build", "dist"}
+        exclusions = {
+            ".venv",
+            "venv",
+            "__pycache__",
+            ".git",
+            "build",
+            "dist",
+            ".claude",
+            ".codex",
+            ".ai",
+            "agent_roadmaps",
+        }
         filtered = []
         for file in python_files:
             if not any(excl in file.parts for excl in exclusions):
                 filtered.append(file)
 
-        return filtered
+        return sorted(filtered)
+
+    def find_mypy_targets(self) -> List[str]:
+        """Find conservative mypy targets to avoid duplicate-module layout issues."""
+        targets: List[str] = []
+
+        for candidate in ["src", "tests"]:
+            path = self.repo_root / candidate
+            if path.exists():
+                targets.append(candidate)
+
+        if targets:
+            return targets
+
+        top_level_py = [
+            file.name
+            for file in self.find_python_files()
+            if file.parent == self.repo_root
+        ]
+        if top_level_py:
+            return sorted(top_level_py)
+
+        return ["."]
 
     def find_cpp_files(self) -> List[Path]:
         """Find all C++/CUDA files in the repository."""

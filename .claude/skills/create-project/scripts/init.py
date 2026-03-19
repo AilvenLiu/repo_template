@@ -49,6 +49,7 @@ _FILE_MAP = {
 
 # Directories to copy verbatim
 _COPY_DIRS = [".ai", ".claude", ".codex", "agent_roadmaps", "bin", "scripts"]
+_COPY_IGNORE = shutil.ignore_patterns("__pycache__", "*.pyc", "*.pyo", ".DS_Store")
 
 # Template-only files that must NOT appear in real repos
 _TEMPLATE_ONLY = {
@@ -73,7 +74,12 @@ def create_project(template_root: Path, target_dir: Path, project_type: str) -> 
         src = template_root / dirname
         if src.is_dir():
             print(f"[{step}] Copying {dirname}/...")
-            shutil.copytree(src, target_dir / dirname, dirs_exist_ok=True)
+            shutil.copytree(
+                src,
+                target_dir / dirname,
+                dirs_exist_ok=True,
+                ignore=_COPY_IGNORE,
+            )
             step += 1
 
     # 2. Copy and rename language-specific files

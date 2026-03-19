@@ -2,7 +2,9 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+# shellcheck source=/dev/null
+source "$SCRIPT_DIR/_agent_common.sh"
+REPO_ROOT="$(agent_repo_root)"
 
 PLATFORM="codex"
 ARGS=()
@@ -21,7 +23,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ ${#ARGS[@]} -gt 0 ]]; then
-  exec python3 "$REPO_ROOT/.ai/tools/session_init.py" --platform "$PLATFORM" "${ARGS[@]}"
+  run_agent_python "$REPO_ROOT" "$REPO_ROOT/.ai/tools/session_init.py" --platform "$PLATFORM" "${ARGS[@]}"
 else
-  exec python3 "$REPO_ROOT/.ai/tools/session_init.py" --platform "$PLATFORM"
+  run_agent_python "$REPO_ROOT" "$REPO_ROOT/.ai/tools/session_init.py" --platform "$PLATFORM"
 fi

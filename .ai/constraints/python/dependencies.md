@@ -85,7 +85,8 @@ Option 3: Download from python.org
 - **MANDATORY**: Poetry MUST create virtual environments inside the project directory (`.venv`)
 - **NEVER** install packages globally
 - **NEVER** use `pip install` directly without Poetry or activated venv
-- **NEVER** use raw `python` or `python3` commands - always use `poetry run`
+- **NEVER** use raw `python` or `python3` commands for application/test workflows - use `poetry run`
+- Agent infrastructure wrappers (`bin/agent-*`, `.ai/tools/*`) may use controlled interpreter fallback
 
 **Poetry Virtual Environment Configuration:**
 
@@ -175,6 +176,9 @@ pip install requests                # WRONG - installs to system Python
 poetry run python script.py         # CORRECT
 poetry run pytest                   # CORRECT
 poetry add requests                 # CORRECT
+
+# EXCEPTION: Agent infrastructure wrappers (controlled runtime)
+bin/agent-init --platform codex     # CORRECT
 ```
 
 ## 2. Poetry Project Structure

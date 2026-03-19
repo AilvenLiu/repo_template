@@ -11,7 +11,14 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import List
 
-from project_type import ProjectType, detect
+try:
+    from .constants import PROTECTED_BRANCHES, PROTECTED_PREFIXES
+    from .paths import resolve_repo_root
+    from .project_type import ProjectType, detect
+except ImportError:
+    from constants import PROTECTED_BRANCHES, PROTECTED_PREFIXES
+    from paths import resolve_repo_root
+    from project_type import ProjectType, detect
 
 
 @dataclass
@@ -40,10 +47,8 @@ def _current_branch(repo_root: Path) -> str:
 
 
 def _is_protected_branch(branch: str) -> bool:
-    return (
-        branch in {"master", "main", "develop"}
-        or branch.startswith("release/")
-        or branch.startswith("hotfix/")
+    return branch in PROTECTED_BRANCHES or any(
+        branch.startswith(prefix) for prefix in PROTECTED_PREFIXES
     )
 
 
@@ -146,9 +151,7 @@ def main() -> None:
     parser.add_argument("--changed-files", nargs="*", default=[])
     args = parser.parse_args()
 
-    del args.changed_files  # reserved for future fine-grained checks
-
-    repo_root = Path(__file__).resolve().parents[2]
+    repo_root = resolve_repo_root(Path(__file__).resolve())
     if args.project_type == "auto":
         project_type = detect(repo_root)
     else:

@@ -62,6 +62,11 @@ common_requirements:
       required: true
       executable: true
 
+    - id: agent-check-constraints
+      path: bin/agent-check-constraints
+      required: true
+      executable: true
+
 platform_requirements:
   claude:
     claude_plugins:
@@ -159,6 +164,9 @@ platform_requirements:
       - id: context7-mcp
         required: true
         check: mcp
+        notes: >
+          Primary method: claude plugin install context7@claude-plugins-official
+          Fallback: claude mcp add --transport http context7 https://mcp.context7.com/mcp --header "CONTEXT7_API_KEY: <key>"
 
   codex:
     codex_skills:
@@ -198,5 +206,10 @@ platform_requirements:
 
       - id: agent-commit
         path: bin/agent-commit
+        required: true
+        executable: true
+
+      - id: agent-check-constraints
+        path: bin/agent-check-constraints
         required: true
         executable: true

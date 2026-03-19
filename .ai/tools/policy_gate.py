@@ -11,16 +11,20 @@ import sys
 from pathlib import Path
 from typing import Dict, Tuple
 
-from project_type import ProjectType, detect
-from session_state import read_state
-
-
-PROTECTED_BRANCHES = {"master", "main", "develop"}
-PROTECTED_PREFIXES = ("release/", "hotfix/")
+try:
+    from .constants import PROTECTED_BRANCHES, PROTECTED_PREFIXES
+    from .paths import resolve_repo_root
+    from .project_type import ProjectType, detect
+    from .session_state import read_state
+except ImportError:
+    from constants import PROTECTED_BRANCHES, PROTECTED_PREFIXES
+    from paths import resolve_repo_root
+    from project_type import ProjectType, detect
+    from session_state import read_state
 
 
 def _repo_root() -> Path:
-    return Path(__file__).resolve().parents[2]
+    return resolve_repo_root(Path(__file__).resolve())
 
 
 def _load_context(raw: str) -> Dict[str, str]:
@@ -68,11 +72,9 @@ def _is_init_command(command: str) -> bool:
     return any(re.match(pattern, command) for pattern in patterns)
 
 
-def _session_gate(repo_root: Path, allow_pre_init: bool = False) -> Tuple[bool, str]:
+def _session_gate(repo_root: Path) -> Tuple[bool, str]:
     state = read_state(repo_root)
     if state is None:
-        if allow_pre_init:
-            return True, ""
         return False, "BLOCKED: Session not initialized. Run /init or bin/agent-init first."
 
     if not state.get("initialized", False):
@@ -107,13 +109,13 @@ def _check_bash_command(command: str, project_type: ProjectType, repo_root: Path
                 return False, "BLOCKED: Direct pip install is forbidden. Use dependency workflow."
 
         if re.search(r"^\s*(python|python3)\s+", command):
-            if re.search(r"\.claude/skills/|\.claude/hooks/", command):
+            if re.search(r"\.claude/skills/|\.claude/hooks/|\.ai/tools/", command):
                 return True, ""
             if "poetry run" in command:
                 return True, ""
             if re.search(r"python[0-9.]*\s+(-V|--version)", command):
                 return True, ""
-            return False, "BLOCKED: Direct python/python3 execution is forbidden. Use poetry run."
+            return False, "BLOCKED: Direct python/python3 execution is forbidden for app workflows."
 
     if re.search(r"^\s*(sudo\s+)?(apt|apt-get)\s+install", command):
         if re.search(r"lib[a-z]+-dev|libboost|libopencv|libeigen|libfmt|libspdlog|libgtest", command):
@@ -190,15 +192,36 @@ def gate_dependency(repo_root: Path, context: Dict[str, str]) -> Tuple[bool, str
     return True, ""
 
 
+def _build_context(args: argparse.Namespace) -> Dict[str, str]:
+    context = _load_context(args.context)
+
+    if args.context_file:
+        file_context = _load_context(Path(args.context_file).read_text())
+        context.update(file_context)
+
+    if args.command is not None:
+        context["command"] = args.command
+    if args.message is not None:
+        context["message"] = args.message
+    if args.branch is not None:
+        context["branch"] = args.branch
+
+    return context
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Shared policy gate")
     parser.add_argument("--op", choices=["mutate", "bash", "commit", "dependency"], required=True)
     parser.add_argument("--context", default="{}", help="JSON context payload")
+    parser.add_argument("--context-file", help="Path to JSON context payload")
+    parser.add_argument("--command", help="Command context (alternative to JSON)")
+    parser.add_argument("--message", help="Commit message context (alternative to JSON)")
+    parser.add_argument("--branch", help="Branch context (alternative to JSON)")
     parser.add_argument("--json", action="store_true", help="Emit JSON response")
     args = parser.parse_args()
 
     repo_root = _repo_root()
-    context = _load_context(args.context)
+    context = _build_context(args)
 
     if args.op == "mutate":
         allowed, message = gate_mutate(repo_root, context)

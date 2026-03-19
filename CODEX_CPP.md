@@ -13,10 +13,10 @@ If initialization or capability audit fails, mutation work is blocked.
 ## Required Workflow Commands
 
 - Init: `bin/agent-init --platform codex`
-- Constraint check: `python3 .ai/tools/constraints_check.py --project-type auto`
+- Constraint check: `bin/agent-check-constraints`
 - Pre-commit validation: `bin/agent-precommit`
 - Dependency add: `bin/agent-dependency add <package> [version]`
-- Commit with policy guard: `bin/agent-commit -m "type(scope): description" [files ...]`
+- Commit with policy guard: `bin/agent-commit -m "type(scope): description" <file1> [file2 ...]`
 
 ## Absolute Prohibitions
 

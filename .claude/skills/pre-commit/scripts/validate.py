@@ -23,15 +23,27 @@ def validate_python(manager: PreCommitManager) -> List[ValidationResult]:
     """Run Python validation checks."""
     results = []
 
-    # CRITICAL: Check for virtual environment (dependency management)
+    # CRITICAL: Check for managed Python environment (Poetry or local venv)
     venv_paths = [".venv", "venv", ".virtualenv"]
     venv_exists = any((manager.repo_root / venv).exists() for venv in venv_paths)
+    poetry_lock = manager.repo_root / "poetry.lock"
+    pyproject = manager.repo_root / "pyproject.toml"
+    poetry_managed = pyproject.exists() and poetry_lock.exists()
 
-    if venv_exists:
+    if poetry_managed:
+        results.append(
+            ValidationResult(
+                "python environment",
+                True,
+                "Poetry-managed environment detected (pyproject.toml + poetry.lock)",
+                "",
+            )
+        )
+    elif venv_exists:
         venv_name = next(venv for venv in venv_paths if (manager.repo_root / venv).exists())
         results.append(
             ValidationResult(
-                "virtual environment",
+                "python environment",
                 True,
                 f"Found virtual environment: {venv_name}",
                 "",
@@ -40,105 +52,148 @@ def validate_python(manager: PreCommitManager) -> List[ValidationResult]:
     else:
         results.append(
             ValidationResult(
-                "virtual environment",
+                "python environment",
                 False,
                 "",
-                "No virtual environment found. Create with: python3 -m venv .venv\n"
-                "CRITICAL: NEVER install packages globally or to system Python.",
+                "No Poetry lockfile or local virtual environment found.\n"
+                "Use Poetry (`poetry install`) or create `.venv` before validating.",
             )
         )
 
-    # Check for requirements.txt (dependency management)
+    # Check for dependency manifest
     requirements_file = manager.repo_root / "requirements.txt"
-    if requirements_file.exists():
+    if poetry_managed or requirements_file.exists():
+        detail = (
+            "Poetry lockfile exists"
+            if poetry_managed
+            else "requirements.txt exists"
+        )
         results.append(
             ValidationResult(
-                "requirements.txt",
+                "dependency manifest",
                 True,
-                "requirements.txt exists",
+                detail,
                 "",
             )
         )
     else:
         results.append(
             ValidationResult(
-                "requirements.txt",
+                "dependency manifest",
                 False,
                 "",
-                "requirements.txt not found. Create it to track dependencies.",
+                "No dependency manifest found. Use Poetry (`poetry add` + `poetry lock`) "
+                "or provide requirements.txt.",
             )
         )
+
+    python_files = manager.find_python_files()
+    file_args = [str(file.relative_to(manager.repo_root)) for file in python_files]
 
     # Check for black (formatter)
     if manager.check_tool_available("black"):
-        returncode, stdout, stderr = manager.run_command(
-            ["black", "--check", "--diff", "."]
-        )
-        results.append(
-            ValidationResult(
-                "black (formatter)",
-                returncode == 0,
-                stdout,
-                stderr,
+        if file_args:
+            returncode, stdout, stderr = manager.run_command(
+                ["black", "--check", "--diff"] + file_args
             )
-        )
+            results.append(
+                ValidationResult(
+                    "black (formatter)",
+                    returncode == 0,
+                    stdout,
+                    stderr,
+                )
+            )
+        else:
+            results.append(
+                ValidationResult(
+                    "black (formatter)",
+                    True,
+                    "No project Python files found",
+                    "",
+                )
+            )
     else:
         results.append(
             ValidationResult(
                 "black (formatter)",
                 False,
                 "",
-                "black not installed. Install with: pip install black",
+                "black not installed. Install with: poetry add --group dev black",
             )
         )
 
     # Check for isort (import sorter)
     if manager.check_tool_available("isort"):
-        returncode, stdout, stderr = manager.run_command(
-            ["isort", "--check-only", "--diff", "."]
-        )
-        results.append(
-            ValidationResult(
-                "isort (import sorter)",
-                returncode == 0,
-                stdout,
-                stderr,
+        if file_args:
+            returncode, stdout, stderr = manager.run_command(
+                ["isort", "--check-only", "--diff"] + file_args
             )
-        )
+            results.append(
+                ValidationResult(
+                    "isort (import sorter)",
+                    returncode == 0,
+                    stdout,
+                    stderr,
+                )
+            )
+        else:
+            results.append(
+                ValidationResult(
+                    "isort (import sorter)",
+                    True,
+                    "No project Python files found",
+                    "",
+                )
+            )
     else:
         results.append(
             ValidationResult(
                 "isort (import sorter)",
                 False,
                 "",
-                "isort not installed. Install with: pip install isort",
+                "isort not installed. Install with: poetry add --group dev isort",
             )
         )
 
     # Check for ruff (linter)
     if manager.check_tool_available("ruff"):
-        returncode, stdout, stderr = manager.run_command(["ruff", "check", "."])
-        results.append(
-            ValidationResult(
-                "ruff (linter)",
-                returncode == 0,
-                stdout,
-                stderr,
+        if file_args:
+            returncode, stdout, stderr = manager.run_command(["ruff", "check"] + file_args)
+            results.append(
+                ValidationResult(
+                    "ruff (linter)",
+                    returncode == 0,
+                    stdout,
+                    stderr,
+                )
             )
-        )
+        else:
+            results.append(
+                ValidationResult(
+                    "ruff (linter)",
+                    True,
+                    "No project Python files found",
+                    "",
+                )
+            )
     else:
         results.append(
             ValidationResult(
                 "ruff (linter)",
                 False,
                 "",
-                "ruff not installed. Install with: pip install ruff",
+                "ruff not installed. Install with: poetry add --group dev ruff",
             )
         )
 
     # Check for mypy (type checker)
     if manager.check_tool_available("mypy"):
-        returncode, stdout, stderr = manager.run_command(["mypy", "."])
+        mypy_cmd = ["mypy"]
+        mypy_targets = manager.find_mypy_targets()
+        if (manager.repo_root / "src").exists():
+            mypy_cmd.append("--explicit-package-bases")
+        returncode, stdout, stderr = manager.run_command(mypy_cmd + mypy_targets)
         results.append(
             ValidationResult(
                 "mypy (type checker)",
@@ -153,14 +208,15 @@ def validate_python(manager: PreCommitManager) -> List[ValidationResult]:
                 "mypy (type checker)",
                 False,
                 "",
-                "mypy not installed. Install with: pip install mypy",
+                "mypy not installed. Install with: poetry add --group dev mypy",
             )
         )
 
     # Run pytest
     if manager.check_tool_available("pytest"):
         returncode, stdout, stderr = manager.run_command(
-            ["pytest", "--tb=short", "-v"]
+            ["pytest", "--tb=short", "-q", "-x"],
+            timeout=600,
         )
         results.append(
             ValidationResult(
@@ -176,7 +232,7 @@ def validate_python(manager: PreCommitManager) -> List[ValidationResult]:
                 "pytest (tests)",
                 False,
                 "",
-                "pytest not installed. Install with: pip install pytest",
+                "pytest not installed. Install with: poetry add --group dev pytest",
             )
         )
 

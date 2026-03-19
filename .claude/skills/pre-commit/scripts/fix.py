@@ -14,11 +14,17 @@ def fix_python_formatting(manager: PreCommitManager) -> None:
     """Auto-fix Python formatting issues."""
     print("Fixing Python formatting...")
     print("-" * 50)
+    python_files = manager.find_python_files()
+    file_args = [str(file.relative_to(manager.repo_root)) for file in python_files]
+
+    if not file_args:
+        print("No project Python files found")
+        return
 
     # Run black
     if manager.check_tool_available("black"):
         print("Running black...")
-        returncode, stdout, stderr = manager.run_command(["black", "."])
+        returncode, stdout, stderr = manager.run_command(["black"] + file_args)
         if returncode == 0:
             print("[OK] black formatting applied")
         else:
@@ -29,7 +35,7 @@ def fix_python_formatting(manager: PreCommitManager) -> None:
     # Run isort
     if manager.check_tool_available("isort"):
         print("Running isort...")
-        returncode, stdout, stderr = manager.run_command(["isort", "."])
+        returncode, stdout, stderr = manager.run_command(["isort"] + file_args)
         if returncode == 0:
             print("[OK] isort applied")
         else:

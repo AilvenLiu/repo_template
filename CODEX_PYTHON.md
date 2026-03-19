@@ -13,16 +13,17 @@ If initialization or capability audit fails, mutation work is blocked.
 ## Required Workflow Commands
 
 - Init: `bin/agent-init --platform codex`
-- Constraint check: `python3 .ai/tools/constraints_check.py --project-type auto`
+- Constraint check: `bin/agent-check-constraints`
 - Pre-commit validation: `bin/agent-precommit`
 - Dependency add: `bin/agent-dependency add <package> [version] [--dev]`
-- Commit with policy guard: `bin/agent-commit -m "type(scope): description" [files ...]`
+- Commit with policy guard: `bin/agent-commit -m "type(scope): description" <file1> [file2 ...]`
 
 ## Absolute Prohibitions
 
 - Never commit directly to `master`, `main`, `develop`, `release/*`, `hotfix/*`
 - Never use direct `pip install` in project workflows
-- Never run `python`/`python3` directly for project tasks; use Poetry flows
+- Never run `python`/`python3` directly for application/test workflows
+- Use `bin/agent-*` commands for agent infrastructure workflows
 - Never include AI attribution in commit messages
 - Never bypass failed capability audit
 

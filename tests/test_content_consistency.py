@@ -19,3 +19,9 @@ def test_codex_entrypoint_files_exist() -> None:
     assert (root / "CODEX_PYTHON.md").exists()
     assert (root / "CODEX_CPP.md").exists()
     assert (root / "CODEX.md").exists()
+
+
+def test_codex_check_constraints_skill_uses_wrapper() -> None:
+    root = Path(__file__).parent.parent
+    skill = (root / ".codex" / "skills" / "check-constraints" / "SKILL.md").read_text()
+    assert "bin/agent-check-constraints" in skill

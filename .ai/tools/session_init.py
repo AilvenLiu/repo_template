@@ -4,24 +4,28 @@
 from __future__ import annotations
 
 import argparse
-import json
 import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from capability_audit import AuditResult, print_audit_report, run_audit
-from project_type import ProjectType, detect
-from session_state import write_state
-
-
-PROTECTED_BRANCHES = {"master", "main", "develop"}
-PROTECTED_PREFIXES = ("release/", "hotfix/")
+try:
+    from .capability_audit import AuditResult, print_audit_report, run_audit
+    from .constants import PROTECTED_BRANCHES, PROTECTED_PREFIXES
+    from .paths import resolve_repo_root
+    from .project_type import ProjectType, detect
+    from .session_state import write_state
+except ImportError:
+    from capability_audit import AuditResult, print_audit_report, run_audit
+    from constants import PROTECTED_BRANCHES, PROTECTED_PREFIXES
+    from paths import resolve_repo_root
+    from project_type import ProjectType, detect
+    from session_state import write_state
 
 
 def _repo_root() -> Path:
-    return Path(__file__).resolve().parents[2]
+    return resolve_repo_root(Path(__file__).resolve())
 
 
 def git_current_branch(repo_root: Path) -> Optional[str]:
