@@ -67,6 +67,9 @@ The above is blocked by stage 1 (detects `&`).
 | `brew install <non-toolchain>` | BLOCK | Enforces Conan for C++ libraries |
 | `rm -rf src/lib/include/tests/.claude` | BLOCK | Protects source and config |
 
+`bash_gate.sh` delegates policy decisions to `.ai/tools/policy_gate.py --op bash`,
+so Codex and Claude enforce the same command-level policy.
+
 ### write_gate.sh
 
 | Trigger | Action | Reason |
@@ -74,6 +77,9 @@ The above is blocked by stage 1 (detects `&`).
 | Write to `agent_roadmaps/*/INVARIANTS.md` | BLOCK | Highest-authority document |
 | Write to `.git/` | BLOCK | Git internals must not be modified directly |
 | Write to `.claude/settings.json` | WARN | Changes affect enforcement itself |
+
+`write_gate.sh` uses `.ai/tools/policy_gate.py --op mutate` for shared init/audit
+gating, then applies write-specific file protections.
 
 ## Design Principles
 

@@ -12,13 +12,10 @@
 
 ### 1.2 Required Testing Tools
 ```bash
-# Install testing dependencies
-pip install pytest pytest-cov pytest-mock
-
-# Or add to requirements-dev.txt
-pytest>=7.3.0,<8.0.0
-pytest-cov>=4.0.0
-pytest-mock>=3.10.0
+# Use repository dependency workflow (preferred)
+bin/agent-dependency add pytest --dev
+bin/agent-dependency add pytest-cov --dev
+bin/agent-dependency add pytest-mock --dev
 ```
 
 ## 2. Test Organization

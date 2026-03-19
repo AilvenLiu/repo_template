@@ -1,0 +1,273 @@
+#!/usr/bin/env python3
+"""Cross-platform session initialization for Claude and Codex."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import subprocess
+import sys
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+from capability_audit import AuditResult, print_audit_report, run_audit
+from project_type import ProjectType, detect
+from session_state import write_state
+
+
+PROTECTED_BRANCHES = {"master", "main", "develop"}
+PROTECTED_PREFIXES = ("release/", "hotfix/")
+
+
+def _repo_root() -> Path:
+    return Path(__file__).resolve().parents[2]
+
+
+def git_current_branch(repo_root: Path) -> Optional[str]:
+    try:
+        result = subprocess.run(
+            ["git", "branch", "--show-current"],
+            capture_output=True,
+            text=True,
+            cwd=repo_root,
+        )
+    except FileNotFoundError:
+        return None
+
+    return result.stdout.strip() if result.returncode == 0 else None
+
+
+def git_modified_files(repo_root: Path) -> List[str]:
+    try:
+        result = subprocess.run(
+            ["git", "diff", "--name-only", "HEAD"],
+            capture_output=True,
+            text=True,
+            cwd=repo_root,
+        )
+    except FileNotFoundError:
+        return []
+
+    if result.returncode != 0:
+        return []
+
+    return [line for line in result.stdout.splitlines() if line.strip()]
+
+
+def find_active_roadmap(repo_root: Path) -> Optional[Path]:
+    roadmaps_dir = repo_root / "agent_roadmaps"
+    if not roadmaps_dir.is_dir():
+        return None
+
+    for child in roadmaps_dir.iterdir():
+        if not child.is_dir():
+            continue
+        roadmap = child / "roadmap.yml"
+        if not roadmap.exists():
+            continue
+        try:
+            content = roadmap.read_text()
+        except OSError:
+            continue
+        if "status: active" in content or "status: in_progress" in content:
+            return child
+    return None
+
+
+_ALWAYS_COMMON = [
+    "common/git-workflow",
+    "common/session-discipline",
+    "common/mcp-integration",
+    "common/ascii-only",
+]
+_ALWAYS_PYTHON = [
+    "python/dependencies",
+    "python/forbidden-practices",
+    "python/security",
+    "python/error-handling",
+]
+_ALWAYS_CPP = [
+    "cpp/dependencies",
+    "cpp/forbidden-practices",
+    "cpp/error-handling",
+    "cpp/static-analysis",
+]
+
+_PYTHON_TRIGGERS = {
+    ".py": ["python/formatting", "python/type-checking"],
+}
+_CPP_TRIGGERS = {
+    ".cpp": ["cpp/formatting", "cpp/memory-safety"],
+    ".hpp": ["cpp/formatting", "cpp/memory-safety"],
+    ".cu": ["cpp/cuda"],
+    ".cuh": ["cpp/cuda"],
+}
+
+
+def resolve_constraints(
+    project_type: ProjectType,
+    modified_files: List[str],
+    has_roadmap: bool,
+) -> List[str]:
+    keys = list(_ALWAYS_COMMON)
+    if has_roadmap:
+        keys.append("common/roadmap-awareness")
+
+    if project_type == ProjectType.PYTHON:
+        keys.extend(_ALWAYS_PYTHON)
+        exts_seen = {Path(path).suffix for path in modified_files}
+        for ext, extra in _PYTHON_TRIGGERS.items():
+            if ext in exts_seen:
+                keys.extend(extra)
+        if any("test" in path.lower() for path in modified_files):
+            keys.append("python/testing")
+    elif project_type == ProjectType.CPP:
+        keys.extend(_ALWAYS_CPP)
+        exts_seen = {Path(path).suffix for path in modified_files}
+        for ext, extra in _CPP_TRIGGERS.items():
+            if ext in exts_seen:
+                keys.extend(extra)
+        if any("cmake" in path.lower() for path in modified_files):
+            keys.append("cpp/cmake")
+        if any("test" in path.lower() for path in modified_files):
+            keys.append("cpp/testing")
+
+    deduped: List[str] = []
+    seen = set()
+    for key in keys:
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped.append(key)
+    return deduped
+
+
+def load_constraint(repo_root: Path, key: str) -> Optional[str]:
+    path = repo_root / ".ai" / "constraints" / f"{key}.md"
+    if not path.exists():
+        return None
+    try:
+        return path.read_text()
+    except OSError:
+        return None
+
+
+def write_session_state(
+    repo_root: Path,
+    platform: str,
+    project_type: ProjectType,
+    branch: Optional[str],
+    loaded_constraints: List[str],
+    roadmap_dir: Optional[Path],
+    audit_result: AuditResult,
+) -> None:
+    payload: Dict[str, Any] = {
+        "initialized": True,
+        "timestamp": datetime.now().isoformat(),
+        "platform": platform,
+        "project_type": project_type.value,
+        "branch": branch,
+        "loaded_constraints": loaded_constraints,
+        "active_roadmap": str(roadmap_dir) if roadmap_dir else None,
+        "capability_audit": audit_result.to_dict(),
+    }
+    write_state(repo_root, payload)
+
+
+def run_init(platform: str, verbose: bool = False) -> int:
+    repo_root = _repo_root()
+
+    separator = "=" * 70
+    print(separator)
+    print("SESSION INITIALIZATION")
+    print(separator)
+
+    project_type = detect(repo_root)
+    if project_type == ProjectType.UNKNOWN:
+        print("[WARN] Unable to detect project type. Defaulting to python.")
+        project_type = ProjectType.PYTHON
+
+    project_yml = repo_root / ".ai" / "project.yml"
+    source = ".ai/project.yml" if project_yml.exists() else "heuristic"
+    print(f"[OK] Project type: {project_type.value.upper()} ({source})")
+
+    roadmap_dir = find_active_roadmap(repo_root)
+    if roadmap_dir:
+        print(f"[OK] Active roadmap: {roadmap_dir.name}")
+    else:
+        print("[--] No active roadmap")
+
+    branch = git_current_branch(repo_root)
+    if branch:
+        if branch in PROTECTED_BRANCHES or any(branch.startswith(p) for p in PROTECTED_PREFIXES):
+            print(f"[WARN] Branch: {branch} (protected)")
+        else:
+            print(f"[OK] Branch: {branch}")
+
+    modified = git_modified_files(repo_root)
+    if modified:
+        print(f"[OK] {len(modified)} modified file(s)")
+
+    print()
+    print(separator)
+    print("CAPABILITY AUDIT")
+    print(separator)
+
+    audit_result = run_audit(repo_root, platform=platform, verbose=False)
+    print_audit_report(audit_result)
+
+    keys = resolve_constraints(project_type, modified, roadmap_dir is not None)
+    loaded: List[str] = []
+
+    print(separator)
+    print("LOADED CONSTRAINTS")
+    print(separator)
+
+    for key in keys:
+        body = load_constraint(repo_root, key)
+        if body is None:
+            print(f"[MISS] {key}")
+            continue
+        loaded.append(key)
+        if verbose:
+            print(f"[CONSTRAINT] {key}")
+            print(body)
+            print()
+        else:
+            print(f"[OK] {key}")
+
+    write_session_state(
+        repo_root=repo_root,
+        platform=platform,
+        project_type=project_type,
+        branch=branch,
+        loaded_constraints=loaded,
+        roadmap_dir=roadmap_dir,
+        audit_result=audit_result,
+    )
+
+    print()
+    print(separator)
+    print(f"Total constraints loaded: {len(loaded)}")
+    print(separator)
+
+    if not audit_result.passed:
+        print("Session is BLOCKED due to failed capability audit.")
+        return 1
+
+    return 0
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Cross-platform session init")
+    parser.add_argument("--platform", choices=["claude", "codex"], default="codex")
+    parser.add_argument("--verbose", action="store_true")
+    args = parser.parse_args()
+
+    code = run_init(platform=args.platform, verbose=args.verbose)
+    sys.exit(code)
+
+
+if __name__ == "__main__":
+    main()

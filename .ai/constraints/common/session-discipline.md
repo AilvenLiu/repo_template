@@ -118,7 +118,8 @@ The agent MUST:
 
 **At the beginning of EVERY session, the agent MUST:**
 
-1. Run the platform's session initialization procedure (e.g., `/init` for Claude Code)
+1. Run the platform's session initialization procedure
+   (e.g., `/init` for Claude Code, `bin/agent-init --platform codex` for Codex)
    - This loads project constraints
    - Detects project type
    - Runs capability audit (verifies required plugins/skills/integrations)
@@ -148,31 +149,22 @@ required plugins, skills, and integrations are available. The audit reads
 - External integrations (e.g., Context7 MCP server health)
 
 If the audit fails, the session is locked down until missing capabilities are
-installed and the initialization is re-run. Non-Claude agents should report
-missing capabilities and may continue with partial functionality where
-constraints allow.
+installed and the initialization is re-run.
 
-**Claude Code bootstrap commands (mandatory when missing):**
+**Platform bootstrap commands (mandatory when missing):**
 
-When Claude Code reports missing required capabilities, the session MUST remain
-blocked until the missing items are installed. The canonical bootstrap commands
-for this repository are:
+When capability audit reports missing required capabilities, the session MUST
+remain blocked until those capabilities are installed.
 
-```bash
-claude plugin install frontend-design@claude-plugins-official
-claude plugin marketplace add tanweai/pua
-claude plugin install pua@pua-skills
-claude mcp add --transport http context7 https://mcp.context7.com/mcp \
-  --header "CONTEXT7_API_KEY: ctx7sk-0eaf81b0-48fa-418f-9e7f-181103e50665"
-```
+Bootstrap commands are platform-specific:
+- Claude workflows: see `CLAUDE.md`
+- Codex workflows: see `CODEX.md`
 
-Claude Code MUST:
+All platforms MUST:
 - report the exact missing capability
-- point the user to the matching bootstrap command above
-- re-run session initialization after the user resolves the missing capability
-
-Claude Code MUST NOT proceed with mutation or substantive implementation work
-while these required capabilities are missing.
+- point the user to the matching platform bootstrap/install command
+- re-run session initialization after the capability is resolved
+- avoid mutation or substantive implementation while required capabilities are missing
 
 ## 2. Decision Hygiene
 

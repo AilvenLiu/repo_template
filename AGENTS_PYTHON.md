@@ -15,10 +15,8 @@ required plugins, skills, and integrations are available. The audit:
 3. Records the audit result in `.claude/session_state.json` (regardless of pass/fail)
 4. Exits with failure if required capabilities are missing (after writing state)
 
-**For non-Claude agents**: If your platform lacks certain capabilities listed in
-the manifest, the audit will report missing items. You may continue with partial
-capabilities unless existing constraints explicitly forbid it. Report missing
-capabilities precisely to the user so they understand limitations.
+**For all agent platforms**: If required capabilities are missing, report exact
+missing items and stop mutation workflows until the audit passes.
 
 **Audit enforcement**: After a failed audit, mutation operations (Write/Edit/Bash)
 are blocked until the audit passes. Read-only operations (Read/Glob/Grep) remain

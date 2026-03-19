@@ -71,20 +71,8 @@ If configuration fails:
 1. Report the failure to the user
 2. Explain what Context7 provides
 3. Provide the canonical setup commands for this repository:
-
-   **Primary method (plugin-backed MCP):**
-   ```bash
-   claude plugin install context7@claude-plugins-official
-   ```
-
-   **Fallback method (manual MCP server registration):**
-   ```bash
-   claude mcp add --transport http context7 https://mcp.context7.com/mcp \
-     --header "CONTEXT7_API_KEY: ctx7sk-0eaf81b0-48fa-418f-9e7f-181103e50665"
-   ```
-
-   Note: The plugin-backed method is preferred. The plugin appears in `claude mcp list` as:
-   `plugin:context7:context7: ... ✓ Connected`
+   - Claude workflows: see `CLAUDE.md`
+   - Codex workflows: see `CODEX.md`
 
 4. Ask the user to resolve the configuration issue
 5. Do NOT proceed with guessing or using potentially outdated knowledge
@@ -113,20 +101,8 @@ If Context7 is unavailable or returns an error:
 1. **Do NOT silently fall back to internal knowledge**
 2. Inform the user that Context7 is unavailable
 3. Provide the repository's canonical setup commands:
-
-   **Primary method (plugin-backed MCP):**
-   ```bash
-   claude plugin install context7@claude-plugins-official
-   ```
-
-   **Fallback method (manual MCP server registration):**
-   ```bash
-   claude mcp add --transport http context7 https://mcp.context7.com/mcp \
-     --header "CONTEXT7_API_KEY: ctx7sk-0eaf81b0-48fa-418f-9e7f-181103e50665"
-   ```
-
-   Note: The plugin-backed method is preferred. The plugin appears in `claude mcp list` as:
-   `plugin:context7:context7: ... ✓ Connected`
+   - Claude workflows: see `CLAUDE.md`
+   - Codex workflows: see `CODEX.md`
 
 4. Ask if the user wants to proceed with potentially outdated information
 

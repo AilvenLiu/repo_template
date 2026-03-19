@@ -1,0 +1,43 @@
+#!/bin/bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+if [[ $# -lt 2 ]]; then
+  echo "Usage: bin/agent-commit -m \"type(scope): description\" [files ...]" >&2
+  exit 1
+fi
+
+MESSAGE=""
+FILES=()
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -m|--message)
+      MESSAGE="$2"
+      shift 2
+      ;;
+    *)
+      FILES+=("$1")
+      shift
+      ;;
+  esac
+done
+
+if [[ -z "$MESSAGE" ]]; then
+  echo "Commit message is required via -m/--message" >&2
+  exit 1
+fi
+
+BRANCH="$(git -C "$REPO_ROOT" branch --show-current || true)"
+CONTEXT_JSON="$(python3 -c 'import json,sys; print(json.dumps({"message": sys.argv[1], "branch": sys.argv[2]}))' "$MESSAGE" "$BRANCH")"
+python3 "$REPO_ROOT/.ai/tools/policy_gate.py" --op commit --context "$CONTEXT_JSON"
+
+if [[ ${#FILES[@]} -gt 0 ]]; then
+  git -C "$REPO_ROOT" add "${FILES[@]}"
+else
+  git -C "$REPO_ROOT" add -A
+fi
+
+exec git -C "$REPO_ROOT" commit -m "$MESSAGE"
