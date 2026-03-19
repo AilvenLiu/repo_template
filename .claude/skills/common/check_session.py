@@ -23,9 +23,13 @@ def check_session_initialized(skill_name: str) -> dict:
     Raises:
         SystemExit: If session not initialized or capability audit failed
     """
-    state_file = Path('.claude/session_state.json')
+    candidate_files = [
+        Path(".ai/session_state.json"),
+        Path(".claude/session_state.json"),
+    ]
+    state_file = next((p for p in candidate_files if p.exists()), candidate_files[0])
 
-    if not state_file.exists():
+    if not any(p.exists() for p in candidate_files):
         print("=" * 70)
         print("ERROR: Session not initialized")
         print("=" * 70)
@@ -102,8 +106,13 @@ def check_session_initialized(skill_name: str) -> dict:
 
 def get_project_type() -> str:
     """Get project type from session state."""
-    state_file = Path('.claude/session_state.json')
-    if not state_file.exists():
+    candidate_files = [
+        Path(".ai/session_state.json"),
+        Path(".claude/session_state.json"),
+    ]
+    state_file = next((p for p in candidate_files if p.exists()), candidate_files[0])
+
+    if not any(p.exists() for p in candidate_files):
         return 'unknown'
 
     try:

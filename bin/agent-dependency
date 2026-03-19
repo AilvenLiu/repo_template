@@ -1,0 +1,25 @@
+#!/bin/bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+if [[ $# -lt 1 ]]; then
+  echo "Usage: bin/agent-dependency add <package> [version] [--dev]" >&2
+  exit 1
+fi
+
+SUBCMD="$1"
+shift
+
+if [[ "$SUBCMD" != "add" ]]; then
+  echo "Unsupported subcommand: $SUBCMD" >&2
+  echo "Supported: add" >&2
+  exit 1
+fi
+
+RAW_CMD="add $*"
+CONTEXT_JSON="$(python3 -c 'import json,sys; print(json.dumps({"command": sys.argv[1]}))' "$RAW_CMD")"
+python3 "$REPO_ROOT/.ai/tools/policy_gate.py" --op dependency --context "$CONTEXT_JSON"
+
+exec python3 "$REPO_ROOT/.claude/skills/dependency/scripts/add.py" "$@"

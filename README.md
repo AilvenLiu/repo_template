@@ -2,14 +2,15 @@
 
 A dual-language (Python / C++/CUDA) repository template with vendor-neutral
 AI agent constraints and development standards. Copy it, pick a language,
-and get a working repo with `CLAUDE.md`, `AGENTS.md`, and full skill support.
+and get a working repo with `CLAUDE.md`, `CODEX.md`, `AGENTS.md`, and full skill support.
 
 ## Overview
 
 This template maintains paired, language-specific files with suffixes
-(`CLAUDE_PYTHON.md` / `CLAUDE_CPP.md`, `AGENTS_PYTHON.md` / `AGENTS_CPP.md`,
+(`CLAUDE_PYTHON.md` / `CLAUDE_CPP.md`, `CODEX_PYTHON.md` / `CODEX_CPP.md`,
+`AGENTS_PYTHON.md` / `AGENTS_CPP.md`,
 etc.). On copy, one variant is renamed to the generic name (`CLAUDE.md`,
-`AGENTS.md`, `CONTRIBUTING.md`, `.gitignore`) and the other is removed.
+`CODEX.md`, `AGENTS.md`, `CONTRIBUTING.md`, `.gitignore`) and the other is removed.
 
 The recommended way to create a project is `/create-project` (see below).
 
@@ -34,11 +35,12 @@ template-only artifacts, and creates an initial git commit.
 #### Template-Only Files
 - `AGENTS.md` -- template documentation (explains the architecture)
 - `CLAUDE.md` -- template documentation (references language-specific variants)
-- `CODEX_INTEGRATION.md` -- guide for using this template with Codex/other agents
+- `CODEX.md` -- template documentation (references language-specific variants)
 
 #### C++/CUDA Variant
 - `AGENTS_CPP.md` -- vendor-neutral agent constraints (becomes `AGENTS.md`)
 - `CLAUDE_CPP.md` -- self-sufficient Claude Code entrypoint (becomes `CLAUDE.md`)
+- `CODEX_CPP.md` -- self-sufficient Codex entrypoint (becomes `CODEX.md`)
 - `CONTRIBUTING_CPP.md` -- contribution guidelines (becomes `CONTRIBUTING.md`)
 - `.gitignore_cpp` -- gitignore (becomes `.gitignore`)
 - `.ai/project_cpp.yml` -- project type config (becomes `.ai/project.yml`)
@@ -46,6 +48,7 @@ template-only artifacts, and creates an initial git commit.
 #### Python Variant
 - `AGENTS_PYTHON.md` -- vendor-neutral agent constraints (becomes `AGENTS.md`)
 - `CLAUDE_PYTHON.md` -- self-sufficient Claude Code entrypoint (becomes `CLAUDE.md`)
+- `CODEX_PYTHON.md` -- self-sufficient Codex entrypoint (becomes `CODEX.md`)
 - `CONTRIBUTING_PYTHON.md` -- contribution guidelines (becomes `CONTRIBUTING.md`)
 - `.gitignore_python` -- gitignore (becomes `.gitignore`)
 - `.ai/project_python.yml` -- project type config (becomes `.ai/project.yml`)
@@ -54,7 +57,10 @@ template-only artifacts, and creates an initial git commit.
 
 - `.ai/project.yml` -- machine-readable project type (source of truth)
 - `.ai/constraints/` -- vendor-neutral constraint files (common, python, cpp)
+- `.ai/tools/` -- shared runtime enforcement tools for all agent platforms
 - `.claude/` -- Claude Code skills, hooks, and settings
+- `.codex/` -- Codex skill bundle
+- `bin/` -- platform-neutral guarded workflow commands (`agent-*`)
 - `agent_roadmaps/` -- multi-session workflow system
 
 ### Claude Code Skills
@@ -77,22 +83,21 @@ template-only artifacts, and creates an initial git commit.
 In a real (non-template) repo, the key entrypoints are:
 
 - `CLAUDE.md` -- self-sufficient Claude Code entrypoint with critical rules inline
+- `CODEX.md` -- self-sufficient Codex entrypoint with critical rules inline
 - `AGENTS.md` -- vendor-neutral agent constraints (works with Codex, etc.)
 - `.ai/project.yml` -- deterministic project type detection
-- `.ai/constraints/` -- modular constraint files loaded by `/init`
+- `.ai/constraints/` -- modular constraint files loaded by init workflows
+- `.ai/tools/` -- shared init/audit/policy enforcement core used by adapters
 
-`CLAUDE.md` and `AGENTS.md` are both first-class, self-sufficient entrypoints.
-Neither is a thin wrapper for the other.
+`CLAUDE.md`, `CODEX.md`, and `AGENTS.md` are all first-class entrypoints.
 
 ## Vendor-Neutral Support
 
 This template is designed to work with multiple AI agent platforms:
 
-- **Claude Code**: Uses `CLAUDE.md` as entrypoint, loads constraints via `/init` skill
-- **Codex**: Uses `AGENTS.md` as entrypoint, reads constraints directly
+- **Claude Code**: Uses `CLAUDE.md` + `/init` (delegates to `.ai/tools/session_init.py`)
+- **Codex**: Uses `CODEX.md` + `bin/agent-init --platform codex`
 - **Other agents**: Can use either pattern depending on file discovery mechanism
-
-See `CODEX_INTEGRATION.md` for details on using this template with non-Claude agents.
 
 ## License
 

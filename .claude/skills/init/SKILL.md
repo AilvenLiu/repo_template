@@ -6,14 +6,15 @@ description: "Session initialization — run at the start of EVERY session befor
 # /init
 
 Detects project type, loads constraint bodies into the conversation,
-writes `.claude/session_state.json`, and warns about protected branches
+writes `.ai/session_state.json` (and `.claude/session_state.json` for compatibility),
+and warns about protected branches
 and active roadmaps.
 
 ## Behaviour (guaranteed)
 
 1. Reads `.ai/project.yml` for project type; falls back to heuristic scan.
 2. Prints the full text of every loaded constraint so the agent ingests it.
-3. Creates `.claude/session_state.json` — hooks use this to gate mutations.
+3. Creates `.ai/session_state.json` + `.claude/session_state.json` — hooks and wrappers use this to gate mutations.
 
 ## Usage
 

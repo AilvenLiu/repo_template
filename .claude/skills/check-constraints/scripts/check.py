@@ -1,31 +1,22 @@
 #!/usr/bin/env python3
-"""
-Standalone constraint validation command.
-Can be run at any time to check for violations.
-"""
+"""Constraint-check adapter to shared .ai/tools implementation."""
 
+import subprocess
 import sys
 from pathlib import Path
 
-# Add common utilities to path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent / 'common'))
-from validate_constraints import validate_all_constraints, print_violations
+
+def main() -> None:
+    repo_root = Path(__file__).resolve().parents[4]
+    command = [
+        sys.executable,
+        str(repo_root / ".ai" / "tools" / "constraints_check.py"),
+        "--project-type",
+        "auto",
+    ]
+    result = subprocess.run(command, cwd=repo_root)
+    sys.exit(result.returncode)
 
 
-def main():
-    print("Checking constraints...")
-    print()
-
-    violations = validate_all_constraints()
-    print_violations(violations)
-
-    # Exit with appropriate code
-    critical_count = sum(1 for v in violations if v.severity == 'CRITICAL')
-    if critical_count > 0:
-        sys.exit(1)
-    else:
-        sys.exit(0)
-
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

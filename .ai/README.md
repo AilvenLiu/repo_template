@@ -9,6 +9,7 @@ which AI agent platform is used.
 
 ```
 .ai/
+  tools/             # Shared runtime core (init/audit/policy/constraints)
   constraints/
     common/          # Cross-language constraints (git, sessions, roadmaps)
     python/          # Python-specific constraints
@@ -19,26 +20,30 @@ which AI agent platform is used.
 
 ## Capability Audits
 
-The `capabilities.yml` file is the canonical manifest of required plugins,
-skills, and integrations for this project. At session start, agents should:
+The `capabilities.yml` file is the canonical manifest of required capabilities.
+Manifest v2 separates:
+- `common_requirements` (shared checks)
+- `platform_requirements.<platform>` (platform-specific checks)
+
+At session start, agents should:
 
 1. Read `capabilities.yml` to understand required capabilities
 2. Check which capabilities are available on the current machine
 3. Report missing capabilities to the user
 4. Hard-fail if required capabilities are missing (Claude Code enforces this)
 
-For Claude Code, the `/init` skill runs this audit automatically and locks
-down the session if required capabilities are missing. Non-Claude agents
-should implement similar checks or report missing capabilities and continue
-with partial functionality where constraints allow.
+Both Claude and Codex use the shared audit runtime:
+- Claude: `/init` -> `.ai/tools/session_init.py --platform claude`
+- Codex: `bin/agent-init --platform codex`
 
 ## How It Works
 
 1. **This directory is the source of truth** for all constraint content.
-2. **Vendor-specific wrappers** (e.g. `.claude/`, `.cursor/`) import from here.
-3. **Agent instruction file** (`AGENTS.md`) provides the vendor-neutral
+2. **Shared runtime** (`.ai/tools`) implements deterministic checks and gates.
+3. **Vendor-specific wrappers** (`.claude/`, `.codex/`) call into the shared runtime.
+4. **Agent instruction file** (`AGENTS.md`) provides the vendor-neutral
    operating instructions that reference these constraints.
-4. **Vendor-specific files** (`CLAUDE.md`, etc.) are self-sufficient
+5. **Vendor-specific files** (`CLAUDE.md`, `CODEX.md`, etc.) are self-sufficient
    entrypoints that embed critical rules inline and reference `AGENTS.md`
    for the full constraint system.
 
@@ -56,16 +61,16 @@ To support a new agent platform:
 
 ### Example: Codex Integration
 
-For Google's Codex agent:
+For Codex:
 
-1. **Codex discovers `AGENTS.md` automatically** as a standard instruction file
-2. **AGENTS.md is self-sufficient** — contains all mandatory constraints inline
-3. **Codex reads `.ai/constraints/` files** when referenced by AGENTS.md
-4. **No Codex-specific wrapper needed** — the vendor-neutral architecture works directly
+1. **Codex uses `CODEX.md` as the platform entrypoint**
+2. **Session init uses `bin/agent-init --platform codex`**
+3. **Shared checks run from `.ai/tools`**
+4. **Codex skills are bundled in `.codex/skills`**
 
 Key differences from Claude Code:
-- **Claude Code**: Uses `CLAUDE.md` as entrypoint → references `AGENTS.md` → loads `.ai/constraints/` via `/init` skill
-- **Codex**: Uses `AGENTS.md` as entrypoint → reads `.ai/constraints/` files directly when needed
+- **Claude Code**: `CLAUDE.md` + `/init` -> shared `.ai/tools` runtime
+- **Codex**: `CODEX.md` + `bin/agent-init --platform codex` -> shared `.ai/tools` runtime
 - **Other agents**: Can use either pattern depending on their file discovery mechanism
 
 ### Platform-Specific Skill Mappings
@@ -74,9 +79,9 @@ Different platforms have different ways to invoke procedures:
 
 | Procedure | Claude Code | Codex | Generic |
 |-----------|-------------|-------|---------|
-| Session init | `/init` | Read AGENTS.md + constraints | Platform-specific |
-| Pre-commit | `/pre-commit validate` | Run validation script | `python3 .claude/skills/pre-commit/scripts/validate.py` |
-| Add dependency | `/dependency add <pkg>` | Run dependency script | `python3 .claude/skills/dependency/scripts/add.py` |
+| Session init | `/init` | `bin/agent-init --platform codex` | `python3 .ai/tools/session_init.py --platform <platform>` |
+| Pre-commit | `/pre-commit validate` | `bin/agent-precommit` | `python3 .ai/tools/constraints_check.py` (+ platform validators) |
+| Add dependency | `/dependency add <pkg>` | `bin/agent-dependency add <pkg>` | `python3 .claude/skills/dependency/scripts/add.py` |
 
 The constraint files describe **what** must be done; platform-specific skills implement **how** to do it.
 

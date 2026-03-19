@@ -1,164 +1,30 @@
 #!/bin/bash
-# Bash Gate: intercepts Bash tool calls and blocks policy violations
-# Receives raw JSON string as $1
+# Bash Gate adapter: delegates command policy checks to .ai/tools/policy_gate.py
+
+set -euo pipefail
 
 INPUT="$1"
 HOOK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 REPO_ROOT="$(cd "$HOOK_DIR/.." && pwd)"
 
-# Extract the command from tool_input.command
-COMMAND="$(echo "$INPUT" | python3 -c "
-import sys, json
-d = json.load(sys.stdin)
-print(d.get('tool_input', {}).get('command', ''))
-" 2>/dev/null)"
+COMMAND="$(echo "$INPUT" | python3 -c '
+import json,sys
+try:
+    d=json.load(sys.stdin)
+    print(d.get("tool_input",{}).get("command",""))
+except Exception:
+    print("")
+' 2>/dev/null)"
 
 if [ -z "$COMMAND" ]; then
     echo "BLOCKED: bash_gate failed to parse command from hook input." >&2
-    echo "  This is a safety measure — please report this if it persists." >&2
     exit 1
 fi
 
-# Detect project type from session state or project.yml
-PROJECT_TYPE=""
-if [ -f "$REPO_ROOT/.claude/session_state.json" ]; then
-    PROJECT_TYPE="$(python3 -c "
-import json, sys
-d = json.load(open('$REPO_ROOT/.claude/session_state.json'))
-print(d.get('project_type', ''))
-" 2>/dev/null)"
-fi
-if [ -z "$PROJECT_TYPE" ] && [ -f "$REPO_ROOT/.ai/project.yml" ]; then
-    PROJECT_TYPE="$(grep -m1 '^project_type:' "$REPO_ROOT/.ai/project.yml" 2>/dev/null | sed 's/project_type:[[:space:]]*//')"
-fi
+CONTEXT_JSON="$(python3 -c '
+import json,sys
+cmd=sys.argv[1]
+print(json.dumps({"command": cmd}))
+' "$COMMAND")"
 
-# ── 1. Protected branch commit gate ─────────────────────────────────────────
-# Block: git commit when on a protected branch
-if echo "$COMMAND" | grep -qE '^\s*git\s+commit'; then
-    BRANCH="$(git branch --show-current 2>/dev/null)"
-    if echo "$BRANCH" | grep -qE '^(master|main|develop)$|^(release|hotfix)/'; then
-        echo "BLOCKED: git commit on protected branch '$BRANCH'." >&2
-        echo "" >&2
-        echo "  You MUST create a feature branch first:" >&2
-        echo "    git checkout -b feat/<description>" >&2
-        echo "" >&2
-        echo "  See .ai/constraints/common/git-workflow.md" >&2
-        exit 1
-    fi
-fi
-
-# ── 2. Force push / hard reset gate ─────────────────────────────────────────
-if echo "$COMMAND" | grep -qE 'git\s+push\s+.*--force|git\s+push\s+.*-f\b'; then
-    echo "BLOCKED: git push --force requires explicit user confirmation." >&2
-    echo "" >&2
-    echo "  Force-pushing can overwrite upstream history and is irreversible." >&2
-    echo "  Ask the user to confirm before proceeding." >&2
-    exit 1
-fi
-
-if echo "$COMMAND" | grep -qE 'git\s+reset\s+--hard'; then
-    echo "BLOCKED: git reset --hard requires explicit user confirmation." >&2
-    echo "" >&2
-    echo "  This discards all uncommitted changes and is irreversible." >&2
-    echo "  Ask the user to confirm before proceeding." >&2
-    exit 1
-fi
-
-# ── 3. Direct pip install gate (Python projects only) ────────────────────────
-# Block pip install / pip3 install / python -m pip install not wrapped in poetry run
-if [ "$PROJECT_TYPE" = "python" ] || [ -z "$PROJECT_TYPE" ]; then
-    if echo "$COMMAND" | grep -qE '^\s*(pip|pip3|python[0-9.]*\s+-m\s+pip)\s+install'; then
-        # Allow: poetry run pip install (rare but valid for some tooling)
-        if echo "$COMMAND" | grep -q 'poetry run'; then
-            exit 0
-        fi
-        # Extract package name (handle both "pip install" and "python -m pip install")
-        PKG="$(echo "$COMMAND" | sed -E 's/^\s*(pip[0-9]*|python[0-9.]*\s+-m\s+pip)\s+install\s+//')"
-        echo "BLOCKED: Direct pip install detected." >&2
-        echo "" >&2
-        echo "  Use the /dependency skill instead:" >&2
-        echo "    /dependency add $PKG" >&2
-        echo "" >&2
-        echo "  This ensures Poetry manages the virtual environment and lock file." >&2
-        echo "  See .ai/constraints/python/dependencies.md" >&2
-        exit 1
-    fi
-fi
-
-# ── 4. Direct python/python3 execution gate (Python projects only) ───────────
-# Block: python script.py or python3 script.py not wrapped in poetry run
-# Allow: python3 .claude/skills/... (internal tooling)
-# Allow: poetry run python ...
-if [ "$PROJECT_TYPE" = "python" ] || [ -z "$PROJECT_TYPE" ]; then
-    if echo "$COMMAND" | grep -qE '^\s*(python|python3)\s+'; then
-        # Allow internal skill scripts
-        if echo "$COMMAND" | grep -qE '\.claude/skills/|\.claude/hooks/'; then
-            exit 0
-        fi
-        # Allow poetry run wrapping
-        if echo "$COMMAND" | grep -q 'poetry run'; then
-            exit 0
-        fi
-        # Allow pyenv / python version checks
-        if echo "$COMMAND" | grep -qE 'python[0-9.]* --version|python[0-9.]* -V'; then
-            exit 0
-        fi
-        echo "BLOCKED: Direct python/python3 usage detected." >&2
-        echo "" >&2
-        SCRIPT="$(echo "$COMMAND" | sed -E 's/^\s*python[0-9.]* //')"
-        echo "  Use Poetry instead:" >&2
-        echo "    poetry run python $SCRIPT" >&2
-        echo "" >&2
-        echo "  See .ai/constraints/python/dependencies.md" >&2
-        exit 1
-    fi
-fi
-
-# ── 5. System package manager gate (C++ library installs) ────────────────────
-# Block: apt install / yum install / brew install for C++ libraries
-# (brew install python/cmake/conan are legitimate toolchain installs — allow those)
-if echo "$COMMAND" | grep -qE '^\s*(sudo\s+)?(apt|apt-get)\s+install'; then
-    # Check if it looks like a C++ library (lib* prefix or known patterns)
-    if echo "$COMMAND" | grep -qE 'lib[a-z]+-dev|libboost|libopencv|libeigen|libfmt|libspdlog|libgtest'; then
-        echo "BLOCKED: System package manager used for C++ library." >&2
-        echo "" >&2
-        echo "  Use the /dependency skill instead:" >&2
-        echo "    /dependency add <package>" >&2
-        echo "" >&2
-        echo "  This ensures Conan manages reproducible builds." >&2
-        echo "  See .ai/constraints/cpp/dependencies.md" >&2
-        exit 1
-    fi
-fi
-
-if echo "$COMMAND" | grep -qE '^\s*brew\s+install'; then
-    # Allow toolchain installs (cmake, conan, python, llvm, clang-format)
-    if echo "$COMMAND" | grep -qE 'brew install (cmake|conan|python|llvm|clang-format|cppcheck|ninja|pkg-config|git)'; then
-        exit 0
-    fi
-    # Block everything else via brew (likely a C++ library)
-    PKG="$(echo "$COMMAND" | sed -E 's/^\s*brew install //')"
-    echo "BLOCKED: brew install for non-toolchain package '$PKG'." >&2
-    echo "" >&2
-    echo "  For C++ libraries, use the /dependency skill:" >&2
-    echo "    /dependency add $PKG" >&2
-    echo "" >&2
-    echo "  If this is a legitimate toolchain install, proceed manually." >&2
-    echo "  See .ai/constraints/cpp/dependencies.md" >&2
-    exit 1
-fi
-
-# ── 6. Destructive file operations gate ──────────────────────────────────────
-if echo "$COMMAND" | grep -qE 'rm\s+-rf\s+'; then
-    # Block rm -rf on anything that looks like source code or config
-    if echo "$COMMAND" | grep -qE 'rm\s+-rf\s+\./?(src|lib|include|tests?|\.claude|agent_roadmaps)'; then
-        echo "BLOCKED: rm -rf on a protected directory." >&2
-        echo "" >&2
-        echo "  This would destroy source code or project configuration." >&2
-        echo "  Ask the user to confirm before proceeding." >&2
-        exit 1
-    fi
-fi
-
-# Allow all other commands
-exit 0
+python3 "$REPO_ROOT/.ai/tools/policy_gate.py" --op bash --context "$CONTEXT_JSON"

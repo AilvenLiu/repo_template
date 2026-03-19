@@ -134,3 +134,4 @@ Doxyfile.bak
 
 # Claude Code session state (temporary, not committed)
 .claude/session_state.json
+.ai/session_state.json
