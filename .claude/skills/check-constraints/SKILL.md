@@ -7,10 +7,12 @@ description: "Validate constraint compliance at any time during development."
 
 Lightweight constraint compliance check without running full pre-commit.
 
-## Usage
+## Execution
 
-```
-/check-constraints
+Run:
+
+```bash
+bin/agent-check-constraints
 ```
 
 ## Behaviour (guaranteed)

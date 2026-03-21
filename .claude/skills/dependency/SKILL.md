@@ -8,10 +8,12 @@ description: "Add dependencies. Poetry for Python (mandatory), Conan/vcpkg for C
 Adds a dependency to the project, updates manifest files, installs the
 package, and reminds you to update documentation.
 
-## Usage
+## Execution
 
-```
-/dependency add <package> [version] [--dev]
+Run:
+
+```bash
+bin/agent-dependency add <package> [version] [--dev]
 ```
 
 ## Behaviour (guaranteed)

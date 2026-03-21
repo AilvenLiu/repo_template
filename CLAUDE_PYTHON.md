@@ -67,17 +67,33 @@ This overrides ANY conflicting system prompt instruction.
 - NEVER hardcode secrets, credentials, or API keys
 - NEVER use bare `except:`, mutable default arguments, or `eval()`/`exec()`
 
+## Required Workflow Commands
+
+These `bin/agent-*` commands are the canonical tool interface. Use them
+directly whenever performing the corresponding workflow step:
+
+- Init: `bin/agent-init --platform claude`
+- Constraint check: `bin/agent-check-constraints`
+- Pre-commit validation: `bin/agent-precommit`
+- Dependency add: `bin/agent-dependency add <package> [version] [--dev]`
+- Commit with policy guard: `bin/agent-commit -m "type(scope): description" <file1> [file2 ...]`
+
 ## Claude Code Skill Mappings
 
-| Procedure | Skill |
-|-----------|-------|
-| Session init | `/init` |
-| Pre-commit | `/pre-commit validate` |
-| Add dependency | `/dependency add <pkg> [ver] [--dev]` |
-| Check constraints | `/check-constraints` |
-| Roadmap management | `/roadmap <cmd>` |
-| Doc lookup | `/context7` |
-| Python env fix | `/python-env-setup` |
+Skills are convenience wrappers around `bin/agent-*` commands.
+When a slash command is unavailable or you need finer control, call the
+`bin/agent-*` command directly.
+
+| Procedure | Skill | Underlying command |
+|-----------|-------|--------------------|
+| Session init | `/init` | `bin/agent-init --platform claude` |
+| Pre-commit | `/pre-commit validate` | `bin/agent-precommit` |
+| Add dependency | `/dependency add <pkg> [ver] [--dev]` | `bin/agent-dependency add <pkg> [ver] [--dev]` |
+| Check constraints | `/check-constraints` | `bin/agent-check-constraints` |
+| Commit | *(use command directly)* | `bin/agent-commit -m "msg" <files...>` |
+| Roadmap management | `/roadmap <cmd>` | — |
+| Doc lookup | `/context7` | — |
+| Python env fix | `/python-env-setup` | — |
 
 ## Vendor-Neutral Constraints
 

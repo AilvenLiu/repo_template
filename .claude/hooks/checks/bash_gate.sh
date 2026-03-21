@@ -5,7 +5,7 @@ set -euo pipefail
 
 INPUT="$1"
 HOOK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-REPO_ROOT="$(cd "$HOOK_DIR/.." && pwd)"
+REPO_ROOT="$(cd "$HOOK_DIR/../.." && pwd)"
 
 COMMAND="$(echo "$INPUT" | python3 -c '
 import json,sys

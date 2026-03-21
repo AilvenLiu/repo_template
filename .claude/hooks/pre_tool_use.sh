@@ -73,6 +73,9 @@ print(d.get('tool_input', {}).get('command', ''))
             elif echo "$COMMAND" | grep -qE '^\s*python3?\s+\.claude/skills/init/scripts/init\.py\s+--verbose\s*$'; then
                 # Init script with --verbose flag - allow
                 exit 0
+            elif echo "$COMMAND" | grep -qE '^\s*bin/agent-init(\s+--platform\s+(claude|codex))?\s*$'; then
+                # bin/agent-init wrapper (with optional --platform flag) - allow
+                exit 0
             fi
 
             # Everything else is blocked before init
