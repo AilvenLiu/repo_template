@@ -5,7 +5,7 @@ set -euo pipefail
 
 INPUT="$1"
 HOOK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-REPO_ROOT="$(cd "$HOOK_DIR/.." && pwd)"
+REPO_ROOT="$(cd "$HOOK_DIR/../.." && pwd)"
 
 # Shared mutate gate (session initialized + audit passed)
 python3 "$REPO_ROOT/.ai/tools/policy_gate.py" --op mutate --context '{}' >/dev/null

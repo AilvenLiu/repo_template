@@ -7,10 +7,13 @@ description: "Code quality validation before commits. Runs formatters, linters, 
 
 Orchestrates code quality tools appropriate to the detected project type.
 
-## Commands
+## Execution
 
-- `/pre-commit validate` — run all checks, exit 0 if all pass
-- `/pre-commit fix` — auto-fix formatting (black/isort for Python, clang-format for C++)
+Run:
+
+```bash
+bin/agent-precommit
+```
 
 ## Behaviour (guaranteed)
 
