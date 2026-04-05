@@ -7,6 +7,13 @@ from pathlib import Path
 # Add scripts directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent))
 
+# Add common utilities to path
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / 'common'))
+from check_session import check_session_initialized
+
+# Check session initialization
+check_session_initialized('roadmap')
+
 from utils import RoadmapManager
 
 
@@ -25,10 +32,11 @@ def main():
         print(f"    Current Phase: {active['current_phase']}")
         print(f"    Current Task: {active['current_task']}")
         print(f"    Status: {active['status']}")
+        print(f"    Expected branch: {active['expected_branch']}")
         print()
         print("Next Steps:")
-        print("- Read INVARIANTS.md, ROADMAP.md, roadmap.yml")
-        print("- Review latest session handoff in sessions/")
+        print(f"- Read {active['path']}/INVARIANTS.md, ROADMAP.md, roadmap.yml")
+        print(f"- Review latest session handoff in {active['path']}/sessions/")
         print("- Continue work on current task")
         sys.exit(0)  # Active roadmap found
     else:

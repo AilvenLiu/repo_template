@@ -40,10 +40,14 @@ def generate_handoff(work_completed: str, decisions: str, blockers: str, next_st
     handoff_path = sessions_dir / filename
 
     # Generate handoff content
+    phase_folder = roadmap_dir.name
+    expected_branch = active.get("expected_branch", f"roadmap/{phase_folder}")
     content = f"""# Session Handoff: {today} (Session {index})
 
 ## Focus
-Phase: {active['current_phase']}
+Phase folder: {phase_folder}
+Branch: {expected_branch}
+Current phase: {active['current_phase']}
 Task: {active['current_task']}
 
 ## Work Completed
@@ -64,6 +68,8 @@ Task: {active['current_task']}
         with open(handoff_path, "w", encoding="utf-8") as f:
             f.write(content)
         print(f"Session handoff created: {handoff_path.relative_to(repo_root)}")
+        print(f"  Phase: {phase_folder}")
+        print(f"  Branch: {expected_branch}")
     except Exception as e:
         print(f"ERROR: Failed to create handoff file: {e}")
         sys.exit(1)
