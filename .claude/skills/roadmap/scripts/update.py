@@ -60,35 +60,20 @@ def complete_task(manager: RoadmapManager, roadmap_dir: Path) -> None:
         print(f"Task {current_task_id} completed")
         print(f"Advanced to next task: {next_task.get('id')} - {next_task.get('title')}")
     else:
-        # Phase completed, check for next phase
-        phases[current_phase_idx]["status"] = "completed"
-        next_phase_idx = current_phase_idx + 1
-
-        if next_phase_idx < len(phases):
-            # Advance to next phase
-            next_phase = phases[next_phase_idx]
-            next_phase["status"] = "active"
-            next_phase_tasks = next_phase.get("tasks", [])
-            if next_phase_tasks:
-                next_phase_tasks[0]["status"] = "active"
-                data["current_focus"] = {
-                    "phase": next_phase.get("id"),
-                    "task": next_phase_tasks[0].get("id"),
-                }
-                print(f"Task {current_task_id} completed")
-                print(f"Phase {current_phase_id} completed")
-                print(f"Advanced to next phase: {next_phase.get('id')} - {next_phase.get('title')}")
-            else:
-                print(f"ERROR: Next phase {next_phase.get('id')} has no tasks")
-                sys.exit(1)
-        else:
-            # All phases completed
-            data["status"]["completed"] = True
-            data["status"]["active"] = False
-            data["current_focus"] = {}
-            print(f"Task {current_task_id} completed")
-            print(f"Phase {current_phase_id} completed")
-            print("All phases completed! Roadmap is now complete.")
+        # All tasks in this phase are done — mark phase completed
+        data["status"]["completed"] = True
+        data["status"]["active"] = False
+        data["current_focus"] = {}
+        print(f"Task {current_task_id} completed")
+        phase_folder = roadmap_dir.name
+        next_branch = RoadmapManager.derive_branch_name(phase_folder)
+        print(f"Phase {phase_folder} completed!")
+        print()
+        print("Next steps:")
+        print(f"1. Create PR/MR from {next_branch} to base branch")
+        print("2. After merge, switch to base branch and pull latest")
+        print("3. Activate next phase: set status.active: true in next phase's roadmap.yml")
+        print("4. Create branch: git checkout -b roadmap/<next-phase-folder>")
 
     # Update roadmap.yml
     manager.update_roadmap_yml(roadmap_yml, data)
