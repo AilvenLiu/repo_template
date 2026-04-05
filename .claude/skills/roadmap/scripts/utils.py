@@ -21,9 +21,12 @@ class RoadmapManager:
     def find_active_roadmap(self) -> Optional[Dict[str, Any]]:
         """Scan for active roadmap and return metadata.
 
+        Only directories matching the pattern ``phase-*`` are considered.
+
         Returns:
             Dictionary with roadmap metadata if active roadmap found, None otherwise.
-            Metadata includes: name, path, current_phase, current_task, status
+            Metadata includes: name, path, current_phase, current_task, status,
+            expected_branch, roadmap_dir
         """
         if not self.roadmaps_dir.exists():
             return None
@@ -31,6 +34,10 @@ class RoadmapManager:
         for roadmap_dir in self.roadmaps_dir.iterdir():
             # Skip template directory and non-directories
             if not roadmap_dir.is_dir() or roadmap_dir.name == "template":
+                continue
+
+            # Only consider phase-* directories
+            if not roadmap_dir.name.startswith("phase-"):
                 continue
 
             roadmap_yml = roadmap_dir / "roadmap.yml"
@@ -47,6 +54,7 @@ class RoadmapManager:
                         "current_phase": current_focus.get("phase", "unknown"),
                         "current_task": current_focus.get("task", "unknown"),
                         "status": "active",
+                        "expected_branch": self.derive_branch_name(roadmap_dir.name),
                         "roadmap_dir": roadmap_dir,
                     }
             except Exception:
@@ -54,6 +62,74 @@ class RoadmapManager:
                 continue
 
         return None
+
+    def find_all_phases(self) -> List[Dict[str, Any]]:
+        """Return metadata for ALL phase directories, sorted by phase number.
+
+        Returns:
+            List of dicts, each containing: name, path, status, phase_number,
+            roadmap_dir.  Sorted ascending by phase_number.
+        """
+        if not self.roadmaps_dir.exists():
+            return []
+
+        phases: List[Dict[str, Any]] = []
+
+        for roadmap_dir in self.roadmaps_dir.iterdir():
+            if not roadmap_dir.is_dir() or roadmap_dir.name == "template":
+                continue
+
+            if not roadmap_dir.name.startswith("phase-"):
+                continue
+
+            roadmap_yml = roadmap_dir / "roadmap.yml"
+            if not roadmap_yml.exists():
+                continue
+
+            # Extract phase number from folder name (e.g. "phase-1-foo" -> 1)
+            try:
+                phase_number = int(roadmap_dir.name.split("-")[1])
+            except (IndexError, ValueError):
+                phase_number = -1
+
+            try:
+                data = self.parse_roadmap_yml(roadmap_yml)
+                raw_status = data.get("status", {})
+                if raw_status.get("active", False):
+                    status = "active"
+                elif raw_status.get("completed", False):
+                    status = "completed"
+                elif raw_status.get("blocked", False):
+                    status = "blocked"
+                else:
+                    status = "inactive"
+            except Exception:
+                status = "inactive"
+
+            phases.append(
+                {
+                    "name": roadmap_dir.name,
+                    "path": str(roadmap_dir.relative_to(self.repo_root)),
+                    "status": status,
+                    "phase_number": phase_number,
+                    "roadmap_dir": roadmap_dir,
+                }
+            )
+
+        phases.sort(key=lambda p: p["phase_number"])
+        return phases
+
+    @staticmethod
+    def derive_branch_name(phase_folder_name: str) -> str:
+        """Return the canonical git branch name for a phase folder.
+
+        Args:
+            phase_folder_name: Folder name such as ``phase-1-core-implementation``.
+
+        Returns:
+            Branch name of the form ``roadmap/<phase_folder_name>``.
+        """
+        return f"roadmap/{phase_folder_name}"
 
     def parse_roadmap_yml(self, roadmap_path: Path) -> Dict[str, Any]:
         """Parse and validate roadmap.yml structure.
