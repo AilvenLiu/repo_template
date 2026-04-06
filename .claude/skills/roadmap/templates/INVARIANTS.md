@@ -1,21 +1,21 @@
-# INVARIANTS -- Constitutional Constraints (Template)
+# INVARIANTS -- Phase Constitutional Constraints (Template)
 
-> This document defines **non-negotiable invariants** for a roadmap task.
+> This document defines **non-negotiable invariants** for the phase `<PHASE_FOLDER_NAME>`.
 > These constraints override ROADMAP.md, roadmap.yml, session instructions, and prompts.
 
 ---
 
 ## 1. Authority and Scope
 
-- These invariants apply to **all phases, tasks, and sessions** of this roadmap.
-- No phase completion, optimization, or workaround may violate these constraints.
+- These invariants apply to **all tasks and sessions** within this phase.
+- No task completion, optimization, or workaround may violate these constraints.
 - Modifying this file requires **explicit human approval**.
 
 ---
 
 ## 2. Architectural Invariants
 
-(Examples -- must be customized per roadmap)
+(Examples -- must be customized per phase)
 
 - Public APIs MUST remain backward compatible unless explicitly approved.
 - Core module boundaries MUST NOT be collapsed or bypassed.
@@ -48,8 +48,9 @@
 
 ## 6. Process Invariants
 
-- All progress MUST be tracked via roadmap.yml.
-- Each session MUST produce a handoff record.
+- All progress MUST be tracked via this phase's roadmap.yml.
+- Each session MUST produce a handoff record in this phase's sessions/.
+- Work MUST be done on the branch `roadmap/<PHASE_FOLDER_NAME>`.
 - Blockers MUST be reported, not worked around.
 
 ---

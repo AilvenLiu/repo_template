@@ -54,6 +54,7 @@ git checkout -b <type>/<description>
 - `perf/<description>` - performance improvements
 - `docs/<description>` - documentation only
 - `chore/<description>` - tooling, dependencies, non-code changes
+- `roadmap/<phase-folder-name>` - roadmap phase branches (e.g., `roadmap/phase-0-baseline`)
 
 ### 2.3 Make Changes on the Feature Branch
 

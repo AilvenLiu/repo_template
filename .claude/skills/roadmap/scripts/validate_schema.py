@@ -680,8 +680,8 @@ def print_validation_results(errors: List[ValidationError], roadmap_name: str):
 def main():
     """Main entry point for validation command."""
     if len(sys.argv) < 2:
-        print("Usage: validate_schema.py <roadmap-name>")
-        print("Example: validate_schema.py api-v2-migration")
+        print("Usage: validate_schema.py <phase-folder>")
+        print("Example: validate_schema.py phase-0-baseline")
         sys.exit(1)
 
     roadmap_name = sys.argv[1]
@@ -689,7 +689,7 @@ def main():
     roadmap_path = repo_root / "agent_roadmaps" / roadmap_name / "roadmap.yml"
 
     if not roadmap_path.exists():
-        print(f"ERROR: Roadmap not found: {roadmap_path}")
+        print(f"ERROR: Phase folder not found: {roadmap_path}")
         sys.exit(1)
 
     errors = validate_roadmap_file(roadmap_path)

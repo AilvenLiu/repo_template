@@ -4,7 +4,7 @@ A Claude Code skill for managing multi-session AI agent workflows using the agen
 
 ## Overview
 
-This skill provides structured commands for managing complex, multi-session development tasks that exceed the scope of 1-2 Claude Code sessions. It enforces mandatory behaviors, validates state transitions, and ensures continuity across sessions.
+This skill provides structured commands for managing complex, multi-session development tasks that exceed the scope of 1-2 Claude Code sessions. It enforces mandatory behaviors, validates state transitions, and ensures continuity across sessions. Each phase of a project lives in its own folder under `agent_roadmaps/`, and work for each phase is tracked on a dedicated branch.
 
 ## Installation
 
@@ -20,19 +20,27 @@ This skill provides structured commands for managing complex, multi-session deve
 
 ## Quick Start
 
-### Check for Active Roadmaps (Mandatory at Session Start)
+### Check for Active Phases (Mandatory at Session Start)
 
 ```bash
 python3 .claude/skills/roadmap/scripts/check.py
 ```
 
-### Create a New Roadmap
+### Create Phase Folders for a Project
 
 ```bash
-python3 .claude/skills/roadmap/scripts/create.py my-roadmap "Description of roadmap"
+python3 .claude/skills/roadmap/scripts/create.py my-project --phases 3 --phase-names baseline core-impl cleanup
 ```
 
-### View Roadmap Status
+This creates `agent_roadmaps/my-project/phase-0-baseline/`, `agent_roadmaps/my-project/phase-1-core-impl/`, and `agent_roadmaps/my-project/phase-2-cleanup/`, each with its own `roadmap.yml`.
+
+### Validate a Phase Schema
+
+```bash
+python3 .claude/skills/roadmap/scripts/validate_schema.py phase-0-baseline
+```
+
+### View Cross-Phase Status
 
 ```bash
 python3 .claude/skills/roadmap/scripts/status.py
@@ -50,7 +58,7 @@ python3 .claude/skills/roadmap/scripts/update.py complete-task
 python3 .claude/skills/roadmap/scripts/handoff.py
 ```
 
-### Complete Roadmap
+### Complete Active Phase
 
 ```bash
 python3 .claude/skills/roadmap/scripts/complete.py
@@ -58,23 +66,26 @@ python3 .claude/skills/roadmap/scripts/complete.py
 
 ## Features
 
-- **Automatic Session-Start Checks**: Ensures agents check for active roadmaps at every session start
-- **Single Active Roadmap Rule**: Enforces at most one active roadmap at a time
+- **Automatic Session-Start Checks**: Ensures agents check for active phases at every session start
+- **Per-Phase Folder Structure**: Each phase has its own folder and `roadmap.yml` under `agent_roadmaps/`
+- **Branch Management**: Enforces work on `roadmap/<phase-folder-name>` branches
+- **Single Active Phase Rule**: Enforces at most one active phase at a time
+- **Cross-Phase Overview**: `status` command shows progress across all phases
 - **State Machine Validation**: Validates all state transitions to prevent invalid operations
 - **Session Handoff Generation**: Creates structured handoff files for continuity
-- **YAML-Based State Management**: Uses roadmap.yml as single source of truth
+- **YAML-Based State Management**: Uses per-phase `roadmap.yml` as single source of truth
 - **Authority Hierarchy**: Enforces INVARIANTS.md > ROADMAP.md > roadmap.yml precedence
 
 ## Commands
 
 | Command | Description |
 |---------|-------------|
-| `check` | Check for active roadmaps (mandatory at session start) |
-| `create <name>` | Create new roadmap directory structure |
-| `status` | Display detailed status of active roadmap |
-| `update <action>` | Update roadmap state (complete-task, block-task, etc.) |
+| `check` | Check for active phases (mandatory at session start) |
+| `create <name> --phases <N> --phase-names <names...>` | Create per-phase folder structure |
+| `status` | Display cross-phase overview of all phases and progress |
+| `update <action>` | Update phase state (complete-task, block-task, etc.) |
 | `handoff` | Generate session handoff file |
-| `complete` | Mark roadmap as completed and deactivate |
+| `complete` | Mark active phase as completed and deactivate |
 
 ## Documentation
 

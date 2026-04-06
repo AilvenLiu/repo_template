@@ -5,8 +5,10 @@
 
 ## Mandatory Checklist
 
-Before finalizing any roadmap, verify:
+Before finalizing any phase roadmap, verify:
 
+- [ ] Each phase has its own folder: `agent_roadmaps/<project>/<phase-folder-name>/`
+- [ ] Each phase folder contains its own `roadmap.yml`
 - [ ] All phase IDs follow `phase-N` format (e.g., `phase-0`, `phase-1`)
 - [ ] All task IDs follow `task-N-M` format (e.g., `task-0-1`, `task-1-2`)
 - [ ] All status values are: `pending`, `active`, `completed`, or `blocked`
@@ -15,7 +17,8 @@ Before finalizing any roadmap, verify:
 - [ ] All tasks are atomic (completable in 1-2 hours)
 - [ ] All task titles are 10-80 characters
 - [ ] Complex tasks have detailed `notes` field
-- [ ] Validation passes: `python3 .claude/skills/roadmap/scripts/validate_schema.py <name>`
+- [ ] Work is on branch `roadmap/<phase-folder-name>`
+- [ ] Validation passes: `python3 .claude/skills/roadmap/scripts/validate_schema.py <phase-folder-name>`
 
 ## Schema Reference
 
@@ -181,23 +184,25 @@ tasks:
 
 ## Validation Workflow
 
-### Step 1: Create Roadmap
+### Step 1: Create Phase Folders
 
 ```bash
-python3 .claude/skills/roadmap/scripts/create.py <name> "<description>"
+python3 .claude/skills/roadmap/scripts/create.py <project-name> --phases <N> --phase-names <name1> <name2> ...
 ```
+
+This creates `agent_roadmaps/<project-name>/phase-0-<name1>/roadmap.yml`, `agent_roadmaps/<project-name>/phase-1-<name2>/roadmap.yml`, etc.
 
 ### Step 2: Edit Files
 
-Edit the generated files:
-- `agent_roadmaps/<name>/INVARIANTS.md` - Add constraints
-- `agent_roadmaps/<name>/ROADMAP.md` - Add detailed plan
-- `agent_roadmaps/<name>/roadmap.yml` - Define phases and tasks
+Edit the generated files in each phase folder:
+- `agent_roadmaps/<project-name>/<phase-folder-name>/INVARIANTS.md` - Add constraints
+- `agent_roadmaps/<project-name>/<phase-folder-name>/ROADMAP.md` - Add detailed plan
+- `agent_roadmaps/<project-name>/<phase-folder-name>/roadmap.yml` - Define phases and tasks
 
 ### Step 3: Validate Schema
 
 ```bash
-python3 .claude/skills/roadmap/scripts/validate_schema.py <name>
+python3 .claude/skills/roadmap/scripts/validate_schema.py phase-0-baseline
 ```
 
 ### Step 4: Fix Errors
@@ -211,7 +216,7 @@ If validation fails:
 
 ### Step 5: Activate
 
-Set in `roadmap.yml`:
+Set in the phase's `roadmap.yml`:
 ```yaml
 status:
   active: true
@@ -222,7 +227,7 @@ status:
 Run this command before committing:
 
 ```bash
-python3 .claude/skills/roadmap/scripts/validate_schema.py <roadmap-name>
+python3 .claude/skills/roadmap/scripts/validate_schema.py <phase-folder-name>
 ```
 
 **Exit codes**:

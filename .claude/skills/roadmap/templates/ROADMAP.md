@@ -1,6 +1,6 @@
-# ROADMAP -- Long-Form Execution Guide (Template)
+# ROADMAP -- Phase Execution Guide (Template)
 
-> This document describes a **large, multi-session roadmap task**.
+> This document describes the **single phase** `<PHASE_FOLDER_NAME>`.
 > It is written to be read by an AI agent with no prior context.
 > Verbosity is intentional to prevent ambiguity.
 
@@ -8,17 +8,17 @@
 
 ## 1. Background and Motivation
 
-(Explain why this roadmap exists.)
+(Explain why this phase exists.)
 
-- What problem is being solved?
-- Why incremental or ad-hoc changes are insufficient
-- What risks exist if this work is done incorrectly
+- What problem is being solved in this phase?
+- Why is this work necessary at this stage of the project?
+- What risks exist if this phase is done incorrectly?
 
 ---
 
-## 2. Overall Objective
+## 2. Overall Objective (for THIS phase)
 
-By the end of this roadmap, the following MUST be true:
+By the end of this phase, the following MUST be true:
 
 - [Objective 1]
 - [Objective 2]
@@ -30,7 +30,7 @@ These objectives are **contractual**.
 
 ## 3. Explicit Non-Goals
 
-The following are **explicitly excluded** from this roadmap:
+The following are **explicitly excluded** from this phase:
 
 - [Non-goal 1]
 - [Non-goal 2]
@@ -43,7 +43,7 @@ If something is not listed as a goal, assume it is out of scope.
 
 (Describe the approach, not the steps.)
 
-- Why this strategy was chosen
+- Why this strategy was chosen for this phase
 - What alternatives were considered and rejected
 - Key trade-offs
 
@@ -51,65 +51,32 @@ Detailed decision rationale belongs in ADRs if needed.
 
 ---
 
-## 5. Phase Overview
+## 5. Deliverables
 
-This roadmap is divided into **ordered phases**.
-Phases MUST be completed sequentially.
+Concrete artifacts this phase must produce:
 
-Example:
-
-- Phase 0 -- Baseline & Freeze
-- Phase 1 -- Structural Change
-- Phase 2 -- Behavioral Change
-- Phase 3 -- Optimization & Hardening
+- [Deliverable 1]
+- [Deliverable 2]
 
 ---
 
-## 6. Phase Details
-
-### Phase X -- <Phase Name>
-
-#### Objective
-
-After this phase:
-
-- [Concrete truth that must hold]
-
-#### Inputs / Preconditions
-
-- [What must already exist]
-
-#### Constraints (Re-affirmed)
-
-- Refer to INVARIANTS.md
-- Phase-specific constraints (if any)
-
-#### Execution Guidance
-
-(How to think while executing this phase.)
-
-- What to focus on
-- What to avoid
-- Typical failure modes
-
-#### Deliverables
-
-- [Concrete artifacts]
-
-#### Exit Criteria
+## 6. Exit Criteria
 
 This phase is complete when:
 
 - [Measurable condition 1]
 - [Measurable condition 2]
+- roadmap.yml reflects `completed: true` for this phase
+- All tasks in roadmap.yml are marked `completed`
+- A final session handoff file has been written in sessions/
 
-Do NOT advance to the next phase unless all exit criteria are met.
+Do NOT mark this phase complete unless all exit criteria are met.
 
 ---
 
 ## 7. Risk and Rollback Considerations
 
-- Known risks
+- Known risks for this phase
 - How to detect failure early
 - Rollback or mitigation strategy
 
@@ -117,11 +84,12 @@ Do NOT advance to the next phase unless all exit criteria are met.
 
 ## 8. Completion Definition
 
-The roadmap is considered complete when:
+This phase is considered complete when:
 
-- All phases are completed
+- All exit criteria in section 6 are met
 - roadmap.yml reflects completion
 - No open blockers remain
+- A PR/MR from `roadmap/<PHASE_FOLDER_NAME>` into the base branch has been opened
 
 ---
 

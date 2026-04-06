@@ -1,249 +1,89 @@
-# Agents Roadmaps - Authoritative Guide
+# Agent Roadmaps - Phase Series Overview
 
-**This document is authoritative for all AI agents (including Claude Code) operating in this repository.**   
+**This document is authoritative for all AI agents (including Claude Code) operating in this repository.**
 Any violation of the rules defined here is considered a critical agent failure.
+
+Read this file at the start of every session, without exception.
 
 
 ## 1. Purpose of agent_roadmaps/
 
-The agent_roadmaps/ directory is the **single source of truth** for:
-- Whether the repository is currently executing a **large, system-level, multi-session task**
-- Which roadmap (if any) is **currently active**
-- How AI agents must **initialize, constrain, execute, and hand off** such tasks across sessions
+The `agent_roadmaps/` directory is the **single source of truth** for:
+- Whether the repository is currently executing a **large, system-level, multi-session task series**
+- Which phase (if any) is **currently active**
+- How AI agents must **initialize, constrain, execute, and hand off** work across sessions
 
-This mechanism exists to **prevent context loss, decision drift, and architectural regression** when tasks exceed one or two Claude Code sessions.
-
-
-## 2. Global Rule: At Most One Active Roadmap
-
-**MENTION: At most ONE roadmap may be active at any time.** 
-- AI agents **MUST NOT** start, create, or propose a second roadmap while one is active
-    - All work must either:
-    - Continue the active roadmap, or
-- Explicitly conclude it before starting a new one
-
-Violation of this rule is forbidden.
+This mechanism exists to **prevent context loss, decision drift, and architectural regression** when tasks exceed one or two sessions.
 
 
-## 3. Active Roadmap Status (MANDATORY CHECKPOINT)
+## 2. Phase Series
 
-Every agent session **MUST begin** by checking the following section.
+Each phase is a self-contained folder. Phases MUST be completed sequentially.
 
-### 3.1 Current Status
+1. `phase-0-<name>/` -- <brief description> -- status: pending | active | completed
+2. `phase-1-<name>/` -- <brief description> -- status: pending | active | completed
+3. `phase-2-<name>/` -- <brief description> -- status: pending | active | completed
 
-> **Active Roadmap**:    
-> [] None   
-> [x] Exists (see below)     
-
-**If active, fill exactly one entry below**:   
-- **Name** : <roadmap-name>
-- **Path** : agent_roadmaps/\<roadmap-name\>/
-- **Current Phase / Task** : \<as defined in roadmap.yml\>
-- **Status** : active | blocked | completing
-
-If **no roadmap is active**, this section MUST explicitly say:
-
-> Active Roadmap: None    
+**Active phase**: `<PHASE_FOLDER_NAME>` (update this when the active phase changes)
 
 
-## 4. When a New Roadmap MUST Be Created
+## 3. Branching Protocol
 
-An AI agent **MUST ask the user to create a new roadmap** if a task meets **any** of the following conditions:
-- Cannot be confidently completed within **1-2 Claude Code sessions**
-- Involves **system-wide refactor**, architectural change, or invariant-sensitive work
-- Requires **long-lived constraints** that must survive context resets
-- Has multiple dependent phases or non-trivial rollback risk
+Each phase has a dedicated git branch:
 
-If the user agrees, the agent MUST create a new roadmap following Section 5 **before writing any implementation code**.
+- Branch name: `roadmap/<phase-folder-name>`
+- Created from: the project's base branch (e.g., `main` or `master`)
+- Merged via: PR/MR into the base branch when the phase is complete
+
+Rules:
+- Work for phase N MUST only happen on `roadmap/phase-N-<name>`.
+- Do NOT commit phase work directly to the base branch.
+- The next phase MUST NOT be activated until the previous phase's PR/MR is merged.
 
 
-## 5. Mandatory Structure of a Roadmap Directory
+## 4. Operating Rules
 
-When a roadmap is activated, a **dedicated subdirectory** MUST be created under agent_roadmaps/ with @agent_roadmaps/template/ as example.
+- Read this file at the start of every session.
+- Work ONLY inside the currently active phase folder.
+- Do NOT start, create, or propose work on a non-active phase.
+- Do NOT activate the next phase until the current phase's PR/MR is merged into the base branch.
+- At most ONE phase may be active at any time.
+
+
+## 5. Per-Phase Folder Structure
+
+Each phase folder contains:
 
 ```
 agent_roadmaps/
-`-- <roadmap-name>/
-    |-- INVARIANTS.md
-    |-- ROADMAP.md
-    |-- roadmap.yml
-    |-- prompt.md
-    `-- sessions/
-```
-
-Each file has **strict semantics** defined below.
-
-
-## 6. Required Files (Authoritative Definitions)
-
-**Template:**    
-Use @agent_roadmaps/template/ as example. 
-
-### 6.1 INVARIANTS.md -- Constitutional Constraints
-
-**Template:**     
-Use @agent_roadmaps/template/INVARIANTS.md as example.
-
-**Purpose:**     
-Defines **non-negotiable, constitutional-level constraints** that override all other instructions.
-
-Requirements:    
-- Must be compatible with:
-    - CLAUDE.md
-    - CONTRIBUTING.md
-    - The project's existing architectural and policy constraints
-- Must clearly state:
-    - What **must never change**
-    - What **must always hold true**
-    - What **requires explicit human approval to modify**
-
-**Authority Order (highest):**    
-1. INVARIANTS.md
-2. ROADMAP.md
-3. roadmap.yml
-4. Session handoff notes
-5. prompt.md
-
-
-### 6.2 ROADMAP.md -- Long-Form Execution Manual
-
-**Template:**    
-Use @agent_roadmaps/template/ROADMAP.md as example.
-
-**Purpose:**     
-A **detailed, instructional, long-form document** describing the roadmap task in its entirety.
-
-**Mandatory Characteristics:**     
-- Written as a **step-by-step operational manual**  
-- Explicitly defines:
-- Overall objective
-- Phases and their intent
-- Non-goals
-- Dependencies
-- Risks and forbidden shortcuts
-- May be long and verbose
-**(verbosity is preferred over ambiguity)**
-
-**FORBIDDEN:** ROADMAP.md must **NOT** be a TODO list or a timeline-only document.
-
-
-### 6.3 roadmap.yml -- Canonical Execution State (Machine-Readable)
-
-**Template:**     
-Use @agent_roadmaps/template/roadmap.yml as example.
-
-**Purpose:**     
-Provides a **normalized, authoritative state machine** for the roadmap.
-
-This file is the **only place** where execution progress is tracked.
-
-#### 6.3.1 Required Top-Level Schema
-
-```yaml
-roadmap:
-  name: <string>
-  description: <string>
-
-status:
-  active: true | false
-  blocked: true | false
-  completed: true | false
-
-current_focus:
-  phase: <phase_id>
-  task: <task_id>
-
-phases:
-  - id: <phase_id>
-    title: <string>
-    status: pending | active | completed | blocked
-    tasks:
-      - id: <task_id>
-        title: <string>
-        status: pending | active | completed | blocked
-        notes: <optional string>
-```
-
-#### 6.3.2 Rules   
-
-- Exactly **one** task may be active at any time
-- current_focus MUST always point to that task
-- Agents MUST NOT advance phases or tasks implicitly
-- State changes must reflect **already completed work**, not intentions
-
-
-### 6.4 prompt.md -- Session Initialization Prompt (Copy-Paste Only)
-
-**Purpose:**     
-Contains the **entire initialization prompt** for starting a new Claude Code session for this roadmap.
-
-**STRICT RULES:**     
-- Must contain **only** text intended to be copied verbatim into Claude Code
-- Must NOT contain:
-    - Commentary
-    - Instructions to humans
-    - Explanatory metadata
-- Must explicitly instruct the agent to:
-    - Read all roadmap files
-    - Respect authority order
-    - Operate only on current_focus
-
-If content should **not** be copied into Claude Code, it **must not** be in this file.
-
-
-### 6.5 sessions/ -- Session-to-Session Handoff Records
-
-**Purpose:**     
-Ensures **continuity across sessions and agent restarts.** 
-
-**Rules:**    
-- Each session MUST generate exactly one new file here
-- Files are **append-only**
-- No retroactive edits
-
-**Recommended naming:**     
-
-```
-YYYY-MM-DD-<agent>-<index>.md
-```
-
-**Required structure per file:**    
-
-```markdown
-## Focus
-- Phase: <phase_id>
-- Task: <task_id>
-
-## Work Completed
-- ...
-
-## Decisions Made
-- ...
-
-## Open Issues / Blockers
-- ...
-
-## Next Session Handoff
-- ...
+-- <phase-folder-name>/
+    |-- INVARIANTS.md   # Non-negotiable constraints for this phase
+    |-- ROADMAP.md      # Long-form execution guide for this phase
+    |-- roadmap.yml     # Machine-readable execution state for this phase
+    |-- prompt.md       # Session initialization prompt (copy-paste only)
+    -- sessions/        # Session handoff records
 ```
 
 
-## 7. Agent Startup Checklist (MANDATORY)
+## 6. Agent Startup Checklist (MANDATORY)
 
-Every Claude Code session MUST:
-1. Read this agent_roadmaps/README.md
-2. Determine whether a roadmap is active
-3. If active:
-    - Enter the roadmap directory
-    - Follow prompt.md
-4. If inactive:
-    - Proceed normally, or
-    - Ask the user whether to start a new roadmap if criteria in Section 4 are met
+Every session MUST:
+
+1. Read this `agent_roadmaps/README.md`.
+2. Identify which phase is currently active (see Section 2).
+3. If a phase is active:
+   - Enter that phase's folder.
+   - Read its `INVARIANTS.md`, `ROADMAP.md`, `roadmap.yml`, and the latest file in `sessions/`.
+   - Follow `prompt.md` to initialize the session.
+   - Confirm you are on the correct branch (`roadmap/<phase-folder-name>`).
+4. If no phase is active:
+   - Proceed normally, or
+   - Ask the user whether to activate the next phase if prior phase's PR/MR has been merged.
 
 
-## 8. Final Enforcement Rule
+## 7. Final Enforcement Rule
 
-> **If an agent is unsure whether an action is allowed,**    
-> it MUST stop and ask the user.**    
+> **If an agent is unsure whether an action is allowed,**
+> it MUST stop and ask the user.
 
 Silent assumption is forbidden.
