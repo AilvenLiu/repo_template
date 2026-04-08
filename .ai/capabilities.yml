@@ -74,14 +74,6 @@ platform_requirements:
         required: true
         notes: Context7 documentation lookup via MCP
 
-      - id: superpowers@claude-plugins-official
-        required: true
-        notes: Provides superpowers:* plugin skills
-
-      - id: skill-creator@claude-plugins-official
-        required: true
-        notes: Skill authoring and evaluation tooling
-
       - id: frontend-design@claude-plugins-official
         required: true
         notes: Frontend design capabilities
@@ -98,67 +90,6 @@ platform_requirements:
       - id: pua-skills
         source: tanweai/pua
         required: true
-
-    claude_plugin_skills:
-      - id: skill-creator:skill-creator
-        required: true
-        plugin: skill-creator@claude-plugins-official
-
-      - id: superpowers:verification-before-completion
-        required: true
-        plugin: superpowers@claude-plugins-official
-
-      - id: superpowers:receiving-code-review
-        required: true
-        plugin: superpowers@claude-plugins-official
-
-      - id: superpowers:finishing-a-development-branch
-        required: true
-        plugin: superpowers@claude-plugins-official
-
-      - id: superpowers:using-git-worktrees
-        required: true
-        plugin: superpowers@claude-plugins-official
-
-      - id: superpowers:brainstorming
-        required: true
-        plugin: superpowers@claude-plugins-official
-
-      - id: superpowers:using-superpowers
-        required: true
-        plugin: superpowers@claude-plugins-official
-
-      - id: superpowers:dispatching-parallel-agents
-        required: true
-        plugin: superpowers@claude-plugins-official
-
-      - id: superpowers:requesting-code-review
-        required: true
-        plugin: superpowers@claude-plugins-official
-
-      - id: superpowers:executing-plans
-        required: true
-        plugin: superpowers@claude-plugins-official
-
-      - id: superpowers:writing-skills
-        required: true
-        plugin: superpowers@claude-plugins-official
-
-      - id: superpowers:subagent-driven-development
-        required: true
-        plugin: superpowers@claude-plugins-official
-
-      - id: superpowers:systematic-debugging
-        required: true
-        plugin: superpowers@claude-plugins-official
-
-      - id: superpowers:test-driven-development
-        required: true
-        plugin: superpowers@claude-plugins-official
-
-      - id: superpowers:writing-plans
-        required: true
-        plugin: superpowers@claude-plugins-official
 
     integrations:
       - id: context7-mcp

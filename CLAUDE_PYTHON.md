@@ -17,7 +17,6 @@ session state.
 The `/init` skill runs a deterministic capability audit that verifies:
 - Required Claude Code plugins are installed and enabled
 - Required project skills exist under `.claude/skills/`
-- Required plugin skills are available
 - Context7 MCP server is configured and healthy
 
 If the audit fails, the session is locked down:
