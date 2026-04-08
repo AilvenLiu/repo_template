@@ -135,13 +135,13 @@ def test_claude_plugin_skill_discovery(monkeypatch) -> None:
                 "platform_requirements": {
                     "claude": {
                         "claude_plugins": [
-                            {"id": "superpowers@claude-plugins-official", "required": True}
+                            {"id": "example-plugin@example-marketplace", "required": True}
                         ],
                         "claude_plugin_skills": [
                             {
-                                "id": "superpowers:brainstorming",
+                                "id": "example-plugin:brainstorming",
                                 "required": True,
-                                "plugin": "superpowers@claude-plugins-official",
+                                "plugin": "example-plugin@example-marketplace",
                             }
                         ],
                     }
@@ -153,14 +153,14 @@ def test_claude_plugin_skill_discovery(monkeypatch) -> None:
         monkeypatch.setattr(
             capability_audit,
             "_claude_plugins_list",
-            lambda: "superpowers@claude-plugins-official\nStatus: enabled\n",
+            lambda: "example-plugin@example-marketplace\nStatus: enabled\n",
         )
         monkeypatch.setattr(
             capability_audit,
             "_claude_plugins_list_json",
             lambda: [
                 {
-                    "id": "superpowers@claude-plugins-official",
+                    "id": "example-plugin@example-marketplace",
                     "enabled": True,
                     "installPath": "/fake/path",
                 }
@@ -169,7 +169,7 @@ def test_claude_plugin_skill_discovery(monkeypatch) -> None:
         monkeypatch.setattr(
             capability_audit,
             "_discover_plugin_skills",
-            lambda plugin_id, install_path: ["superpowers:brainstorming"],
+            lambda plugin_id, install_path: ["example-plugin:brainstorming"],
         )
 
         result = run_audit(repo, platform="claude")
