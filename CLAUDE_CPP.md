@@ -29,7 +29,6 @@ The audit reads `.ai/capabilities.yml` as the canonical manifest.
 Required Claude Code bootstrap commands for this repository:
 
 ```bash
-claude plugin install frontend-design@claude-plugins-official
 claude plugin marketplace add tanweai/pua
 claude plugin install pua@pua-skills
 # Primary method (plugin-backed MCP):

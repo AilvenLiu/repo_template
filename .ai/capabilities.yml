@@ -74,10 +74,6 @@ platform_requirements:
         required: true
         notes: Context7 documentation lookup via MCP
 
-      - id: frontend-design@claude-plugins-official
-        required: true
-        notes: Frontend design capabilities
-
       - id: pua@pua-skills
         required: true
         notes: PUA skills (marketplace source tanweai/pua)
