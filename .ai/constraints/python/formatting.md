@@ -480,6 +480,14 @@ name = "Francois"  # ASCII only
 - Variable names
 - Function names
 - Documentation
+- User-facing generated text
+- Skill output and slash-command output
+
+**Skill variant requirement**:
+- If a skill offers multiple language variants, choose the British-English-
+  compliant variant
+- For the PUA plugin, use `pua:pua-en` and do not use `pua:pua` when producing
+  English output
 
 **Common British vs American spellings**:
 - colour (not color)

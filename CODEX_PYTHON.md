@@ -10,6 +10,20 @@ bin/agent-init --platform codex
 
 If initialization or capability audit fails, mutation work is blocked.
 
+## PUA Language Variant
+
+If PUA mode is requested or triggered in an English session, use the English variant.
+
+Install the `pua-en` skill variant:
+
+```bash
+mkdir -p .agents/skills/pua-en
+curl -o .agents/skills/pua-en/SKILL.md \
+  https://raw.githubusercontent.com/tanweai/pua/main/codex/pua-en/SKILL.md
+```
+
+Do NOT use the default `pua` (Chinese) variant. The repository requires British English for user-facing text.
+
 ## Required Workflow Commands
 
 - Init: `bin/agent-init --platform codex`

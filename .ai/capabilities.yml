@@ -115,6 +115,10 @@ platform_requirements:
       - id: context7
         required: true
 
+      - id: pua-en
+        required: true
+        notes: PUA-EN skill for English sessions (source tanweai/pua)
+
     repo_commands:
       - id: agent-init
         path: bin/agent-init

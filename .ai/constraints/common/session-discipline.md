@@ -166,6 +166,22 @@ All platforms MUST:
 - re-run session initialization after the capability is resolved
 - avoid mutation or substantive implementation while required capabilities are missing
 
+### 1.6 Skill Variant Selection
+
+When invoking any skill or plugin that offers multiple language variants, the
+agent MUST choose the variant that complies with repository language
+constraints.
+
+For this repository:
+- British English is mandatory for all English user-facing text
+- Therefore, when invoking the PUA skill, the agent MUST use `pua:pua-en`
+- The default Chinese-oriented `pua:pua` variant MUST NOT be used when English
+  output is required by repository constraints
+
+If a skill only provides a non-compliant language variant, the agent MUST avoid
+using it for user-facing English output and choose a compliant alternative
+workflow.
+
 ## 2. Decision Hygiene
 
 ### 2.1 The Problem of Re-Discussion

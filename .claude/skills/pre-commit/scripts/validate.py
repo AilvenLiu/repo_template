@@ -1,27 +1,36 @@
 #!/usr/bin/env python3
 """Main validation orchestrator for pre-commit checks."""
 
+from __future__ import annotations
+
 import sys
 from pathlib import Path
-from typing import List
 
 # Add scripts directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent))
 
 # Add common utilities to path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent / 'common'))
-from check_session import check_session_initialized
-from validate_constraints import validate_all_constraints, print_violations
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / "common"))
+from check_session import check_session_initialized  # type: ignore[import-not-found]  # noqa: E402  # isort: skip
+from validate_constraints import (  # type: ignore[import-not-found]  # noqa: E402  # isort: skip
+    print_violations,
+    validate_all_constraints,
+)
 
 # Check session initialization
-session_state = check_session_initialized('pre-commit')
+session_state = check_session_initialized("pre-commit")
 
-from utils import PreCommitManager, ProjectType, ValidationResult
+from utils import PreCommitManager, ProjectType, ValidationResult  # noqa: E402  # isort: skip
 
 
-def validate_python(manager: PreCommitManager) -> List[ValidationResult]:
+def _emit(message: str = "") -> None:
+    """Write a single console line."""
+    sys.stdout.write(f"{message}\n")
+
+
+def validate_python(manager: PreCommitManager) -> list[ValidationResult]:
     """Run Python validation checks."""
-    results = []
+    results: list[ValidationResult] = []
 
     # CRITICAL: Check for managed Python environment (Poetry or local venv)
     venv_paths = [".venv", "venv", ".virtualenv"]
@@ -63,11 +72,7 @@ def validate_python(manager: PreCommitManager) -> List[ValidationResult]:
     # Check for dependency manifest
     requirements_file = manager.repo_root / "requirements.txt"
     if poetry_managed or requirements_file.exists():
-        detail = (
-            "Poetry lockfile exists"
-            if poetry_managed
-            else "requirements.txt exists"
-        )
+        detail = "Poetry lockfile exists" if poetry_managed else "requirements.txt exists"
         results.append(
             ValidationResult(
                 "dependency manifest",
@@ -87,7 +92,7 @@ def validate_python(manager: PreCommitManager) -> List[ValidationResult]:
             )
         )
 
-    python_files = manager.find_python_files()
+    python_files = manager.find_changed_python_files()
     file_args = [str(file.relative_to(manager.repo_root)) for file in python_files]
 
     # Check for black (formatter)
@@ -189,19 +194,31 @@ def validate_python(manager: PreCommitManager) -> List[ValidationResult]:
 
     # Check for mypy (type checker)
     if manager.check_tool_available("mypy"):
-        mypy_cmd = ["mypy"]
         mypy_targets = manager.find_mypy_targets()
-        if (manager.repo_root / "src").exists():
-            mypy_cmd.append("--explicit-package-bases")
-        returncode, stdout, stderr = manager.run_command(mypy_cmd + mypy_targets)
-        results.append(
-            ValidationResult(
-                "mypy (type checker)",
-                returncode == 0,
-                stdout,
-                stderr,
+        if mypy_targets:
+            mypy_cmd = ["mypy"]
+            if (manager.repo_root / "src").exists() and any(
+                target.startswith("src/") for target in mypy_targets
+            ):
+                mypy_cmd.extend(["--namespace-packages", "--explicit-package-bases"])
+            returncode, stdout, stderr = manager.run_command(mypy_cmd + mypy_targets)
+            results.append(
+                ValidationResult(
+                    "mypy (type checker)",
+                    returncode == 0,
+                    stdout,
+                    stderr,
+                )
             )
-        )
+        else:
+            results.append(
+                ValidationResult(
+                    "mypy (type checker)",
+                    True,
+                    "No project Python files found",
+                    "",
+                )
+            )
     else:
         results.append(
             ValidationResult(
@@ -239,9 +256,9 @@ def validate_python(manager: PreCommitManager) -> List[ValidationResult]:
     return results
 
 
-def validate_cpp(manager: PreCommitManager) -> List[ValidationResult]:
+def validate_cpp(manager: PreCommitManager) -> list[ValidationResult]:
     """Run C++/CUDA validation checks."""
-    results = []
+    results: list[ValidationResult] = []
 
     # CRITICAL: Check for package manager configuration (dependency management)
     conan_file = manager.repo_root / "conanfile.txt"
@@ -408,7 +425,7 @@ def validate_cpp(manager: PreCommitManager) -> List[ValidationResult]:
     return results
 
 
-def main():
+def main() -> None:
     """Main entry point for validation."""
     repo_root = Path.cwd()
     manager = PreCommitManager(repo_root)
@@ -416,71 +433,73 @@ def main():
     # Detect project type
     project_type = manager.detect_project_type()
 
-    print("Pre-Commit Validation")
-    print("=" * 50)
-    print(f"Project Type: {project_type.value}")
-    print()
+    _emit("Pre-Commit Validation")
+    _emit("=" * 50)
+    _emit(f"Project Type: {project_type.value}")
+    _emit()
 
     # Run constraint validation first
-    print("=" * 50)
-    print("CONSTRAINT VALIDATION")
-    print("=" * 50)
-    print()
+    _emit("=" * 50)
+    _emit("CONSTRAINT VALIDATION")
+    _emit("=" * 50)
+    _emit()
 
     constraint_violations = validate_all_constraints()
     print_violations(constraint_violations)
 
     # If critical constraint violations, fail immediately
-    critical = [v for v in constraint_violations if v.severity == 'CRITICAL']
+    critical = [
+        violation for violation in constraint_violations if violation.severity == "CRITICAL"
+    ]
     if critical:
-        print()
-        print("=" * 50)
-        print("FAILED: Critical constraint violations must be fixed before committing")
-        print("=" * 50)
+        _emit()
+        _emit("=" * 50)
+        _emit("FAILED: Critical constraint violations must be fixed before committing")
+        _emit("=" * 50)
         sys.exit(1)
 
-    print()
+    _emit()
 
     # Run appropriate validations
-    results = []
+    results: list[ValidationResult] = []
     if project_type == ProjectType.PYTHON:
         results = validate_python(manager)
     elif project_type == ProjectType.CPP:
         results = validate_cpp(manager)
     else:
-        print("ERROR: Unknown project type")
-        print("Could not detect Python or C++/CUDA project")
+        _emit("ERROR: Unknown project type")
+        _emit("Could not detect Python or C++/CUDA project")
         sys.exit(1)
 
     # Display results
-    print("Validation Results:")
-    print("-" * 50)
+    _emit("Validation Results:")
+    _emit("-" * 50)
     passed_count = 0
     failed_count = 0
 
     for result in results:
-        print(result)
+        _emit(str(result))
         if result.passed:
             passed_count += 1
         else:
             failed_count += 1
 
-    print()
-    print(f"Passed: {passed_count}/{len(results)}")
-    print(f"Failed: {failed_count}/{len(results)}")
+    _emit()
+    _emit(f"Passed: {passed_count}/{len(results)}")
+    _emit(f"Failed: {failed_count}/{len(results)}")
 
     # Show detailed errors
     if failed_count > 0:
-        print()
-        print("Detailed Errors:")
-        print("-" * 50)
+        _emit()
+        _emit("Detailed Errors:")
+        _emit("-" * 50)
         for result in results:
             if not result.passed:
-                print(f"\n{result.tool}:")
+                _emit(f"\n{result.tool}:")
                 if result.error:
-                    print(f"  Error: {result.error}")
+                    _emit(f"  Error: {result.error}")
                 if result.output:
-                    print(f"  Output: {result.output[:500]}")  # Limit output
+                    _emit(f"  Output: {result.output[:500]}")
 
     # Exit with appropriate code
     sys.exit(0 if failed_count == 0 else 1)

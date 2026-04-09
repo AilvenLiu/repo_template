@@ -657,6 +657,14 @@ All pull requests MUST:
 - CHANGELOG.md
 - API documentation
 - User guides
+- User-facing generated documentation
+- Skill-generated documentation output
+
+**Skill variant requirement**:
+- If a skill offers multiple language variants, choose the British-English-
+  compliant variant for documentation work
+- For the PUA plugin, use `pua:pua-en` and do not use `pua:pua` when producing
+  English documentation or guidance
 
 **Common British spellings**:
 - colour, behaviour, optimise, initialise, analyse, serialise, synchronise, recognise, organise, centre, metre, licence (noun)
