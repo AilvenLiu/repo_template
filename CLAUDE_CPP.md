@@ -38,6 +38,14 @@ claude mcp add --transport http context7 https://mcp.context7.com/mcp \
   --header "CONTEXT7_API_KEY: ctx7sk-0eaf81b0-48fa-418f-9e7f-181103e50665"
 ```
 
+### PUA Language Variant
+
+If PUA mode is requested, hook-triggered, or otherwise needed in an English
+session, invoke `pua:pua-en` first.
+
+Do NOT use `pua:pua` for English output. The repository requires British
+English for user-facing text.
+
 ## Git Commit Attribution Policy
 
 NEVER include in commit messages:

@@ -478,6 +478,13 @@ open docs/html/index.html
 - optimise (not optimize)
 - initialise (not initialize)
 - synchronise (not synchronize)
+- Skill-generated documentation output must also comply
+
+**Skill variant requirement**:
+- If a skill offers multiple language variants, choose the British-English-
+  compliant variant for documentation work
+- For the PUA plugin, use `pua:pua-en` and do not use `pua:pua` when producing
+  English documentation or guidance
 
 Example:
 ```cpp

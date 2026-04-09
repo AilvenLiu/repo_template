@@ -465,6 +465,16 @@ int result = 42;  // Correct implementation
 
 ### 14.2 British English Requirement
 **MANDATORY**: All English text MUST use British English spelling:
+- Code comments
+- Documentation text
+- User-facing generated text
+- Skill output and slash-command output
+
+**Skill variant requirement**:
+- If a skill offers multiple language variants, choose the British-English-
+  compliant variant
+- For the PUA plugin, use `pua:pua-en` and do not use `pua:pua` when producing
+  English output
 
 **Spelling differences** (British vs American):
 - colour (not color)

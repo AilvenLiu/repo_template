@@ -1,17 +1,21 @@
 #!/usr/bin/env python3
 """Utilities for pre-commit validation skill."""
 
+from __future__ import annotations
+
 import subprocess
 import sys
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
 
 # Use shared detection
 _COMMON_DIR = Path(__file__).resolve().parents[2] / "common"
 if str(_COMMON_DIR) not in sys.path:
     sys.path.insert(0, str(_COMMON_DIR))
 
-from project_type import ProjectType, detect as detect_project_type  # noqa: E402
+from project_type import (  # type: ignore[import-not-found]  # noqa: E402  # isort: skip
+    ProjectType,
+    detect as detect_project_type,
+)
 
 
 class ValidationResult:
@@ -31,7 +35,7 @@ class ValidationResult:
 class PreCommitManager:
     """Manager for pre-commit validation operations."""
 
-    def __init__(self, repo_root: Optional[Path] = None):
+    def __init__(self, repo_root: Path | None = None):
         self.repo_root = repo_root or Path.cwd()
 
     def detect_project_type(self) -> ProjectType:
@@ -40,10 +44,10 @@ class PreCommitManager:
 
     def run_command(
         self,
-        cmd: List[str],
-        cwd: Optional[Path] = None,
+        cmd: list[str],
+        cwd: Path | None = None,
         timeout: int = 300,
-    ) -> Tuple[int, str, str]:
+    ) -> tuple[int, str, str]:
         """Run a command and return exit code, stdout, stderr."""
         try:
             result = subprocess.run(
@@ -58,17 +62,17 @@ class PreCommitManager:
             return 1, "", f"Command timed out after {timeout // 60} minutes"
         except FileNotFoundError:
             return 1, "", f"Command not found: {cmd[0]}"
-        except Exception as e:
-            return 1, "", str(e)
+        except Exception as error:
+            return 1, "", str(error)
 
     def check_tool_available(self, tool: str) -> bool:
         """Check if a tool is available in PATH."""
         returncode, _, _ = self.run_command(["which", tool])
         return returncode == 0
 
-    def find_python_files(self) -> List[Path]:
+    def find_python_files(self) -> list[Path]:
         """Find all Python files in the repository."""
-        python_files = []
+        python_files: list[Path] = []
         for pattern in ["**/*.py"]:
             python_files.extend(self.repo_root.glob(pattern))
 
@@ -85,44 +89,81 @@ class PreCommitManager:
             ".ai",
             "agent_roadmaps",
         }
-        filtered = []
+        filtered: list[Path] = []
         for file in python_files:
             if not any(excl in file.parts for excl in exclusions):
                 filtered.append(file)
 
         return sorted(filtered)
 
-    def find_mypy_targets(self) -> List[str]:
-        """Find conservative mypy targets to avoid duplicate-module layout issues."""
-        targets: List[str] = []
+    def find_changed_python_files(self) -> list[Path]:
+        """Find changed Python files.
 
-        for candidate in ["src", "tests"]:
-            path = self.repo_root / candidate
-            if path.exists():
-                targets.append(candidate)
+        Fall back to all repository Python files only when Git inspection fails.
+        When there are no changed Python files, return an empty list so non-Python
+        commits do not fail on unrelated repository-wide Python debt.
+        """
+        changed_files: list[Path] = []
 
-        if targets:
-            return targets
-
-        top_level_py = [
-            file.name
-            for file in self.find_python_files()
-            if file.parent == self.repo_root
+        git_commands = [
+            ["git", "diff", "--name-only", "--diff-filter=ACMRTUXB", "HEAD", "--", "*.py"],
+            ["git", "ls-files", "--others", "--exclude-standard", "--", "*.py"],
         ]
-        if top_level_py:
-            return sorted(top_level_py)
 
-        return ["."]
+        for command in git_commands:
+            returncode, stdout, _stderr = self.run_command(command)
+            if returncode != 0:
+                return self.find_python_files()
 
-    def find_cpp_files(self) -> List[Path]:
+            for line in stdout.splitlines():
+                if not line.strip():
+                    continue
+
+                path = self.repo_root / line.strip()
+                if path.exists() and path.suffix == ".py":
+                    changed_files.append(path)
+
+        if not changed_files:
+            return []
+
+        exclusions = {
+            ".venv",
+            "venv",
+            "__pycache__",
+            ".git",
+            "build",
+            "dist",
+            ".claude",
+            ".codex",
+            ".ai",
+            "agent_roadmaps",
+        }
+        filtered: list[Path] = []
+        seen: set[Path] = set()
+        for file in sorted(changed_files):
+            if file in seen:
+                continue
+            if any(excl in file.parts for excl in exclusions):
+                continue
+            filtered.append(file)
+            seen.add(file)
+
+        return filtered
+
+    def find_mypy_targets(self) -> list[str]:
+        """Find mypy targets scoped to changed Python files."""
+        changed_python_files = self.find_changed_python_files()
+        return [str(file.relative_to(self.repo_root)) for file in changed_python_files]
+
+    def find_cpp_files(self) -> list[Path]:
         """Find all C++/CUDA files in the repository."""
-        cpp_files = []
+        cpp_files: list[Path] = []
         for pattern in ["**/*.cpp", "**/*.hpp", "**/*.cu", "**/*.cuh", "**/*.h"]:
             cpp_files.extend(self.repo_root.glob(pattern))
 
         # Filter out common exclusions
         exclusions = {".git", "build", "cmake-build-*"}
-        filtered = []
+        filtered: list[Path] = []
         for file in cpp_files:
             if not any(excl in file.parts for excl in exclusions):
                 filtered.append(file)

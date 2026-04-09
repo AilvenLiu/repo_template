@@ -1,16 +1,14 @@
 #!/usr/bin/env python3
-"""Tests for pre-commit utility helpers."""
-
+import sys
 import tempfile
 from pathlib import Path
-import sys
 
 sys.path.insert(
     0,
     str(Path(__file__).parent.parent / ".claude" / "skills" / "pre-commit" / "scripts"),
 )
 
-from utils import PreCommitManager
+from utils import PreCommitManager  # type: ignore[import-not-found]
 
 
 def test_find_python_files_excludes_agent_infrastructure_dirs() -> None:
@@ -31,7 +29,7 @@ def test_find_python_files_excludes_agent_infrastructure_dirs() -> None:
         assert ".ai/tools/gate.py" not in files
 
 
-def test_find_mypy_targets_prefers_src_and_tests() -> None:
+def test_find_mypy_targets_falls_back_to_python_files_outside_git() -> None:
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
         (root / "src").mkdir()
@@ -40,4 +38,4 @@ def test_find_mypy_targets_prefers_src_and_tests() -> None:
         (root / "tests" / "test_pkg.py").write_text("def test_x():\n    assert True\n")
 
         manager = PreCommitManager(root)
-        assert manager.find_mypy_targets() == ["src", "tests"]
+        assert manager.find_mypy_targets() == ["src/pkg.py", "tests/test_pkg.py"]
