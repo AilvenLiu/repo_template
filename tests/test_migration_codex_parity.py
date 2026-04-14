@@ -32,7 +32,11 @@ def test_migration_script_upgrades_legacy_repo() -> None:
         assert result.returncode == 0, result.stdout + "\n" + result.stderr
 
         assert (target / ".ai" / "tools" / "session_init.py").exists()
+        assert (target / ".ai" / "constraints" / "common" / "karpathy-guidelines.md").exists()
+        assert (target / ".claude" / "settings.json").exists()
+        assert (target / ".claude" / "skills" / "karpathy-guidelines" / "SKILL.md").exists()
         assert (target / ".codex" / "skills" / "init" / "SKILL.md").exists()
+        assert (target / ".codex" / "skills" / "karpathy-guidelines" / "SKILL.md").exists()
         assert (target / "bin" / "agent-init").exists()
         assert (target / ".claude" / "skills" / "pre-commit" / "scripts" / "validate.py").exists()
         assert (target / "CODEX.md").exists()

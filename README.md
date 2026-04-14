@@ -28,6 +28,10 @@ The script prompts for project type (Python or C++), copies the template,
 renames the correct variant files, writes `.ai/project.yml`, removes
 template-only artifacts, and creates an initial git commit.
 
+Existing repos can be upgraded with `scripts/migrate_codex_parity.py`, which now
+also carries the shared constraints, Claude hook/settings files, and the local
+`karpathy-guidelines` assets into older projects.
+
 ## Contents
 
 ### Documentation Files (Template Pairs)
@@ -67,6 +71,7 @@ template-only artifacts, and creates an initial git commit.
 
 | Skill | Purpose |
 |-------|---------|
+| `/karpathy-guidelines` | Behavioural guardrails for non-trivial coding, review, debugging, and refactors |
 | `/init` | Session initialisation (mandatory at session start) |
 | `/create-project` | Bootstrap a new project from this template |
 | `/pre-commit` | Code quality validation before commits |
@@ -95,9 +100,22 @@ In a real (non-template) repo, the key entrypoints are:
 
 This template is designed to work with multiple AI agent platforms:
 
-- **Claude Code**: Uses `CLAUDE.md` + `/init` (delegates to `.ai/tools/session_init.py`)
-- **Codex**: Uses `CODEX.md` + `bin/agent-init --platform codex`
+- **Claude Code**: Uses `CLAUDE.md` + `/init` (delegates to `.ai/tools/session_init.py`) and discovers local skills from `.claude/skills/`
+- **Codex**: Uses `CODEX.md` + `bin/agent-init --platform codex` and local skills from `.codex/skills/`
 - **Other agents**: Can use either pattern depending on file discovery mechanism
+
+Both platforms now inherit the bundled `karpathy-guidelines` behaviour in two ways:
+- via local platform skills for direct or autonomous skill selection
+- via `.ai/constraints/common/karpathy-guidelines.md`, which `init` loads automatically in real projects
+
+Capability audit requirements are also filtered by the generated project's
+language where appropriate, so copied C++ repos do not require Python-only
+support skills such as `python-env-setup`.
+
+Codex is now intentionally stronger in generated repos than before:
+- local Codex skills include `build`, `navigate`, and `python-env-setup` for Python projects
+- `bin/agent-build` provides a shared build entrypoint for both platforms
+- `bin/agent-python-env-setup` exposes the environment recovery tooling through a platform-neutral wrapper
 
 ## License
 

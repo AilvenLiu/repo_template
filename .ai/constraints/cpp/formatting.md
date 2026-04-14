@@ -473,8 +473,8 @@ int result = 42;  // Correct implementation
 **Skill variant requirement**:
 - If a skill offers multiple language variants, choose the British-English-
   compliant variant
-- For the PUA plugin, use `pua:pua-en` and do not use `pua:pua` when producing
-  English output
+- Prefer bundled local skills that already comply with the repository's
+  British-English requirement when producing English output
 
 **Spelling differences** (British vs American):
 - colour (not color)

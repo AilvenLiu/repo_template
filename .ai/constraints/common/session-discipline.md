@@ -166,21 +166,20 @@ All platforms MUST:
 - re-run session initialization after the capability is resolved
 - avoid mutation or substantive implementation while required capabilities are missing
 
-### 1.6 Skill Variant Selection
+### 1.6 Behavioural Skill Selection
 
-When invoking any skill or plugin that offers multiple language variants, the
-agent MUST choose the variant that complies with repository language
-constraints.
+When the repository bundles a local behavioural skill, the agent SHOULD prefer
+that local skill over an external marketplace equivalent.
 
 For this repository:
 - British English is mandatory for all English user-facing text
-- Therefore, when invoking the PUA skill, the agent MUST use `pua:pua-en`
-- The default Chinese-oriented `pua:pua` variant MUST NOT be used when English
-  output is required by repository constraints
+- `karpathy-guidelines` is bundled locally for both Claude Code and Codex
+- For non-trivial coding, debugging, review, or refactor work, apply the local
+  `karpathy-guidelines` skill or follow its equivalent common constraint
 
-If a skill only provides a non-compliant language variant, the agent MUST avoid
-using it for user-facing English output and choose a compliant alternative
-workflow.
+If a platform cannot invoke the skill directly, the agent MUST still follow the
+same behavioural guidance through the shared constraint set loaded at session
+initialisation.
 
 ## 2. Decision Hygiene
 

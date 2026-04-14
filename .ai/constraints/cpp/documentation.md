@@ -483,8 +483,8 @@ open docs/html/index.html
 **Skill variant requirement**:
 - If a skill offers multiple language variants, choose the British-English-
   compliant variant for documentation work
-- For the PUA plugin, use `pua:pua-en` and do not use `pua:pua` when producing
-  English documentation or guidance
+- Prefer bundled local skills that already comply with the repository's
+  British-English requirement when producing English documentation or guidance
 
 Example:
 ```cpp

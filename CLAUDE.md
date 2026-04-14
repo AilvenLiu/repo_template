@@ -15,13 +15,14 @@ remains blocked until they are installed and `/init` is re-run. The canonical
 bootstrap commands live in `.ai/constraints/common/session-discipline.md` and
 the language-specific `CLAUDE_*.md` files.
 
-## PUA Language Variant
+## Bundled Behavioural Skill
 
-If PUA mode is requested, hook-triggered, or otherwise needed in an English
-session, invoke `pua:pua-en` first.
+This template vendors `karpathy-guidelines` locally under `.claude/skills/`.
 
-Do NOT use `pua:pua` for English output. The repository requires British
-English for user-facing text.
+Use it for non-trivial coding, debugging, review, and refactor work to keep
+assumptions explicit, changes surgical, and completion criteria verifiable.
+
+The repository requires British English for user-facing text.
 
 ## Git Commit Attribution Policy
 

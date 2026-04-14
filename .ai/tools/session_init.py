@@ -82,6 +82,7 @@ def find_active_roadmap(repo_root: Path) -> Optional[Path]:
 _ALWAYS_COMMON = [
     "common/git-workflow",
     "common/session-discipline",
+    "common/karpathy-guidelines",
     "common/mcp-integration",
     "common/ascii-only",
 ]
@@ -108,6 +109,44 @@ _CPP_TRIGGERS = {
     ".cuh": ["cpp/cuda"],
 }
 
+_DOC_FILENAMES = {
+    "README.md",
+    "CONTRIBUTING.md",
+    "AGENTS.md",
+    "CLAUDE.md",
+    "CODEX.md",
+}
+
+
+def _is_test_path(path: str) -> bool:
+    lowered = path.lower()
+    return (
+        "test" in lowered
+        or lowered.endswith("pytest.ini")
+        or lowered.endswith("tox.ini")
+        or lowered.endswith("conftest.py")
+    )
+
+
+def _is_doc_path(path: str) -> bool:
+    pure = Path(path)
+    lowered = path.lower()
+    return (
+        pure.name in _DOC_FILENAMES
+        or lowered.startswith("docs/")
+        or pure.suffix in {".md", ".rst"}
+    )
+
+
+def _is_cmake_path(path: str) -> bool:
+    pure = Path(path)
+    lowered = path.lower()
+    return (
+        pure.name == "CMakeLists.txt"
+        or pure.suffix == ".cmake"
+        or lowered.startswith("cmake/")
+    )
+
 
 def resolve_constraints(
     project_type: ProjectType,
@@ -124,18 +163,22 @@ def resolve_constraints(
         for ext, extra in _PYTHON_TRIGGERS.items():
             if ext in exts_seen:
                 keys.extend(extra)
-        if any("test" in path.lower() for path in modified_files):
+        if any(_is_test_path(path) for path in modified_files):
             keys.append("python/testing")
+        if any(_is_doc_path(path) for path in modified_files):
+            keys.append("python/documentation")
     elif project_type == ProjectType.CPP:
         keys.extend(_ALWAYS_CPP)
         exts_seen = {Path(path).suffix for path in modified_files}
         for ext, extra in _CPP_TRIGGERS.items():
             if ext in exts_seen:
                 keys.extend(extra)
-        if any("cmake" in path.lower() for path in modified_files):
+        if any(_is_cmake_path(path) for path in modified_files):
             keys.append("cpp/cmake")
-        if any("test" in path.lower() for path in modified_files):
+        if any(_is_test_path(path) for path in modified_files):
             keys.append("cpp/testing")
+        if any(_is_doc_path(path) for path in modified_files):
+            keys.append("cpp/documentation")
 
     deduped: List[str] = []
     seen = set()
