@@ -1,0 +1,36 @@
+#!/bin/bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+source "$SCRIPT_DIR/_agent_common.sh"
+
+usage() {
+  cat <<'EOF'
+Usage: bin/agent-python-env-setup <diagnose|fix|verify> [extra args]
+EOF
+}
+
+main() {
+  local command="${1:-}"
+  shift || true
+
+  case "$command" in
+    diagnose)
+      run_agent_python "$REPO_ROOT" "$REPO_ROOT/.claude/skills/python-env-setup/scripts/diagnose.py" "$@"
+      ;;
+    fix)
+      run_agent_python "$REPO_ROOT" "$REPO_ROOT/.claude/skills/python-env-setup/scripts/fix.py" "$@"
+      ;;
+    verify)
+      run_agent_python "$REPO_ROOT" "$REPO_ROOT/.claude/skills/python-env-setup/scripts/verify.py" "$@"
+      ;;
+    *)
+      usage
+      exit 1
+      ;;
+  esac
+}
+
+main "$@"

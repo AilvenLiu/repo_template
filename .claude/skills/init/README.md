@@ -18,6 +18,7 @@ That's it! The skill will:
 - Detect your project type (Python or C++/CUDA)
 - Check for active roadmaps
 - Run the capability audit from `.ai/capabilities.yml`
+- Filter capability requirements that are specific to the detected project type
 - Analyze your git status
 - Load only relevant constraints based on what you're working on
 
@@ -35,6 +36,7 @@ Detects whether you're working on Python or C++/CUDA projects by analyzing:
 Loads constraints based on:
 - **Project type**: Python vs C++/CUDA specific constraints
 - **Modified files**: Only loads constraints for file types you're actually working on
+- **File intent**: Documentation, test, and CMake-related constraints load only when matching files changed
 - **Git context**: Warns about protected branches, analyzes changes
 - **Active roadmaps**: Loads roadmap discipline if roadmap is active
 
@@ -60,8 +62,6 @@ The audit will block the session until they are available. The main setup comman
 
 ```bash
 claude plugin install frontend-design@claude-plugins-official
-claude plugin marketplace add tanweai/pua
-claude plugin install pua@pua-skills
 # Primary method (plugin-backed MCP):
 claude plugin install context7@claude-plugins-official
 # Fallback method (manual MCP server):
@@ -166,6 +166,10 @@ NEXT STEPS:
 ```
 
 ## Integration with Other Skills
+
+### `/karpathy-guidelines` Skill
+- The behavioural guidance is bundled locally in the template and copied into real projects
+- `/init` always loads the matching common constraint so the same guidance is active even without an explicit skill invocation
 
 ### `/roadmap` Skill
 - `/init` checks for active roadmaps

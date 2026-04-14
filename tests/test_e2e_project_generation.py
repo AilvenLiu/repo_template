@@ -21,11 +21,41 @@ def template_root():
     return Path(__file__).parent.parent
 
 
-def _assert_common_generated_assets(target: Path) -> None:
+def _assert_common_generated_assets(target: Path, project_type: str) -> None:
+    codex_skill_dirs = {path.name for path in (target / ".codex" / "skills").iterdir() if path.is_dir()}
+
     assert (target / ".ai" / "capabilities.yml").exists()
+    assert (target / ".ai" / "constraints" / "common" / "karpathy-guidelines.md").exists()
     assert (target / ".ai" / "project.yml").exists()
     assert (target / ".ai" / "tools" / "session_init.py").exists()
+    assert (target / ".claude" / "skills" / "karpathy-guidelines" / "SKILL.md").exists()
+    assert (target / ".codex" / "skills" / "build" / "SKILL.md").exists()
     assert (target / ".codex" / "skills" / "init" / "SKILL.md").exists()
+    assert (target / ".codex" / "skills" / "karpathy-guidelines" / "SKILL.md").exists()
+    assert (target / ".codex" / "skills" / "navigate" / "SKILL.md").exists()
+    assert (target / "bin" / "agent-build").exists()
+    expected_codex_skills = {
+        "build",
+        "check-constraints",
+        "context7",
+        "dependency",
+        "init",
+        "karpathy-guidelines",
+        "navigate",
+        "pre-commit",
+        "roadmap",
+    }
+    if project_type == "python":
+        assert (target / ".claude" / "skills" / "python-env-setup" / "SKILL.md").exists()
+        expected_codex_skills.add("python-env-setup")
+        assert (target / ".codex" / "skills" / "python-env-setup" / "SKILL.md").exists()
+        assert (target / "bin" / "agent-python-env-setup").exists()
+    else:
+        assert not (target / ".claude" / "skills" / "python-env-setup").exists()
+        assert not (target / ".claude" / "docs" / "python-env-quick-reference.md").exists()
+        assert not (target / ".codex" / "skills" / "python-env-setup").exists()
+        assert not (target / "bin" / "agent-python-env-setup").exists()
+    assert codex_skill_dirs == expected_codex_skills
     assert (target / "bin" / "agent-init").exists()
     assert (target / "bin" / "agent-precommit").exists()
     assert (target / "bin" / "agent-check-constraints").exists()
@@ -46,7 +76,7 @@ def test_e2e_python_project_generation_and_codex_init(template_root):
         target = Path(tmpdir) / "test_project"
         create_project(template_root, target, "python")
 
-        _assert_common_generated_assets(target)
+        _assert_common_generated_assets(target, "python")
         _assert_template_only_removed(target)
 
         assert (target / "AGENTS.md").exists()
@@ -70,7 +100,7 @@ def test_e2e_cpp_project_generation_and_codex_init(template_root):
         target = Path(tmpdir) / "test_cpp_project"
         create_project(template_root, target, "cpp")
 
-        _assert_common_generated_assets(target)
+        _assert_common_generated_assets(target, "cpp")
         _assert_template_only_removed(target)
 
         assert (target / "CMakeLists.txt").exists()

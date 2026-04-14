@@ -142,6 +142,24 @@ def create_project(template_root: Path, target_dir: Path, project_type: str) -> 
     if create_skill.is_dir():
         shutil.rmtree(create_skill)
 
+    # 8b. Remove language-specific extras that do not help the generated project.
+    if project_type == "cpp":
+        python_env_skill = target_dir / ".claude" / "skills" / "python-env-setup"
+        if python_env_skill.is_dir():
+            shutil.rmtree(python_env_skill)
+
+        python_env_doc = target_dir / ".claude" / "docs" / "python-env-quick-reference.md"
+        if python_env_doc.exists():
+            python_env_doc.unlink()
+
+        codex_python_env_skill = target_dir / ".codex" / "skills" / "python-env-setup"
+        if codex_python_env_skill.is_dir():
+            shutil.rmtree(codex_python_env_skill)
+
+        python_env_wrapper = target_dir / "bin" / "agent-python-env-setup"
+        if python_env_wrapper.exists():
+            python_env_wrapper.unlink()
+
     # 9. Git init + initial commit
     print(f"[{step}] Initializing git repository...")
     try:

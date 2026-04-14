@@ -22,14 +22,14 @@ missing items and stop mutation workflows until the audit passes.
 are blocked until the audit passes. Read-only operations (Read/Glob/Grep) remain
 available for exploration.
 
-### Language-Variant Selection
+### Behavioural Guidance
 
 For English sessions, user-facing output MUST remain in British English.
 
-If the host platform exposes multiple language variants of the same skill,
-choose the English-compliant variant.
-
-On Claude Code, use `pua:pua-en` rather than `pua:pua`.
+For non-trivial coding, debugging, review, or refactor work, apply the bundled
+`karpathy-guidelines` skill when the host platform exposes it. If the skill is
+not directly invokable, follow the same guidance from
+`.ai/constraints/common/karpathy-guidelines.md`.
 
 ---
 

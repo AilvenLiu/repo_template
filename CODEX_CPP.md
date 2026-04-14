@@ -10,23 +10,26 @@ bin/agent-init --platform codex
 
 If initialization or capability audit fails, mutation work is blocked.
 
-## PUA Language Variant
+## Bundled Behavioural Skill
 
-If PUA mode is requested or triggered in an English session, use the English variant.
+This template bundles `karpathy-guidelines` in `.codex/skills/karpathy-guidelines/`.
 
-Install the `pua-en` skill variant:
+Use it for non-trivial coding, debugging, review, and refactor work. It keeps
+the agent focused on explicit assumptions, simple solutions, surgical diffs,
+and verifiable success criteria.
 
-```bash
-mkdir -p .agents/skills/pua-en
-curl -o .agents/skills/pua-en/SKILL.md \
-  https://raw.githubusercontent.com/tanweai/pua/main/codex/pua-en/SKILL.md
-```
+## Bundled Codex Skills
 
-Do NOT use the default `pua` (Chinese) variant. The repository requires British English for user-facing text.
+Codex-native best-effort skills included in generated C++ repos:
+- `build` via `bin/agent-build <setup|compile|test|full|doctor|clean>`
+- `navigate` via repo-native `rg`-first exploration
+
+The repository requires British English for user-facing text.
 
 ## Required Workflow Commands
 
 - Init: `bin/agent-init --platform codex`
+- Build: `bin/agent-build <setup|compile|test|full|doctor|clean>`
 - Constraint check: `bin/agent-check-constraints`
 - Pre-commit validation: `bin/agent-precommit`
 - Dependency add: `bin/agent-dependency add <package> [version]`

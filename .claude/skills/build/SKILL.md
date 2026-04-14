@@ -27,3 +27,11 @@ Automates the full build lifecycle for Python and C++ projects.
 - Mixed Python+C++ projects (builds C++ extensions then installs Python).
 - Cross-compilation and parallel build flags.
 - Tool installation guidance when compilers/tools are missing.
+
+## Execution
+
+Prefer the shared wrapper when invoking build work directly:
+
+```bash
+bin/agent-build <setup|compile|test|full|doctor|clean>
+```

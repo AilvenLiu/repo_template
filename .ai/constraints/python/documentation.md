@@ -663,8 +663,8 @@ All pull requests MUST:
 **Skill variant requirement**:
 - If a skill offers multiple language variants, choose the British-English-
   compliant variant for documentation work
-- For the PUA plugin, use `pua:pua-en` and do not use `pua:pua` when producing
-  English documentation or guidance
+- Prefer bundled local skills that already comply with the repository's
+  British-English requirement when producing English documentation or guidance
 
 **Common British spellings**:
 - colour, behaviour, optimise, initialise, analyse, serialise, synchronise, recognise, organise, centre, metre, licence (noun)

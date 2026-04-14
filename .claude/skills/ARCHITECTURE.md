@@ -134,6 +134,12 @@ Skills that fetch external information:
 - **context7**: Documentation from Context7 MCP
 - **navigate**: Code structure analysis
 
+### Behavioural Skills
+
+Skills that steer execution quality across other workflows:
+
+- **karpathy-guidelines**: Non-trivial coding guidance focused on explicit assumptions, simple solutions, surgical diffs, and verification-first execution
+
 ### Project Management Skills
 
 Skills for managing complex tasks:

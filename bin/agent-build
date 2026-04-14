@@ -1,0 +1,126 @@
+#!/bin/bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+source "$SCRIPT_DIR/_agent_common.sh"
+
+usage() {
+  cat <<'EOF'
+Usage: bin/agent-build <setup|compile|test|full|doctor|clean>
+EOF
+}
+
+project_type() {
+  if [[ -f "$REPO_ROOT/.ai/project.yml" ]]; then
+    awk -F': *' '/^project_type:/ {print $2; exit}' "$REPO_ROOT/.ai/project.yml"
+  else
+    echo "python"
+  fi
+}
+
+python_setup() {
+  if has_poetry_project "$REPO_ROOT"; then
+    (cd "$REPO_ROOT" && poetry install)
+    return
+  fi
+
+  echo "No Poetry project detected. Add pyproject.toml before using build setup for Python." >&2
+  exit 1
+}
+
+python_compile() {
+  echo "Python projects do not have a separate compile step. Use 'test' or 'doctor' instead."
+}
+
+python_test() {
+  if has_poetry_project "$REPO_ROOT"; then
+    (cd "$REPO_ROOT" && poetry run pytest)
+    return
+  fi
+
+  echo "No Poetry project detected. Add pyproject.toml before using build test for Python." >&2
+  exit 1
+}
+
+python_doctor() {
+  if has_poetry_project "$REPO_ROOT"; then
+    (cd "$REPO_ROOT" && poetry env info)
+  else
+    echo "No Poetry project detected. Python environment doctor is limited."
+  fi
+
+  echo "Run 'bin/agent-python-env-setup diagnose' for deeper environment checks."
+}
+
+cpp_setup() {
+  if [[ -f "$REPO_ROOT/conanfile.txt" || -f "$REPO_ROOT/conanfile.py" ]]; then
+    (cd "$REPO_ROOT" && conan install . --build=missing -of build)
+  fi
+  (cd "$REPO_ROOT" && cmake -S . -B build)
+}
+
+cpp_compile() {
+  (cd "$REPO_ROOT" && cmake --build build)
+}
+
+cpp_test() {
+  (cd "$REPO_ROOT" && ctest --test-dir build --output-on-failure)
+}
+
+cpp_doctor() {
+  (cd "$REPO_ROOT" && cmake --version)
+  if command -v conan >/dev/null 2>&1; then
+    conan --version
+  fi
+  if [[ -d "$REPO_ROOT/build" ]]; then
+    echo "Build directory present: $REPO_ROOT/build"
+  else
+    echo "Build directory missing. Run 'bin/agent-build setup' first."
+  fi
+}
+
+cpp_clean() {
+  rm -rf "$REPO_ROOT/build"
+  echo "Removed build directory."
+}
+
+main() {
+  local command="${1:-}"
+  if [[ -z "$command" ]]; then
+    usage
+    exit 1
+  fi
+
+  case "$(project_type)" in
+    python)
+      case "$command" in
+        setup) python_setup ;;
+        compile) python_compile ;;
+        test) python_test ;;
+        full) python_setup; python_test ;;
+        doctor) python_doctor ;;
+        clean) echo "No standard clean step for Python projects." ;;
+        *) usage; exit 1 ;;
+      esac
+      ;;
+    cpp)
+      case "$command" in
+        setup) cpp_setup ;;
+        compile) cpp_compile ;;
+        test) cpp_test ;;
+        full) cpp_setup; cpp_compile; cpp_test ;;
+        doctor) cpp_doctor ;;
+        clean) cpp_clean ;;
+        *) usage; exit 1 ;;
+      esac
+      ;;
+    *)
+      echo "Unsupported or unknown project type." >&2
+      exit 1
+      ;;
+  esac
+}
+
+main "$@"

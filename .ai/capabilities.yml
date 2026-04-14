@@ -9,8 +9,12 @@
 
 common_requirements:
   project_skills:
+    - id: karpathy-guidelines
+      required: true
+
     - id: python-env-setup
       required: true
+      project_types: [python]
 
     - id: roadmap
       required: true
@@ -47,6 +51,11 @@ common_requirements:
       required: true
       executable: true
 
+    - id: agent-build
+      path: bin/agent-build
+      required: true
+      executable: true
+
     - id: agent-precommit
       path: bin/agent-precommit
       required: true
@@ -56,6 +65,12 @@ common_requirements:
       path: bin/agent-dependency
       required: true
       executable: true
+
+    - id: agent-python-env-setup
+      path: bin/agent-python-env-setup
+      required: true
+      executable: true
+      project_types: [python]
 
     - id: agent-commit
       path: bin/agent-commit
@@ -74,17 +89,9 @@ platform_requirements:
         required: true
         notes: Context7 documentation lookup via MCP
 
-      - id: pua@pua-skills
-        required: true
-        notes: PUA skills (marketplace source tanweai/pua)
-
     claude_marketplaces:
       - id: claude-plugins-official
         source: anthropics/claude-plugins-official
-        required: true
-
-      - id: pua-skills
-        source: tanweai/pua
         required: true
 
     integrations:
@@ -106,6 +113,12 @@ platform_requirements:
       - id: dependency
         required: true
 
+      - id: build
+        required: true
+
+      - id: navigate
+        required: true
+
       - id: roadmap
         required: true
 
@@ -115,13 +128,23 @@ platform_requirements:
       - id: context7
         required: true
 
-      - id: pua-en
+      - id: karpathy-guidelines
         required: true
-        notes: PUA-EN skill for English sessions (source tanweai/pua)
+        notes: Bundled Karpathy-inspired behavioural guidance for non-trivial work
+
+      - id: python-env-setup
+        required: true
+        project_types: [python]
+        notes: Diagnose and recover Poetry or pyenv-related environment issues
 
     repo_commands:
       - id: agent-init
         path: bin/agent-init
+        required: true
+        executable: true
+
+      - id: agent-build
+        path: bin/agent-build
         required: true
         executable: true
 
@@ -134,6 +157,12 @@ platform_requirements:
         path: bin/agent-dependency
         required: true
         executable: true
+
+      - id: agent-python-env-setup
+        path: bin/agent-python-env-setup
+        required: true
+        executable: true
+        project_types: [python]
 
       - id: agent-commit
         path: bin/agent-commit

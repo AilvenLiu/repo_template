@@ -244,3 +244,38 @@ def test_codex_repo_commands_are_deduplicated_between_common_and_platform() -> N
             e for e in result.entries if e.category == "repo_command" and e.capability_id == "agent-init"
         ]
         assert len(entries) == 1
+
+
+def test_project_skills_can_be_filtered_by_project_type() -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = Path(tmp)
+        _create_common_layout(repo)
+        (repo / ".ai").mkdir(parents=True, exist_ok=True)
+        (repo / ".ai" / "project.yml").write_text("project_type: cpp\n")
+
+        _write_manifest(
+            repo,
+            {
+                "common_requirements": {
+                    "project_skills": [
+                        {"id": "shared-skill", "required": True},
+                        {
+                            "id": "python-only-skill",
+                            "required": True,
+                            "project_types": ["python"],
+                        },
+                    ]
+                },
+                "platform_requirements": {"codex": {}},
+            },
+        )
+
+        (repo / ".claude" / "skills" / "shared-skill").mkdir(parents=True, exist_ok=True)
+        (repo / ".claude" / "skills" / "shared-skill" / "SKILL.md").write_text("# shared")
+
+        result = run_audit(repo, platform="codex")
+
+        ids = [e.capability_id for e in result.entries if e.category == "project_skill"]
+        assert "shared-skill" in ids
+        assert "python-only-skill" not in ids
+        assert result.passed

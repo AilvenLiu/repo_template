@@ -20,6 +20,7 @@ CLAUDE_MIGRATION_PATHS = [
     Path(".claude/skills/check-constraints"),
     Path(".claude/skills/pre-commit"),
     Path(".claude/skills/dependency"),
+    Path(".claude/skills/karpathy-guidelines"),
 ]
 
 
@@ -82,15 +83,26 @@ def migrate(source_root: Path, target_root: Path, force: bool, backup: bool) -> 
     changed: List[str] = []
     skipped: List[str] = []
 
+    copy_tree(source_root / ".ai" / "constraints", target_root / ".ai" / "constraints", force, changed, skipped)
     copy_tree(source_root / ".ai" / "tools", target_root / ".ai" / "tools", force, changed, skipped)
     copy_tree(source_root / ".codex", target_root / ".codex", force, changed, skipped)
     copy_tree(source_root / "bin", target_root / "bin", force, changed, skipped)
     for rel_path in CLAUDE_MIGRATION_PATHS:
         copy_tree(source_root / rel_path, target_root / rel_path, force, changed, skipped)
 
+    copy_file(source_root / ".claude" / "settings.json", target_root / ".claude" / "settings.json", force, changed, skipped)
+
     project_type = read_project_type(target_root)
     codex_variant = "CODEX_PYTHON.md" if project_type == "python" else "CODEX_CPP.md"
     copy_file(source_root / codex_variant, target_root / "CODEX.md", force, changed, skipped)
+
+    if project_type == "cpp":
+        cpp_python_env_skill = target_root / ".codex" / "skills" / "python-env-setup"
+        if cpp_python_env_skill.is_dir():
+            shutil.rmtree(cpp_python_env_skill)
+        cpp_python_env_wrapper = target_root / "bin" / "agent-python-env-setup"
+        if cpp_python_env_wrapper.exists():
+            cpp_python_env_wrapper.unlink()
 
     # Upgrade capabilities schema if target still uses legacy shape.
     target_manifest = target_root / ".ai" / "capabilities.yml"

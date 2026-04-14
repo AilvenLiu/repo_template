@@ -15,6 +15,12 @@ overrides pyenv's Python selection.
 - `/python-env-setup fix` — automatically fix detected issues
 - `/python-env-setup verify` — confirm environment is correct
 
+Direct wrapper:
+
+```bash
+bin/agent-python-env-setup <diagnose|fix|verify>
+```
+
 ## Behaviour (guaranteed)
 
 1. Checks VIRTUAL_ENV, Python version, pyenv config, Poetry config, PATH order.

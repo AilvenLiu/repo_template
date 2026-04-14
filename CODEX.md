@@ -10,10 +10,17 @@ When generating a real project, the selected variant is copied to `CODEX.md`.
 
 The vendor-neutral constraints live in `AGENTS.md` and `.ai/constraints/`.
 
-## PUA Language Variant
+## Bundled Behavioural Skill
 
-If PUA mode is requested or triggered in an English session, use the English variant.
+This template now vendors `karpathy-guidelines` locally for Codex.
 
-For Codex, install the `pua-en` skill variant rather than the default `pua` (Chinese) variant.
+Use it for non-trivial coding, debugging, review, and refactor work to keep
+changes minimal, surface assumptions early, and drive work with verifiable
+success criteria.
+
+Codex also ships local best-effort skills for:
+- `build`
+- `navigate`
+- `python-env-setup` on Python projects
 
 The repository requires British English for user-facing text.

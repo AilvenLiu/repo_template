@@ -17,8 +17,10 @@ List = list
 
 try:
     from .paths import resolve_repo_root
+    from .project_type import detect
 except ImportError:
     from paths import resolve_repo_root
+    from project_type import detect
 
 
 @dataclass
@@ -196,9 +198,22 @@ def _normalize_manifest(raw: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-def _entry_enabled_for_repo(entry: Dict[str, Any], is_template: bool) -> bool:
+def _entry_enabled_for_repo(entry: Dict[str, Any], is_template: bool, repo_root: Path) -> bool:
     if entry.get("template_only", False) and not is_template:
         return False
+
+    project_types = entry.get("project_types")
+    if project_types:
+        detected = detect(repo_root).value
+        if isinstance(project_types, str):
+            allowed = {project_types}
+        elif isinstance(project_types, list):
+            allowed = {str(item) for item in project_types}
+        else:
+            allowed = set()
+        if detected not in allowed:
+            return False
+
     return True
 
 
@@ -233,7 +248,7 @@ def _audit_project_skills(
 ) -> None:
     skills_root = repo_root / ".claude" / "skills"
     for entry in entries:
-        if not _entry_enabled_for_repo(entry, is_template):
+        if not _entry_enabled_for_repo(entry, is_template, repo_root):
             continue
 
         skill_id = entry.get("id", "")
@@ -268,7 +283,7 @@ def _audit_codex_skills(
 ) -> None:
     skills_root = repo_root / ".codex" / "skills"
     for entry in entries:
-        if not _entry_enabled_for_repo(entry, is_template):
+        if not _entry_enabled_for_repo(entry, is_template, repo_root):
             continue
 
         skill_id = entry.get("id", "")
@@ -301,7 +316,7 @@ def _audit_repo_commands(
     result: AuditResult,
 ) -> None:
     for entry in entries:
-        if not _entry_enabled_for_repo(entry, is_template):
+        if not _entry_enabled_for_repo(entry, is_template, repo_root):
             continue
 
         command_id = entry.get("id", "")

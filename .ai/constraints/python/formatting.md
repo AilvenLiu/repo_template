@@ -486,8 +486,8 @@ name = "Francois"  # ASCII only
 **Skill variant requirement**:
 - If a skill offers multiple language variants, choose the British-English-
   compliant variant
-- For the PUA plugin, use `pua:pua-en` and do not use `pua:pua` when producing
-  English output
+- Prefer bundled local skills that already comply with the repository's
+  British-English requirement when producing English output
 
 **Common British vs American spellings**:
 - colour (not color)
