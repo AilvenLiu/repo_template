@@ -11,6 +11,8 @@ FIRST ACTION every session, no exceptions:
 Skipping `/init` is a critical failure. It loads project constraints,
 detects project type, checks roadmaps, runs capability audit, and writes
 session state.
+On Claude, the normal init path also prints the full text of each selected
+constraint so those rules are actually present in the live session context.
 
 ### Capability Audit
 
@@ -107,5 +109,6 @@ When a slash command is unavailable or you need finer control, call the
 ## Vendor-Neutral Constraints
 
 All coding standards and workflow rules live in `.ai/constraints/`.
-The `/init` skill loads the relevant subset at session start.
+The `/init` skill loads the relevant subset at session start and prints the
+selected constraint bodies into the session context.
 For the full vendor-neutral reference, see `AGENTS.md`.

@@ -224,6 +224,7 @@ def write_session_state(
 
 def run_init(platform: str, verbose: bool = False) -> int:
     repo_root = _repo_root()
+    effective_verbose = verbose or platform == "claude"
 
     separator = "=" * 70
     print(separator)
@@ -277,7 +278,7 @@ def run_init(platform: str, verbose: bool = False) -> int:
             print(f"[MISS] {key}")
             continue
         loaded.append(key)
-        if verbose:
+        if effective_verbose:
             print(f"[CONSTRAINT] {key}")
             print(body)
             print()
