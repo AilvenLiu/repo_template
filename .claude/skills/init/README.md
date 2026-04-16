@@ -20,7 +20,7 @@ That's it! The skill will:
 - Run the capability audit from `.ai/capabilities.yml`
 - Filter capability requirements that are specific to the detected project type
 - Analyze your git status
-- Load only relevant constraints based on what you're working on
+- Print the full text of the relevant constraints based on what you're working on
 
 ## Features
 
@@ -77,7 +77,10 @@ claude mcp add --transport http context7 https://mcp.context7.com/mcp \
 /init
 ```
 
-### Verbose Mode (for debugging)
+### Direct Invocation
+
+Normal `/init` already prints the selected constraint bodies. If you need to
+run the adapter directly while debugging the skill path, you can still invoke:
 
 ```bash
 python3 .claude/skills/init/scripts/init.py --verbose
@@ -119,7 +122,7 @@ Constraints are organized by topic in `.ai/constraints/`:
 2. **Git Analysis**: Checks current branch and modified files
 3. **Roadmap Check**: Looks for active roadmaps using `/roadmap` skill
 4. **Context Analysis**: Determines which constraints are needed based on modified files
-5. **Constraint Loading**: Loads and displays relevant constraint files
+5. **Constraint Loading**: Selects and prints the relevant constraint files
 6. **Guidance**: Provides next steps for the session
 
 ## Example Session
