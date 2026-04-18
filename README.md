@@ -77,7 +77,7 @@ also carries the shared constraints, Claude hook/settings files, and the local
 | `/pre-commit` | Code quality validation before commits |
 | `/dependency` | Add dependencies (Poetry for Python, Conan for C++) |
 | `/build` | Build orchestration (setup, compile, test) |
-| `/roadmap` | Multi-session workflow management |
+| `/roadmap` | Dependency-aware multi-session workflow management |
 | `/navigate` | Code navigation and structural analysis |
 | `/check-constraints` | Lightweight constraint compliance check |
 | `/context7` | Library documentation via Context7 MCP |
@@ -116,6 +116,7 @@ Codex is now intentionally stronger in generated repos than before:
 - local Codex skills include `build`, `navigate`, and `python-env-setup` for Python projects
 - `bin/agent-build` provides a shared build entrypoint for both platforms
 - `bin/agent-python-env-setup` exposes the environment recovery tooling through a platform-neutral wrapper
+- `bin/agent-roadmap` exposes one shared roadmap backend for Codex and Claude parity
 
 ## License
 

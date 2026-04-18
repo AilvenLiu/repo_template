@@ -33,6 +33,7 @@ The repository requires British English for user-facing text.
 - Constraint check: `bin/agent-check-constraints`
 - Pre-commit validation: `bin/agent-precommit`
 - Dependency add: `bin/agent-dependency add <package> [version]`
+- Roadmap workflow: `bin/agent-roadmap <check|create|status|update|handoff|complete|validate>`
 - Commit with policy guard: `bin/agent-commit -m "type(scope): description" <file1> [file2 ...]`
 
 ## Absolute Prohibitions

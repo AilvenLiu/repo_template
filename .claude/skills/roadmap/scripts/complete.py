@@ -1,86 +1,98 @@
 #!/usr/bin/env python3
-"""Mark active phase as completed and emit branch transition instructions."""
+"""Mark active phase as completed and print dependency-safe next steps."""
+
+from __future__ import annotations
 
 import sys
+from datetime import date
 from pathlib import Path
 
 # Add scripts directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent))
 
+# Add common utilities to path
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / "common"))
+from check_session import check_session_initialized
+
 from utils import RoadmapManager
 
 
 def complete_roadmap() -> None:
-    """Mark the active phase as completed and print branch transition instructions."""
-    repo_root = Path.cwd()
-    manager = RoadmapManager(repo_root)
+    check_session_initialized("roadmap")
 
-    # Find active roadmap (active phase)
-    active = manager.find_active_roadmap()
-    if not active:
+    manager = RoadmapManager(Path.cwd())
+    active_phases = manager.find_active_roadmaps()
+
+    if not active_phases:
         print("ERROR: No active roadmap found")
         sys.exit(1)
 
+    if len(active_phases) > 1:
+        print("ERROR: Multiple active phases found")
+        for phase in active_phases:
+            print(f"  - {phase['name']}")
+        print("Fix roadmap.yml so only one phase has status.active: true")
+        sys.exit(2)
+
+    active = active_phases[0]
     roadmap_dir = active["roadmap_dir"]
-    phase_folder = roadmap_dir.name
     roadmap_yml = roadmap_dir / "roadmap.yml"
     data = manager.parse_roadmap_yml(roadmap_yml)
 
-    # Verify all tasks in the active phase are completed
-    phases = data.get("phases", [])
-    incomplete_items = []
-
-    for phase in phases:
-        phase_id = phase.get("id")
-        tasks = phase.get("tasks", [])
-        for task in tasks:
-            task_id = task.get("id")
-            task_status = task.get("status", "pending")
-            if task_status != "completed":
-                incomplete_items.append(f"Task {phase_id}/{task_id} is {task_status}")
-
-    if incomplete_items:
-        print("ERROR: Cannot complete phase - incomplete tasks found:")
-        for item in incomplete_items:
-            print(f"  - {item}")
-        print()
-        print("Use '/roadmap update complete-task' to complete tasks")
+    tasks = data.get("tasks", [])
+    if not isinstance(tasks, list):
+        print("ERROR: Invalid tasks section in roadmap.yml")
         sys.exit(1)
 
-    # Mark phase as completed
-    updates = {
-        "status": {
-            "active": False,
-            "blocked": False,
-            "completed": True,
-        },
-        "current_focus": {},
-    }
+    incomplete = [
+        f"{task.get('id', 'unknown')} ({task.get('status', 'unknown')})"
+        for task in tasks
+        if isinstance(task, dict) and task.get("status") != "completed"
+    ]
 
-    manager.update_roadmap_yml(roadmap_yml, updates)
+    if incomplete:
+        print("ERROR: Cannot complete phase because not all tasks are completed:")
+        for item in incomplete:
+            print(f"  - {item}")
+        print()
+        print("Use '/roadmap update complete-task' until all tasks are completed.")
+        sys.exit(1)
 
-    # Generate completion summary and branch transition instructions
-    total_tasks = sum(len(phase.get("tasks", [])) for phase in phases)
-    current_branch = RoadmapManager.derive_branch_name(phase_folder)
+    data["status"]["active"] = False
+    data["status"]["blocked"] = False
+    data["status"]["completed_at"] = date.today().isoformat()
+    data["focus"]["current_task"] = None
 
-    print("Phase Completed!")
+    manager.update_roadmap_yml(roadmap_yml, data)
+
+    # Recompute phase list to identify dependency-ready next phases.
+    all_phases = manager.find_all_phases()
+    ready_next = [
+        phase
+        for phase in all_phases
+        if phase["status"] == "pending" and phase.get("ready", False)
+    ]
+
+    phase_folder = roadmap_dir.name
+    branch = RoadmapManager.derive_branch_name(phase_folder)
+
+    print("Phase Completed")
     print("=" * 50)
-    print(f"Phase: {phase_folder}")
-    print(f"Total Tasks: {total_tasks}")
-    print()
-    print(f"Phase {phase_folder} completed!")
+    print(f"Phase folder: {phase_folder}")
+    print(f"Branch: {branch}")
+    print(f"Tasks completed: {len(tasks)}/{len(tasks)}")
     print()
     print("Next steps:")
-    print(f"1. Create PR/MR from {current_branch} to base branch")
-    print("2. After merge, switch to base branch and pull latest")
-    print("3. Activate next phase: set status.active: true in next phase's roadmap.yml")
-    print("4. Create branch: git checkout -b roadmap/<next-phase-folder>")
-
-
-def main():
-    """Main entry point for complete command."""
-    complete_roadmap()
+    print(f"1. Create PR/MR from {branch} into the base branch")
+    print("2. Merge the PR/MR")
+    print("3. Switch to base branch and pull latest")
+    if ready_next:
+        print("4. Activate one dependency-ready next phase:")
+        for phase in ready_next:
+            print(f"   - {phase['name']}")
+    else:
+        print("4. No dependency-ready pending phase found (check depends_on_phases)")
 
 
 if __name__ == "__main__":
-    main()
+    complete_roadmap()

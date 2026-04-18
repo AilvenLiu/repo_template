@@ -52,7 +52,8 @@ The agent MUST:
 
 **For roadmap work:**
 - `agent_roadmaps/<active>/INVARIANTS.md` - Immutable constraints
-- `agent_roadmaps/<active>/prompt.md` - Objectives and plan
+- `agent_roadmaps/<active>/ROADMAP.md` - Phase intent, scope, and dependency rationale
+- `agent_roadmaps/<active>/prompt.md` - Session initialization instructions
 - `agent_roadmaps/<active>/roadmap.yml` - Current state and progress
 - `agent_roadmaps/<active>/sessions/` - Session handoff files
 
@@ -92,9 +93,10 @@ The agent MUST:
      - Decisions made
 
      ## Current State
-     - Current phase/task
+     - Current task
      - Progress percentage
      - Blockers or issues
+     - Unmet dependencies (if any)
 
      ## Next Steps
      - What should be done next
@@ -109,7 +111,7 @@ The agent MUST:
 
 2. Update `roadmap.yml` with current state
    - Mark completed tasks
-   - Update phase status
+   - Update phase/task dependency state
    - Note any timeline changes
 
 3. Commit both files together
@@ -127,6 +129,7 @@ The agent MUST:
 2. Check for active roadmaps (see roadmap-awareness.md)
 3. If active roadmap exists:
    - Read `INVARIANTS.md`
+   - Read `ROADMAP.md`
    - Read `prompt.md`
    - Read `roadmap.yml`
    - Read latest session handoff

@@ -1,87 +1,76 @@
 #!/usr/bin/env python3
-"""Generate session handoff file."""
+"""Generate session handoff file for active roadmap phase."""
+
+from __future__ import annotations
 
 import sys
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
 # Add scripts directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent))
 
+# Add common utilities to path
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / "common"))
+from check_session import check_session_initialized
+
 from utils import RoadmapManager
 
 
-def generate_handoff(work_completed: str, decisions: str, blockers: str, next_steps: str) -> None:
-    """Generate session handoff file.
-
-    Args:
-        work_completed: Description of work completed
-        decisions: Decisions made during session
-        blockers: Open issues or blockers
-        next_steps: Guidance for next session
-    """
-    repo_root = Path.cwd()
-    manager = RoadmapManager(repo_root)
-
-    # Find active roadmap
-    active = manager.find_active_roadmap()
+def _get_single_active_phase(manager: RoadmapManager):
+    active = manager.find_active_roadmaps()
     if not active:
         print("ERROR: No active roadmap found")
         sys.exit(1)
+    if len(active) > 1:
+        print("ERROR: Multiple active phases found")
+        for phase in active:
+            print(f"  - {phase['name']}")
+        print("Fix roadmap.yml so only one phase has status.active: true")
+        sys.exit(2)
+    return active[0]
+
+
+def generate_handoff(work_completed: str, decisions: str, blockers: str, next_steps: str) -> None:
+    check_session_initialized("roadmap")
+
+    manager = RoadmapManager(Path.cwd())
+    active = _get_single_active_phase(manager)
 
     roadmap_dir = active["roadmap_dir"]
     sessions_dir = roadmap_dir / "sessions"
+    sessions_dir.mkdir(parents=True, exist_ok=True)
 
-    # Generate filename: YYYY-MM-DD-claude-<index>.md
-    today = datetime.now().strftime("%Y-%m-%d")
-    existing_files = list(sessions_dir.glob(f"{today}-claude-*.md"))
-    index = len(existing_files) + 1
-    filename = f"{today}-claude-{index}.md"
+    now = datetime.now()
+    timestamp = now.strftime("%Y-%m-%d-%H-%M")
+    filename = f"session-{timestamp}.md"
     handoff_path = sessions_dir / filename
 
-    # Generate handoff content
+    data = manager.parse_roadmap_yml(roadmap_dir / "roadmap.yml")
+
     phase_folder = roadmap_dir.name
     expected_branch = active.get("expected_branch", f"roadmap/{phase_folder}")
-    content = f"""# Session Handoff: {today} (Session {index})
+    current_task = data.get("focus", {}).get("current_task")
+    phase_dependencies = data.get("depends_on_phases", [])
 
-## Focus
-Phase folder: {phase_folder}
-Branch: {expected_branch}
-Current phase: {active['current_phase']}
-Task: {active['current_task']}
+    content = f"""# Session Handoff: {now.strftime('%Y-%m-%d %H:%M')}\n\n## Focus\n- Phase folder: {phase_folder}\n- Branch: {expected_branch}\n- Current task: {current_task}\n- Phase dependencies: {phase_dependencies}\n\n## Work Completed\n{work_completed}\n\n## Decisions Made\n{decisions}\n\n## Open Issues / Blockers\n{blockers}\n\n## Next Session Handoff\n{next_steps}\n"""
 
-## Work Completed
-{work_completed}
-
-## Decisions Made
-{decisions}
-
-## Blockers / Open Issues
-{blockers}
-
-## Next Steps
-{next_steps}
-"""
-
-    # Write handoff file
     try:
-        with open(handoff_path, "w", encoding="utf-8") as f:
-            f.write(content)
-        print(f"Session handoff created: {handoff_path.relative_to(repo_root)}")
-        print(f"  Phase: {phase_folder}")
-        print(f"  Branch: {expected_branch}")
-    except Exception as e:
-        print(f"ERROR: Failed to create handoff file: {e}")
+        handoff_path.write_text(content, encoding="utf-8")
+    except OSError as exc:
+        print(f"ERROR: Failed to create handoff file: {exc}")
         sys.exit(1)
 
+    print(f"Session handoff created: {handoff_path.relative_to(Path.cwd())}")
+    print(f"  Phase: {phase_folder}")
+    print(f"  Branch: {expected_branch}")
 
-def main():
-    """Main entry point for handoff command."""
+
+def main() -> None:
     print("Session Handoff Generator")
     print("=" * 50)
     print()
 
-    # Prompt for information
     print("Work Completed:")
     print("(Describe what was accomplished in this session)")
     work_completed = input("> ")
@@ -92,12 +81,12 @@ def main():
     decisions = input("> ")
     print()
 
-    print("Blockers / Open Issues:")
-    print("(Describe any blockers or unresolved issues)")
+    print("Open Issues / Blockers:")
+    print("(Describe blockers or unresolved issues)")
     blockers = input("> ")
     print()
 
-    print("Next Steps:")
+    print("Next Session Handoff:")
     print("(Guidance for the next session)")
     next_steps = input("> ")
     print()

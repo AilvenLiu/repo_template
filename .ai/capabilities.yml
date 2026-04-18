@@ -82,6 +82,11 @@ common_requirements:
       required: true
       executable: true
 
+    - id: agent-roadmap
+      path: bin/agent-roadmap
+      required: true
+      executable: true
+
 platform_requirements:
   claude:
     claude_plugins:
@@ -171,5 +176,10 @@ platform_requirements:
 
       - id: agent-check-constraints
         path: bin/agent-check-constraints
+        required: true
+        executable: true
+
+      - id: agent-roadmap
+        path: bin/agent-roadmap
         required: true
         executable: true

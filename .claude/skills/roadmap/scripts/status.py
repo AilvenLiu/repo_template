@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-"""Display detailed status of active roadmap."""
+"""Display roadmap status with dependency resolution details."""
+
+from __future__ import annotations
 
 import sys
 from pathlib import Path
@@ -8,150 +10,132 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 # Add common utilities to path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent / 'common'))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / "common"))
 from check_session import check_session_initialized
 
 # Check session initialization
-session_state = check_session_initialized('roadmap')
+check_session_initialized("roadmap")
 
 from utils import RoadmapManager
 
 
+def _phase_symbol(status: str) -> str:
+    mapping = {
+        "active": "[ACTIVE]",
+        "completed": "[DONE]",
+        "blocked": "[BLOCKED]",
+        "pending": "[PENDING]",
+    }
+    return mapping.get(status, "[UNKNOWN]")
+
+
+def _task_symbol(status: str) -> str:
+    mapping = {
+        "active": "[ACTIVE]",
+        "completed": "[DONE]",
+        "blocked": "[BLOCKED]",
+        "pending": "[PENDING]",
+    }
+    return mapping.get(status, "[UNKNOWN]")
+
+
 def display_status() -> None:
-    """Display cross-phase overview and detailed status of active phase."""
     repo_root = Path.cwd()
     manager = RoadmapManager(repo_root)
 
-    # Get all phases for the overview
     all_phases = manager.find_all_phases()
     if not all_phases:
         print("No phase directories found in agent_roadmaps/")
         print("Use '/roadmap create <name>' to create a new roadmap")
         sys.exit(1)
 
-    # Find the active phase
-    active = manager.find_active_roadmap()
-
-    # Display cross-phase overview
     print("Phase Series Overview:")
     for phase in all_phases:
-        phase_status = phase["status"]
-        phase_name = phase["name"]
-
-        # Count tasks for this phase
-        roadmap_yml = phase["roadmap_dir"] / "roadmap.yml"
-        try:
-            data = manager.parse_roadmap_yml(roadmap_yml)
-            tasks = []
-            for p in data.get("phases", []):
-                tasks.extend(p.get("tasks", []))
-            total = len(tasks)
-            completed = sum(1 for t in tasks if t.get("status") == "completed")
-            task_summary = f"({completed}/{total} tasks completed)"
-        except Exception:
-            task_summary = "(unreadable)"
-
-        if phase_status == "completed":
-            symbol = "[DONE]"
-        elif phase_status == "active":
-            symbol = "[ACTIVE]"
-        elif phase_status == "blocked":
-            symbol = "[BLOCKED]"
+        symbol = _phase_symbol(phase["status"])
+        deps = phase.get("depends_on_phases", [])
+        unresolved = phase.get("unresolved_phase_dependencies", [])
+        if deps:
+            if unresolved:
+                dep_text = f"deps: {', '.join(deps)} (waiting: {', '.join(unresolved)})"
+            else:
+                dep_text = f"deps: {', '.join(deps)} (satisfied)"
         else:
-            symbol = "[PENDING]"
+            dep_text = "deps: none"
 
-        print(f"  {symbol:<10} {phase_name} {task_summary}")
+        task_summary = f"{phase['tasks_completed']}/{phase['tasks_total']} tasks"
+        print(f"  {symbol:<10} {phase['name']}  {task_summary}  {dep_text}")
 
     print()
 
-    # If no active phase, stop here
+    active = [phase for phase in all_phases if phase["status"] == "active"]
+    if len(active) > 1:
+        print("ERROR: Multiple active phases detected. Resolve roadmap.yml state first.")
+        sys.exit(2)
+
     if not active:
         print("No active phase found.")
-        print("Use '/roadmap create <name>' to create a new roadmap")
+        print("Activate one phase after dependencies are satisfied.")
         sys.exit(0)
 
-    # Parse roadmap.yml of the active phase for detailed task info
-    roadmap_yml = active["roadmap_dir"] / "roadmap.yml"
-    data = manager.parse_roadmap_yml(roadmap_yml)
+    active_phase = active[0]
+    active_dir = active_phase["roadmap_dir"]
+    data = manager.parse_roadmap_yml(active_dir / "roadmap.yml")
 
-    roadmap_info = data.get("roadmap", {})
-    status_info = data.get("status", {})
-    current_focus = data.get("current_focus", {})
+    print(f"Active Phase: {active_phase['name']}")
+    print(f"Name: {data.get('name', active_phase['display_name'])}")
+    print(f"Branch: {active_phase['expected_branch']}")
+    print(f"Started: {data.get('status', {}).get('started_at')}")
+    print(f"Blocked: {data.get('status', {}).get('blocked')}")
 
-    # Determine the phase folder name from the active roadmap_dir
-    active_phase_folder = active["roadmap_dir"].name
-
-    print(f"Active Phase: {active_phase_folder}")
-    print(f"Branch: {active['expected_branch']}")
-
-    # Show current task description if available
-    current_phase_id = current_focus.get("phase", "N/A")
-    current_task_id = current_focus.get("task", "N/A")
-    current_task_title = ""
-    for phase in data.get("phases", []):
-        if phase.get("id") == current_phase_id:
-            for task in phase.get("tasks", []):
-                if task.get("id") == current_task_id:
-                    current_task_title = task.get("title", "")
-                    break
-            break
-
-    if current_task_title:
-        print(f"Current Task: {current_task_id} - {current_task_title}")
+    phase_deps = data.get("depends_on_phases", [])
+    if phase_deps:
+        unresolved = active_phase.get("unresolved_phase_dependencies", [])
+        if unresolved:
+            print(f"Phase Dependencies: waiting on {', '.join(unresolved)}")
+        else:
+            print(f"Phase Dependencies: satisfied ({', '.join(phase_deps)})")
     else:
-        print(f"Current Task: {current_task_id}")
+        print("Phase Dependencies: none")
 
+    current_task = data.get("focus", {}).get("current_task")
+    print(f"Current Task: {current_task or 'none'}")
     print()
 
-    # Display tasks from the active phase only
-    phases = data.get("phases", [])
-    total_tasks = 0
-    completed_tasks = 0
+    completed_ids = {
+        task.get("id")
+        for task in data.get("tasks", [])
+        if isinstance(task, dict) and task.get("status") == "completed"
+    }
 
-    for phase in phases:
-        phase_id = phase.get("id", "unknown")
-        tasks = phase.get("tasks", [])
+    print("Tasks:")
+    for task in data.get("tasks", []):
+        if not isinstance(task, dict):
+            continue
 
-        for task in tasks:
-            task_id = task.get("id", "unknown")
-            task_title = task.get("title", "Untitled")
-            task_status = task.get("status", "pending")
+        task_id = task.get("id", "unknown")
+        status = task.get("status", "pending")
+        symbol = _task_symbol(status)
+        title = task.get("title", "Untitled")
+        effort = task.get("effort", "unknown")
+        deps = [dep for dep in task.get("depends_on", []) if isinstance(dep, str)]
 
-            total_tasks += 1
-            if task_status == "completed":
-                completed_tasks += 1
+        if deps:
+            unmet = [dep for dep in deps if dep not in completed_ids]
+            dep_state = "ready" if not unmet else f"waiting on {', '.join(unmet)}"
+            dep_text = f"deps: {', '.join(deps)} ({dep_state})"
+        else:
+            dep_text = "deps: none"
 
-            if task_status == "completed":
-                task_symbol = "[DONE]"
-            elif task_status == "active":
-                task_symbol = "[ACTIVE]"
-            elif task_status == "blocked":
-                task_symbol = "[BLOCKED]"
-            else:
-                task_symbol = "[PENDING]"
+        marker = " (CURRENT)" if task_id == current_task else ""
+        print(f"  {symbol:<10} {task_id}: {title}{marker}")
+        print(f"             effort: {effort} | {dep_text}")
 
-            is_current = (phase_id == current_phase_id and task_id == current_task_id)
-            current_marker = " (CURRENT)" if is_current else ""
-
-            print(f"  {task_symbol:<10} {task_id}: {task_title}{current_marker}")
-
-            notes = task.get("notes")
-            if notes:
-                print(f"              Notes: {notes}")
-
-    # Display progress summary
     print()
-    if total_tasks > 0:
-        progress_pct = (completed_tasks / total_tasks) * 100
-        print(f"Progress: {completed_tasks}/{total_tasks} tasks completed ({progress_pct:.1f}%)")
-    else:
-        print("Progress: No tasks defined")
-
-
-def main():
-    """Main entry point for status command."""
-    display_status()
+    total = active_phase["tasks_total"]
+    completed = active_phase["tasks_completed"]
+    pct = (completed / total * 100.0) if total else 0.0
+    print(f"Progress: {completed}/{total} tasks completed ({pct:.1f}%)")
 
 
 if __name__ == "__main__":
-    main()
+    display_status()

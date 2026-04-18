@@ -1,99 +1,57 @@
 # ROADMAP -- Phase Execution Guide (Template)
 
-> This document describes the **single phase** `<PHASE_FOLDER_NAME>`.
-> It is written to be read by an AI agent with no prior context.
-> Verbosity is intentional to prevent ambiguity.
+> This document describes the phase `<PHASE_FOLDER_NAME>`.
+> It should be explicit enough for a fresh session with zero prior context.
 
----
+## 1. Goal
 
-## 1. Background and Motivation
+Describe exactly what this phase must deliver and why it matters.
 
-(Explain why this phase exists.)
+## 2. Upstream Dependencies
 
-- What problem is being solved in this phase?
-- Why is this work necessary at this stage of the project?
-- What risks exist if this phase is done incorrectly?
+List explicit prerequisite phases from `depends_on_phases` and what each one
+must provide before this phase starts.
 
----
+- Dependency: `<phase-folder>`
+- Required outputs consumed in this phase
+- Verification method for dependency completion
 
-## 2. Overall Objective (for THIS phase)
+## 3. Scope and Non-Goals
 
-By the end of this phase, the following MUST be true:
+### In Scope
+- [Concrete objective 1]
+- [Concrete objective 2]
 
-- [Objective 1]
-- [Objective 2]
-- [Objective 3]
-
-These objectives are **contractual**.
-
----
-
-## 3. Explicit Non-Goals
-
-The following are **explicitly excluded** from this phase:
-
+### Out of Scope
 - [Non-goal 1]
 - [Non-goal 2]
 
-If something is not listed as a goal, assume it is out of scope.
+## 4. Task Strategy
 
----
+Map each task in `roadmap.yml` to execution intent, including dependency order.
 
-## 4. High-Level Strategy
-
-(Describe the approach, not the steps.)
-
-- Why this strategy was chosen for this phase
-- What alternatives were considered and rejected
-- Key trade-offs
-
-Detailed decision rationale belongs in ADRs if needed.
-
----
+- `<TASK_PREFIX>-1`: why this must happen first
+- `<TASK_PREFIX>-2`: dependency assumptions and failure modes
+- `<TASK_PREFIX>-3`: validation + handoff expectations
 
 ## 5. Deliverables
 
-Concrete artifacts this phase must produce:
-
-- [Deliverable 1]
-- [Deliverable 2]
-
----
+- [Deliverable artifact 1]
+- [Deliverable artifact 2]
+- [Validation evidence]
 
 ## 6. Exit Criteria
 
-This phase is complete when:
+This phase is complete only when:
+- Every task in `roadmap.yml` is `completed`
+- `status.completed_at` is set
+- Final handoff exists in `sessions/`
+- PR/MR from `roadmap/<PHASE_FOLDER_NAME>` is ready
 
-- [Measurable condition 1]
-- [Measurable condition 2]
-- roadmap.yml reflects `completed: true` for this phase
-- All tasks in roadmap.yml are marked `completed`
-- A final session handoff file has been written in sessions/
+## 7. Risks and Rollback
 
-Do NOT mark this phase complete unless all exit criteria are met.
+Document critical risks, detection signals, and rollback or containment strategy.
 
----
+## 8. Execution Rule
 
-## 7. Risk and Rollback Considerations
-
-- Known risks for this phase
-- How to detect failure early
-- Rollback or mitigation strategy
-
----
-
-## 8. Completion Definition
-
-This phase is considered complete when:
-
-- All exit criteria in section 6 are met
-- roadmap.yml reflects completion
-- No open blockers remain
-- A PR/MR from `roadmap/<PHASE_FOLDER_NAME>` into the base branch has been opened
-
----
-
-## 9. Final Execution Rule
-
-> Follow this document literally.  
-> Do not infer intent beyond what is written.
+Follow task and dependency order exactly; do not bypass declared dependencies.

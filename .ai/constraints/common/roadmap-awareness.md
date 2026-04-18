@@ -1,185 +1,116 @@
 # Roadmap Awareness Constraints
 
-> **This document defines mandatory roadmap awareness and management constraints for all AI agents.**
-> These rules apply to both Python and C++/CUDA projects.
-> Violations are considered critical failures.
+> Mandatory roadmap constraints for all AI agents.
+> Applies to Python and C++/CUDA projects.
 
 ## Overview
 
-This document establishes the requirements for roadmap awareness at session start,
-roadmap creation triggers, execution discipline, and authority hierarchy. Roadmaps
-are used to manage complex, multi-session tasks with long-lived constraints.
+Roadmaps govern complex, multi-session work. They are dependency-aware and phase-driven.
+Each phase lives in `agent_roadmaps/phase-*/` and must declare both:
+- phase dependencies (`depends_on_phases`)
+- task dependencies (`tasks[].depends_on`)
 
-## 1. Mandatory Roadmap Awareness (Startup Requirement)
+## 1. Mandatory Startup Check
 
-### 1.1 Always Check for Active Roadmaps
+At the beginning of every session, the agent MUST:
+1. Read `agent_roadmaps/README.md`
+2. Check whether an active phase exists
+3. If active, read:
+   - `INVARIANTS.md`
+   - `ROADMAP.md`
+   - `roadmap.yml`
+   - latest handoff in `sessions/`
+4. Verify current branch is `roadmap/<active-phase-folder>`
+5. Verify active phase dependencies are satisfied
 
-**At the beginning of EVERY session**, the agent MUST:
+Skipping this check is forbidden.
 
-1. Inspect the `agent_roadmaps/` directory
-2. Read `agent_roadmaps/README.md`
-3. Scan for `phase-*/roadmap.yml` files under each project directory in `agent_roadmaps/`
-4. Determine whether there is an **active, unfinished phase**
+## 2. Roadmap Creation Trigger
 
-This check is MANDATORY and MUST NOT be skipped.
+The agent MUST ask whether to create a roadmap before implementation when work:
+1. Cannot be completed confidently in 1-2 sessions
+2. Requires architectural or invariant-sensitive change
+3. Needs constraints to survive context resets
+4. Has non-trivial phase or rollback dependencies
 
-### 1.2 Behavior When Active Phase Exists
+If user approves roadmap creation, the agent MUST create roadmap files before production implementation.
 
-If an active phase exists, the agent MUST NOT:
-- Start unrelated work
-- Propose parallel large tasks
-- Redefine scope or architecture outside the roadmap
+## 3. Required Phase Structure
 
-If an active phase exists, the agent MUST:
-- Follow the active phase's `prompt.md`
-- Operate strictly within its defined current phase/task
-- Update execution state via the active phase's `roadmap.yml` and session handoff files
-- Verify that the current git branch matches the active phase branch (`roadmap/<phase-folder-name>`)
+Each phase folder must include:
 
-## 2. Mandatory Roadmap Creation Trigger
+```text
+agent_roadmaps/
+  phase-N-name/
+    INVARIANTS.md
+    ROADMAP.md
+    roadmap.yml
+    prompt.md
+    sessions/
+```
 
-The agent MUST proactively ask the user whether to create a new roadmap **before proceeding**
-if a requested task meets **any** of the following criteria:
+## 4. Canonical roadmap.yml Schema
 
-### 2.1 Roadmap Creation Criteria
+```yaml
+phase: <int>
+name: <string>
 
-Create a roadmap when the task:
+status:
+  active: <bool>
+  blocked: <bool>
+  started_at: <YYYY-MM-DD|null>
+  completed_at: <YYYY-MM-DD|null>
 
-1. **Cannot be confidently completed within 1-2 sessions**
-2. **Involves system-wide refactor, architectural change, or invariant-sensitive logic**
-3. **Requires long-lived constraints across sessions**
-4. **Contains multiple dependent phases, steps, or rollback risks**
+depends_on_phases:
+  - <phase-folder-name>
 
-### 2.2 Roadmap Creation Protocol
+tasks:
+  - id: task-N-M
+    title: <string>
+    description: <string>
+    status: pending|active|completed|blocked
+    effort: low|medium|high
+    key_files: [<path>, ...]
+    depends_on: [task-id, ...]
 
-If the user agrees to start a roadmap, the agent MUST:
+focus:
+  current_task: <task-id|null>
+  notes: <string>
+```
 
-1. Create a new project subdirectory under `agent_roadmaps/`
-   - Use descriptive name: `agent_roadmaps/<project-name>/`
-   - Follow naming convention: lowercase with hyphens
+Rules:
+- At most one phase may be active.
+- Active phase must have exactly one active task.
+- `focus.current_task` must match the active task.
+- Tasks may be activated only when all `depends_on` tasks are completed.
+- A phase may be activated only when all `depends_on_phases` are completed.
+- `completed_at` may be set only after all tasks are completed.
 
-2. Within the project directory, create **phase folders** for each phase:
-   - Phase folder naming: `phase-0-<short-description>/`, `phase-1-<short-description>/`, etc.
-   - Each phase folder MUST contain:
-     - `prompt.md` - Phase-specific prompt and objectives
-     - `INVARIANTS.md` - Immutable constraints and rules for this phase
-     - `ROADMAP.md` - Human-readable roadmap description for this phase
-     - `roadmap.yml` - Structured phase definition
-     - `sessions/` - Directory for session handoff files
+## 5. Branching Discipline
 
-3. STOP and wait for confirmation **before implementing production code**
+- Each phase uses `roadmap/<phase-folder-name>` branch.
+- Do not commit phase work directly on base branch.
+- Phase completion requires PR/MR into base branch.
+- Do not activate downstream phases until dependency phases are completed and merged.
 
-### 2.3 When NOT to Create a Roadmap
+## 6. Session-End Discipline
 
-Do NOT create a roadmap for:
-- Simple, single-session tasks
-- Trivial changes (typos, formatting)
-- Well-understood, routine operations
+For roadmap sessions, always:
+1. Update `roadmap.yml` state
+2. Write new handoff: `sessions/session-YYYY-MM-DD-HH-MM.md`
+3. Record completed work, decisions, blockers, and next steps
 
-### 2.4 Phase Branching Strategy
+## 7. Blockage Handling
 
-Each roadmap phase MUST be worked on a dedicated git branch. The following rules apply:
+If dependencies prevent forward progress:
+- mark blocked state in roadmap
+- report exact unmet dependencies
+- do not bypass dependency order without explicit user approval
 
-1. **Branch per phase**: Each phase MUST have its own branch named `roadmap/<phase-folder-name>`
-   - Example: `roadmap/phase-0-baseline`, `roadmap/phase-1-refactor`
+## 8. Enforcement Summary
 
-2. **Branch verification**: Before making any code changes, the agent MUST verify that the current git branch matches the active phase's branch (`roadmap/<phase-folder-name>`). If it does not match, the agent MUST stop and correct the branch before proceeding.
-
-3. **Phase completion**: When a phase is complete, the agent MUST open a PR/MR to merge the phase branch into the base branch. The phase branch MUST NOT be merged by the agent directly.
-
-4. **Next phase activation**: The next phase may only be activated after:
-   - The previous phase's PR is merged into the base branch
-   - The agent switches back to the base branch
-   - A new branch `roadmap/<next-phase-folder>` is created from the base branch
-
-5. **No direct base-branch commits**: The agent MUST NOT commit phase work directly to the base branch (`master`, `main`, or `develop`).
-
-## 3. Roadmap Execution Discipline
-
-### 3.1 Treating Phase Documents as Frozen Contracts
-
-When operating under an active phase, the agent MUST:
-
-- Treat the active phase's documents (`prompt.md`, `INVARIANTS.md`, `ROADMAP.md`) as **frozen contracts** for that phase
-  - Do not reinterpret objectives
-  - Do not redesign architecture
-  - Do not change scope
-  - Follow the plan as written
-
-- NOT reinterpret or redesign objectives unless explicitly instructed
-- NOT advance phases or tasks implicitly
-
-- Update execution state only via:
-  - The active phase's `roadmap.yml` - Update phase status, progress
-  - A new session handoff file in the active phase's `sessions/`
-
-### 3.2 Handling Blockages
-
-If blocked, the agent MUST:
-- Report the blockage immediately
-- Explain the constraint preventing progress
-- Propose solutions within roadmap constraints
-- NOT work around constraints without approval
-
-### 3.3 Session Handoff Requirements
-
-At the end of EVERY session working on a roadmap phase, the agent MUST:
-
-1. Create a new handoff file in the active phase's `sessions/` directory
-   (`agent_roadmaps/<project-name>/<phase-folder>/sessions/`)
-   - Filename: `session-YYYY-MM-DD-HH-MM.md`
-   - Include: work completed, decisions made, next steps, blockers
-
-2. Update the active phase's `roadmap.yml` with current state
-
-3. Commit both files together
-   - Use commit message: `chore(roadmap): session handoff YYYY-MM-DD`
-
-### 3.4 Phase Completion
-
-When a phase is complete, the agent MUST:
-1. Mark the phase as complete in its `roadmap.yml`
-2. Create a final session handoff documenting completion in the phase's `sessions/` directory
-3. Open a PR/MR to merge the phase branch (`roadmap/<phase-folder-name>`) into the base branch
-4. Wait for the PR to be merged before activating the next phase
-5. After merge: switch to base branch, pull latest, then create `roadmap/<next-phase-folder>` branch
-6. Update `agent_roadmaps/README.md` to reflect phase completion and next active phase
-
-## 4. Roadmap Template Compliance (MANDATORY)
-
-### 4.1 Template Structure Requirements
-
-When creating or modifying a phase's `roadmap.yml`, the agent MUST:
-
-1. **Follow exact schema**:
-   - Phase IDs: `phase-0`, `phase-1`, etc. (format: `phase-\d+`)
-   - Task IDs: `task-0-1`, `task-1-1`, etc. (format: `task-\d+-\d+`)
-   - Status values: ONLY `pending`, `active`, `completed`, `blocked`
-
-2. **Use only template fields**:
-   - Allowed fields per task: `id`, `title`, `status`, `notes` (optional)
-   - Allowed fields per phase: `id`, `title`, `status`, `tasks`
-
-3. **Ensure task atomicity**:
-   - Each task must be completable in 1-2 hours maximum
-   - Tasks should have single, clear objective
-
-4. **Provide detailed descriptions**:
-   - Task titles: 10-80 characters, specific and actionable
-   - Avoid vague descriptions like "Fix bugs", "Update code"
-
-## 5. Summary
-
-**Key Rules:**
-
-1. **ALWAYS check for active phases at session start** (scan `phase-*/roadmap.yml` under each project in `agent_roadmaps/`)
-2. **NEVER skip roadmap awareness check**
-3. **ASK before creating roadmap for complex tasks**
-4. **FOLLOW the active phase as a frozen contract**
-5. **VALIDATE each phase's `roadmap.yml` before finalizing**
-6. **USE ONLY template fields, no custom additions**
-7. **ENSURE tasks are atomic (1-2 hours max)**
-8. **UPDATE phase state via its `roadmap.yml` and `sessions/` handoffs**
-9. **REPORT blockages, do not work around constraints**
-10. **WORK on a dedicated `roadmap/<phase-folder-name>` branch per phase**
-11. **NEVER commit phase work directly to the base branch**
+1. Always perform roadmap startup check
+2. Enforce single active phase
+3. Enforce phase/task dependency ordering
+4. Track state only in roadmap.yml + sessions handoffs
+5. Stop and ask when unsure

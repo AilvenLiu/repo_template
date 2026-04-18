@@ -1,34 +1,38 @@
 ---
 name: roadmap
-description: Manage roadmap-aware workflows using the existing roadmap files under agent_roadmaps/.
+description: Manage dependency-aware roadmap workflows in agent_roadmaps/.
 ---
 
 # Codex Roadmap
 
+Use the shared roadmap command wrapper so Codex and Claude follow the same logic.
+
+## Commands
+
+- `bin/agent-roadmap check`
+- `bin/agent-roadmap create <name> --phases <N> --phase-names <names...>`
+- `bin/agent-roadmap status`
+- `bin/agent-roadmap update complete-task`
+- `bin/agent-roadmap update block-task <reason>`
+- `bin/agent-roadmap update unblock-task`
+- `bin/agent-roadmap update set-focus <task-id>`
+- `bin/agent-roadmap handoff`
+- `bin/agent-roadmap complete`
+- `bin/agent-roadmap validate <phase-folder>`
+
 ## Startup Protocol
 
-1. Read `agent_roadmaps/README.md`
-2. If an active phase exists (scan `phase-*/roadmap.yml` for `status.active: true`), read in order:
+1. Read `agent_roadmaps/README.md`.
+2. Run `bin/agent-roadmap check`.
+3. If a phase is active, read:
    - `agent_roadmaps/<active-phase>/INVARIANTS.md`
-   - `agent_roadmaps/<active-phase>/prompt.md`
+   - `agent_roadmaps/<active-phase>/ROADMAP.md`
    - `agent_roadmaps/<active-phase>/roadmap.yml`
-   - Latest `agent_roadmaps/<active-phase>/sessions/session-*.md`
-3. Verify current branch matches `roadmap/<active-phase-folder>`
+   - latest `agent_roadmaps/<active-phase>/sessions/session-*.md`
+4. Verify branch is `roadmap/<active-phase-folder>`.
 
-## Session Handoff Requirements
+## Dependency Rules
 
-At end of each roadmap session:
-
-1. Create `agent_roadmaps/<active-phase>/sessions/session-YYYY-MM-DD-HH-MM.md`
-2. Include sections:
-   - Work Completed
-   - Current State
-   - Next Steps
-   - Notes
-3. Update `agent_roadmaps/<active-phase>/roadmap.yml`
-
-## Phase Branching
-
-- Work on branch `roadmap/<phase-folder-name>`
-- On phase completion: open a PR/MR targeting the base branch
-- Do not activate the next phase until the previous phase PR is merged
+- Do not activate a phase before all `depends_on_phases` are completed.
+- Do not activate a task before all `depends_on` tasks are completed.
+- Keep exactly one active task for an active phase.

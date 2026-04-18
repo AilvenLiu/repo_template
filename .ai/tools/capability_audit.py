@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import subprocess
 import sys
@@ -361,7 +362,84 @@ def _claude_plugins_list_json() -> Optional[List[Dict[str, Any]]]:
 
 
 def _claude_mcp_list() -> Optional[str]:
-    return _run(["claude", "mcp", "list"])
+    timeout = 45
+    timeout_env = os.environ.get("AGENT_MCP_HEALTH_TIMEOUT_SEC", "").strip()
+    if timeout_env:
+        try:
+            parsed = int(timeout_env)
+            if parsed > 0:
+                timeout = parsed
+        except ValueError:
+            pass
+    return _run(["claude", "mcp", "list"], timeout=timeout)
+
+
+def _parse_context7_health(raw: str) -> Dict[str, Any]:
+    """Parse `claude mcp list` output for Context7 connectivity details."""
+    lines = [line.strip() for line in raw.splitlines() if "context7" in line.lower()]
+    if not lines:
+        return {
+            "found": False,
+            "connected": False,
+            "failed": False,
+            "detail": "",
+        }
+
+    failed = False
+    connected = False
+    for line in lines:
+        lowered = line.lower()
+        if "failed to connect" in lowered or "✗" in line:
+            failed = True
+        if "✓" in line:
+            connected = True
+            continue
+        if "connected" in lowered and "failed" not in lowered:
+            connected = True
+
+    return {
+        "found": True,
+        "connected": connected,
+        "failed": failed,
+        "detail": lines[0],
+    }
+
+
+def _context7_plugin_configured() -> Dict[str, Any]:
+    """Inspect plugin metadata for Context7 MCP configuration fallback."""
+    plugins = _claude_plugins_list_json()
+    if plugins is None:
+        return {
+            "configured": False,
+            "message": "Could not inspect plugin metadata via `claude plugins list --json`.",
+        }
+
+    for plugin in plugins:
+        plugin_id = str(plugin.get("id", ""))
+        if not plugin_id.startswith("context7@"):
+            continue
+        if not plugin.get("enabled", False):
+            return {
+                "configured": False,
+                "message": f"Context7 plugin '{plugin_id}' is installed but disabled.",
+            }
+
+        mcp_servers = plugin.get("mcpServers")
+        if isinstance(mcp_servers, dict) and "context7" in mcp_servers:
+            return {
+                "configured": True,
+                "message": "Context7 plugin is enabled with MCP server metadata.",
+            }
+
+        return {
+            "configured": True,
+            "message": "Context7 plugin is enabled (MCP server metadata not exposed by this CLI version).",
+        }
+
+    return {
+        "configured": False,
+        "message": "Context7 plugin is not installed or not visible to Claude CLI.",
+    }
 
 
 def _discover_plugin_skills(plugin_id: str, install_path: str) -> List[str]:
@@ -546,6 +624,26 @@ def _audit_integrations(
         if check_type == "mcp" and platform == "claude":
             raw = _claude_mcp_list()
             if raw is None:
+                context7_fallback = integration_id == "context7-mcp"
+                if context7_fallback:
+                    plugin_status = _context7_plugin_configured()
+                    configured = bool(plugin_status.get("configured", False))
+                    message = str(plugin_status.get("message", ""))
+                    result.add(
+                        AuditEntry(
+                            category="integration",
+                            capability_id=integration_id,
+                            required=required,
+                            available=configured,
+                            method="claude plugins list --json (fallback)",
+                            message=(
+                                "Could not run `claude mcp list`; using plugin configuration fallback. "
+                                + message
+                            ),
+                        )
+                    )
+                    continue
+
                 result.add(
                     AuditEntry(
                         category="integration",
@@ -558,11 +656,69 @@ def _audit_integrations(
                 )
                 continue
 
+            if integration_id == "context7-mcp":
+                health = _parse_context7_health(raw)
+                if health["connected"]:
+                    result.add(
+                        AuditEntry(
+                            category="integration",
+                            capability_id=integration_id,
+                            required=required,
+                            available=True,
+                            method="claude mcp list",
+                            message=health["detail"],
+                        )
+                    )
+                    continue
+
+                plugin_status = _context7_plugin_configured()
+                configured = bool(plugin_status.get("configured", False))
+                plugin_message = str(plugin_status.get("message", ""))
+
+                if health["found"] and health["failed"]:
+                    result.add(
+                        AuditEntry(
+                            category="integration",
+                            capability_id=integration_id,
+                            required=required,
+                            available=configured,
+                            method="claude mcp list + plugin fallback",
+                            message=(
+                                f"Health probe reported disconnected: {health['detail']}. "
+                                + plugin_message
+                            ),
+                        )
+                    )
+                    continue
+
+                if health["found"]:
+                    result.add(
+                        AuditEntry(
+                            category="integration",
+                            capability_id=integration_id,
+                            required=required,
+                            available=True,
+                            method="claude mcp list",
+                            message=health["detail"],
+                        )
+                    )
+                    continue
+
+                result.add(
+                    AuditEntry(
+                        category="integration",
+                        capability_id=integration_id,
+                        required=required,
+                        available=configured,
+                        method="claude mcp list + plugin fallback",
+                        message="No Context7 entry found in `claude mcp list`. " + plugin_message,
+                    )
+                )
+                continue
+
             lowered = raw.lower()
-            available = "context7" in lowered
-            message = ""
-            if not available:
-                message = "Context7 MCP not connected."
+            available = integration_id.lower() in lowered
+            message = "" if available else f"{integration_id} MCP not connected."
             result.add(
                 AuditEntry(
                     category="integration",

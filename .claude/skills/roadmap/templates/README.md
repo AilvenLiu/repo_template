@@ -1,89 +1,74 @@
-# Agent Roadmaps - Phase Series Overview
+# Agent Roadmaps - Dependency-Aware Phase Series
 
-**This document is authoritative for all AI agents (including Claude Code) operating in this repository.**
-Any violation of the rules defined here is considered a critical agent failure.
+**This document is authoritative for all AI agents operating in this repository.**
+Any violation of the rules defined here is a critical failure.
 
-Read this file at the start of every session, without exception.
+Read this file at the start of every session.
 
+## 1. Roadmap Overview
 
-## 1. Purpose of agent_roadmaps/
+- **Roadmap name**: `<ROADMAP_TITLE>`
+- **Roadmap slug**: `<ROADMAP_SLUG>`
+- **Description**:
+  <ROADMAP_DESCRIPTION>
 
-The `agent_roadmaps/` directory is the **single source of truth** for:
-- Whether the repository is currently executing a **large, system-level, multi-session task series**
-- Which phase (if any) is **currently active**
-- How AI agents must **initialize, constrain, execute, and hand off** work across sessions
+## 2. Phase Series Status
 
-This mechanism exists to **prevent context loss, decision drift, and architectural regression** when tasks exceed one or two sessions.
+At most one phase may be active at any time.
 
+| Phase | Folder | Status | Depends On |
+|-------|--------|--------|------------|
+<PHASE_TABLE_ROWS>
 
-## 2. Phase Series
+**Active phase**: `<ACTIVE_PHASE_FOLDER>`
 
-Each phase is a self-contained folder. Phases MUST be completed sequentially.
+## 3. Dependency Graph
 
-1. `phase-0-<name>/` -- <brief description> -- status: pending | active | completed
-2. `phase-1-<name>/` -- <brief description> -- status: pending | active | completed
-3. `phase-2-<name>/` -- <brief description> -- status: pending | active | completed
-
-**Active phase**: `<PHASE_FOLDER_NAME>` (update this when the active phase changes)
-
-
-## 3. Branching Protocol
-
-Each phase has a dedicated git branch:
-
-- Branch name: `roadmap/<phase-folder-name>`
-- Created from: the project's base branch (e.g., `main` or `master`)
-- Merged via: PR/MR into the base branch when the phase is complete
+```text
+<PHASE_DEP_GRAPH>
+```
 
 Rules:
-- Work for phase N MUST only happen on `roadmap/phase-N-<name>`.
-- Do NOT commit phase work directly to the base branch.
-- The next phase MUST NOT be activated until the previous phase's PR/MR is merged.
+- A phase may be activated only when every `depends_on_phases` entry is completed.
+- The phase branch MUST be `roadmap/<phase-folder-name>`.
+- Next phase activation is blocked until previous phase PR/MR is merged.
 
+## 4. Branching Protocol
 
-## 4. Operating Rules
-
-- Read this file at the start of every session.
-- Work ONLY inside the currently active phase folder.
-- Do NOT start, create, or propose work on a non-active phase.
-- Do NOT activate the next phase until the current phase's PR/MR is merged into the base branch.
-- At most ONE phase may be active at any time.
-
+Each phase has a dedicated git branch:
+- Branch name: `roadmap/<phase-folder-name>`
+- Created from: base branch (`main`, `master`, or project default)
+- Merged via: PR/MR after phase completion
 
 ## 5. Per-Phase Folder Structure
 
-Each phase folder contains:
-
-```
+```text
 agent_roadmaps/
--- <phase-folder-name>/
-    |-- INVARIANTS.md   # Non-negotiable constraints for this phase
-    |-- ROADMAP.md      # Long-form execution guide for this phase
-    |-- roadmap.yml     # Machine-readable execution state for this phase
-    |-- prompt.md       # Session initialization prompt (copy-paste only)
-    -- sessions/        # Session handoff records
+  <phase-folder-name>/
+    INVARIANTS.md
+    ROADMAP.md
+    roadmap.yml
+    prompt.md
+    sessions/
 ```
 
+## 6. Startup Checklist (Mandatory)
 
-## 6. Agent Startup Checklist (MANDATORY)
+At every session start:
+1. Read this file.
+2. Identify the active phase.
+3. Read active phase `INVARIANTS.md`, `ROADMAP.md`, `roadmap.yml`, and latest session handoff.
+4. Confirm branch is `roadmap/<active-phase-folder-name>`.
+5. Confirm active phase dependencies are satisfied before implementation.
 
-Every session MUST:
+## 7. Session Handoff Rules
 
-1. Read this `agent_roadmaps/README.md`.
-2. Identify which phase is currently active (see Section 2).
-3. If a phase is active:
-   - Enter that phase's folder.
-   - Read its `INVARIANTS.md`, `ROADMAP.md`, `roadmap.yml`, and the latest file in `sessions/`.
-   - Follow `prompt.md` to initialize the session.
-   - Confirm you are on the correct branch (`roadmap/<phase-folder-name>`).
-4. If no phase is active:
-   - Proceed normally, or
-   - Ask the user whether to activate the next phase if prior phase's PR/MR has been merged.
+For roadmap sessions:
+1. Create `sessions/session-YYYY-MM-DD-HH-MM.md`
+2. Include work completed, decisions, blockers, next steps
+3. Update `roadmap.yml`
+4. Commit handoff and roadmap state together
 
+## 8. Final Enforcement Rule
 
-## 7. Final Enforcement Rule
-
-> **If an agent is unsure whether an action is allowed,**
-> it MUST stop and ask the user.
-
-Silent assumption is forbidden.
+If uncertain whether an action is allowed, stop and ask the user.
