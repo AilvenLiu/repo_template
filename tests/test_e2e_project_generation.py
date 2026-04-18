@@ -55,10 +55,12 @@ def _assert_common_generated_assets(target: Path, project_type: str) -> None:
         assert not (target / ".claude" / "docs" / "python-env-quick-reference.md").exists()
         assert not (target / ".codex" / "skills" / "python-env-setup").exists()
         assert not (target / "bin" / "agent-python-env-setup").exists()
+        assert (target / "conanfile.txt").exists()
     assert codex_skill_dirs == expected_codex_skills
     assert (target / "bin" / "agent-init").exists()
     assert (target / "bin" / "agent-precommit").exists()
     assert (target / "bin" / "agent-check-constraints").exists()
+    assert (target / "bin" / "agent-roadmap").exists()
     assert (target / "bin" / "_agent_common.sh").exists()
     assert (target / "CODEX.md").exists()
     assert not any(target.rglob("__pycache__"))
@@ -94,6 +96,21 @@ def test_e2e_python_project_generation_and_codex_init(template_root):
         assert result.returncode == 0, result.stdout + "\n" + result.stderr
         assert (target / ".ai" / "session_state.json").exists()
 
+        subprocess.run(
+            ["git", "checkout", "-b", "chore/e2e-python"],
+            cwd=target,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        constraints = subprocess.run(
+            ["bash", "bin/agent-check-constraints"],
+            cwd=target,
+            capture_output=True,
+            text=True,
+        )
+        assert constraints.returncode == 0, constraints.stdout + "\n" + constraints.stderr
+
 
 def test_e2e_cpp_project_generation_and_codex_init(template_root):
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -116,3 +133,18 @@ def test_e2e_cpp_project_generation_and_codex_init(template_root):
         )
         assert result.returncode == 0, result.stdout + "\n" + result.stderr
         assert (target / ".ai" / "session_state.json").exists()
+
+        subprocess.run(
+            ["git", "checkout", "-b", "chore/e2e-cpp"],
+            cwd=target,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        constraints = subprocess.run(
+            ["bash", "bin/agent-check-constraints"],
+            cwd=target,
+            capture_output=True,
+            text=True,
+        )
+        assert constraints.returncode == 0, constraints.stdout + "\n" + constraints.stderr

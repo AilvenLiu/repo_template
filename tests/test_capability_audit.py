@@ -202,6 +202,67 @@ def test_context7_mcp_check_for_claude(monkeypatch) -> None:
         assert result.passed
 
 
+def test_context7_mcp_fallback_passes_when_health_probe_unavailable(monkeypatch) -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = Path(tmp)
+        _create_common_layout(repo)
+
+        _write_manifest(
+            repo,
+            {
+                "platform_requirements": {
+                    "claude": {
+                        "integrations": [{"id": "context7-mcp", "required": True, "check": "mcp"}]
+                    }
+                }
+            },
+        )
+
+        monkeypatch.setattr(capability_audit, "_claude_mcp_list", lambda: None)
+        monkeypatch.setattr(
+            capability_audit,
+            "_claude_plugins_list_json",
+            lambda: [
+                {
+                    "id": "context7@claude-plugins-official",
+                    "enabled": True,
+                    "mcpServers": {"context7": {"command": "npx", "args": ["-y", "@upstash/context7-mcp"]}},
+                }
+            ],
+        )
+
+        result = run_audit(repo, platform="claude")
+        assert result.passed
+        integration = next(e for e in result.entries if e.category == "integration")
+        assert integration.available
+        assert "fallback" in integration.method.lower()
+
+
+def test_context7_mcp_fails_when_probe_and_plugin_fallback_both_fail(monkeypatch) -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = Path(tmp)
+        _create_common_layout(repo)
+
+        _write_manifest(
+            repo,
+            {
+                "platform_requirements": {
+                    "claude": {
+                        "integrations": [{"id": "context7-mcp", "required": True, "check": "mcp"}]
+                    }
+                }
+            },
+        )
+
+        monkeypatch.setattr(capability_audit, "_claude_mcp_list", lambda: None)
+        monkeypatch.setattr(capability_audit, "_claude_plugins_list_json", lambda: None)
+
+        result = run_audit(repo, platform="claude")
+        assert not result.passed
+        integration = next(e for e in result.entries if e.category == "integration")
+        assert not integration.available
+
+
 def test_codex_repo_commands_are_deduplicated_between_common_and_platform() -> None:
     with tempfile.TemporaryDirectory() as tmp:
         repo = Path(tmp)
