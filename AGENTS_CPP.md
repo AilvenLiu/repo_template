@@ -138,8 +138,9 @@ Branch naming: `feat/`, `fix/`, `refactor/`, `perf/`, `docs/`, `chore/`
 ## Roadmap Discipline
 
 When `agent_roadmaps/` contains an active roadmap:
-- MUST read `INVARIANTS.md`, `prompt.md`, `roadmap.yml`, and latest session handoff before any work
+- MUST read `INVARIANTS.md`, `ROADMAP.md`, `prompt.md`, `roadmap.yml`, and latest session handoff before any work
 - MUST NOT work outside the current phase without user approval
+- MUST enforce dependency order (`depends_on_phases` and task `depends_on`) before activating work
 - MUST NOT reinterpret objectives or redesign architecture without explicit instruction
 - MUST update `roadmap.yml` and create a session handoff at end of every session
 

@@ -11,6 +11,11 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 try:
+    import yaml  # type: ignore[import-untyped]
+except ImportError:  # pragma: no cover - fallback for minimal environments
+    yaml = None
+
+try:
     from .capability_audit import AuditResult, print_audit_report, run_audit
     from .constants import PROTECTED_BRANCHES, PROTECTED_PREFIXES
     from .paths import resolve_repo_root
@@ -64,19 +69,48 @@ def find_active_roadmap(repo_root: Path) -> Optional[Path]:
     if not roadmaps_dir.is_dir():
         return None
 
-    for child in roadmaps_dir.iterdir():
+    active_candidates: List[Path] = []
+
+    for roadmap_file in sorted(roadmaps_dir.rglob("roadmap.yml")):
+        if "template" in roadmap_file.parts:
+            continue
+        child = roadmap_file.parent
         if not child.is_dir():
             continue
-        roadmap = child / "roadmap.yml"
-        if not roadmap.exists():
-            continue
+
         try:
-            content = roadmap.read_text()
+            content = roadmap_file.read_text(encoding="utf-8")
         except OSError:
             continue
-        if "status: active" in content or "status: in_progress" in content:
-            return child
-    return None
+
+        parsed = None
+        if yaml is not None:
+            try:
+                parsed = yaml.safe_load(content)
+            except yaml.YAMLError:
+                parsed = None
+
+        is_active = False
+
+        if isinstance(parsed, dict):
+            status = parsed.get("status")
+            if isinstance(status, dict):
+                active_flag = status.get("active")
+                if isinstance(active_flag, bool):
+                    is_active = active_flag
+                elif isinstance(active_flag, str):
+                    is_active = active_flag.strip().lower() in {"true", "active", "in_progress"}
+            elif isinstance(status, str):
+                is_active = status.strip().lower() in {"active", "in_progress"}
+
+        # Fallback for malformed/legacy files that still use plaintext markers.
+        if not is_active and ("status: active" in content or "status: in_progress" in content):
+            is_active = True
+
+        if is_active:
+            active_candidates.append(child)
+
+    return active_candidates[0] if active_candidates else None
 
 
 _ALWAYS_COMMON = [

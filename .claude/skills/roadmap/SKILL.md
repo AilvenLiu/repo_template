@@ -1,36 +1,36 @@
 ---
 name: roadmap
-description: "Manage multi-session agent workflows via agent_roadmaps/. Each phase lives in its own folder. Checks for active phases at session start."
+description: "Manage dependency-aware multi-session workflows in agent_roadmaps/."
 ---
 
 # /roadmap
 
-Structured commands for multi-session AI agent workflows using the
-`agent_roadmaps/` system.
+Structured commands for dependency-aware phase workflows.
 
 ## Commands
 
-- `/roadmap check` — check for active phases (run at session start)
-- `/roadmap create <name> --phases <N> --phase-names <names...>` — create phase folders for a project
-- `/roadmap status` — show cross-phase overview of all phases and their progress
-- `/roadmap update complete-task` — mark current task done, advance
+- `/roadmap check` — detect active phase and dependency readiness (run at session start)
+- `/roadmap create <name> --phases <N> --phase-names <names...>` — create phase series with explicit dependencies
+- `/roadmap status` — show cross-phase and task dependency status
+- `/roadmap update complete-task` — complete current task and advance to next dependency-ready task
 - `/roadmap update block-task <reason>` — mark current task blocked
-- `/roadmap update unblock-task` — clear blocked status
-- `/roadmap update set-focus <phase> <task>` — change focus manually
+- `/roadmap update unblock-task` — unblock first dependency-ready blocked task
+- `/roadmap update set-focus <task-id>` — set focus to a dependency-ready task
 - `/roadmap handoff` — generate session handoff file
-- `/roadmap complete` — mark active phase done and deactivate
+- `/roadmap complete` — mark active phase completed
 
 ## Behaviour (guaranteed)
 
 1. Enforces single-active-phase rule.
-2. Validates state transitions (no skipping tasks/phases).
-3. Validates roadmap schema (phase/task ID formats, allowed statuses).
-4. Generates session handoff files in `sessions/`.
+2. Enforces dependency-safe task progression (`depends_on`).
+3. Validates dependency-aware roadmap schema.
+4. Generates session handoff files under `sessions/`.
 
 ## Critical rules
 
-- At most ONE active **phase** at a time.
-- Work MUST be on branch `roadmap/<phase-folder-name>`.
-- Work ONLY on the current focus task.
-- Generate a handoff at the end of every session.
-- Authority hierarchy: INVARIANTS.md > ROADMAP.md > roadmap.yml > sessions/ > prompt.md.
+- At most one phase may be active.
+- Work must be on branch `roadmap/<phase-folder-name>`.
+- Do not start a phase before `depends_on_phases` are completed.
+- Operate only on `focus.current_task`.
+- End each roadmap session with roadmap state + handoff update.
+- Authority order: `INVARIANTS.md` > `ROADMAP.md` > `roadmap.yml` > `sessions/` > `prompt.md`.

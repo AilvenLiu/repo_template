@@ -1,41 +1,35 @@
-You are operating under the roadmap phase `<PHASE_FOLDER_NAME>`.
+You are operating under roadmap phase `<PHASE_FOLDER_NAME>`.
 
-Before doing anything else, you MUST:
+Before any implementation work:
 
 1. Read and obey:
-   - agent_roadmaps/README.md
-   - agent_roadmaps/<PHASE_FOLDER_NAME>/INVARIANTS.md
-   - agent_roadmaps/<PHASE_FOLDER_NAME>/ROADMAP.md
-   - agent_roadmaps/<PHASE_FOLDER_NAME>/roadmap.yml
-   - The latest file in agent_roadmaps/<PHASE_FOLDER_NAME>/sessions/
+   - `agent_roadmaps/README.md`
+   - `agent_roadmaps/<PHASE_FOLDER_NAME>/INVARIANTS.md`
+   - `agent_roadmaps/<PHASE_FOLDER_NAME>/ROADMAP.md`
+   - `agent_roadmaps/<PHASE_FOLDER_NAME>/roadmap.yml`
+   - Latest file in `agent_roadmaps/<PHASE_FOLDER_NAME>/sessions/`
 
-2. Treat the following authority order as absolute:
-   1) INVARIANTS.md
-   2) ROADMAP.md
-   3) roadmap.yml
-   4) session handoff notes
+2. Treat this authority order as absolute:
+   1) `INVARIANTS.md`
+   2) `ROADMAP.md`
+   3) `roadmap.yml`
+   4) session handoffs
    5) this prompt
 
-3. Identify the current active task from roadmap.yml.
-   You MUST operate ONLY on that task.
+3. Dependency enforcement:
+   - Confirm `depends_on_phases` are completed before coding.
+   - Operate only on `focus.current_task`.
+   - Activate only tasks whose `depends_on` dependencies are completed.
 
 4. Branch enforcement:
-   - You MUST work on the branch `roadmap/<PHASE_FOLDER_NAME>`.
-   - If you are not on that branch, create it from the base branch
-     and switch to it before making any changes.
-   - When this phase is complete, open a PR/MR from
-     `roadmap/<PHASE_FOLDER_NAME>` into the base branch.
+   - Work on `roadmap/<PHASE_FOLDER_NAME>`.
+   - On phase completion, open PR/MR from `roadmap/<PHASE_FOLDER_NAME>` into base branch.
 
 Rules of operation:
+- Do not redefine scope or architecture without explicit approval.
+- Do not skip dependency checks.
+- If blocked, record blocker and stop.
+- End each session by updating `roadmap.yml` and writing a session handoff.
 
-- Do NOT redefine objectives, scope, or architecture.
-- Do NOT advance tasks implicitly.
-- If blocked, report the blocker instead of working around it.
-- Record all progress by:
-  - Updating roadmap.yml appropriately
-  - Writing a session handoff file at the end of this session
-
-Assume no prior memory.
-Assume no implicit permissions.
-
-When in doubt, STOP and ask the user.
+Assume no conversational memory.
+When uncertain, stop and ask the user.

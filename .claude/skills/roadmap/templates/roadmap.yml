@@ -1,39 +1,60 @@
-# roadmap.yml -- Per-Phase Execution State (Template)
+# roadmap.yml -- Per-Phase Execution State (Dependency-Aware Template)
 #
-# This file is the ONLY authoritative source of execution progress
-# for this phase. It must reflect completed work, not intentions.
-#
-# Each phase folder gets its own roadmap.yml.
-# The roadmap.name is the phase folder name.
+# This file is the ONLY authoritative execution state for this phase.
+# Keep it machine-readable and deterministic.
 
-roadmap:
-  name: <PHASE_FOLDER_NAME>
-  description: >
-    <Describe the purpose and scope of this phase in one or two sentences.>
+phase: <PHASE_NUMBER>
+name: <PHASE_TITLE>
 
 status:
   active: true
   blocked: false
-  completed: false
+  started_at: null
+  completed_at: null
 
-# Exactly one task MUST be active at any time.
-current_focus:
-  phase: <PHASE_ID>
-  task: <TASK_ID>-1
+# Explicit upstream phase dependencies by folder name.
+# Example: [phase-6-foundation, phase-7-data-pipeline]
+depends_on_phases: <PHASE_DEPENDENCIES>
 
-phases:
-  - id: <PHASE_ID>
-    title: <Phase Title>
+tasks:
+  - id: <TASK_PREFIX>-1
+    title: Define implementation baseline for <PHASE_TITLE>
+    description: >
+      Clarify exact scope, constraints, and acceptance criteria for this phase.
+      Confirm objective boundaries and identify files touched first.
     status: active
-    tasks:
-      - id: <TASK_ID>-1
-        title: <First task title>
-        status: active
-        notes: >
-          <Describe what must be accomplished in this task.>
-      - id: <TASK_ID>-2
-        title: <Second task title>
-        status: pending
-      - id: <TASK_ID>-3
-        title: <Third task title>
-        status: pending
+    effort: medium
+    key_files:
+      - src/
+      - tests/
+    depends_on: []
+
+  - id: <TASK_PREFIX>-2
+    title: Implement dependency-safe core changes for <PHASE_TITLE>
+    description: >
+      Implement the primary code changes for this phase while preserving
+      upstream invariants and compatibility guarantees.
+    status: pending
+    effort: medium
+    key_files:
+      - src/
+    depends_on:
+      - <TASK_PREFIX>-1
+
+  - id: <TASK_PREFIX>-3
+    title: Validate outcomes and prepare merge handoff
+    description: >
+      Run required validation, document final state, and prepare branch merge
+      guidance for this phase.
+    status: pending
+    effort: low
+    key_files:
+      - tests/
+      - docs/
+    depends_on:
+      - <TASK_PREFIX>-2
+
+focus:
+  current_task: <TASK_PREFIX>-1
+  notes: >
+    Update this note at the end of each session with concise status and next action.

@@ -32,6 +32,10 @@ At session start, agents should:
 3. Report missing capabilities to the user
 4. Hard-fail if required capabilities are missing (Claude Code enforces this)
 
+For Claude Context7 integration checks, the runtime prefers live MCP health
+results (`claude mcp list`) and falls back to plugin metadata
+(`claude plugins list --json`) when health probing is transiently unavailable.
+
 Both Claude and Codex use the shared audit runtime:
 - Claude: `/init` -> `.ai/tools/session_init.py --platform claude`
 - Codex: `bin/agent-init --platform codex`
@@ -82,6 +86,7 @@ Different platforms have different ways to invoke procedures:
 | Session init | `/init` | `bin/agent-init --platform codex` | `python3 .ai/tools/session_init.py --platform <platform>` |
 | Pre-commit | `/pre-commit validate` | `bin/agent-precommit` | `python3 .ai/tools/constraints_check.py` (+ platform validators) |
 | Add dependency | `/dependency add <pkg>` | `bin/agent-dependency add <pkg>` | `python3 .claude/skills/dependency/scripts/add.py` |
+| Roadmap workflow | `/roadmap <cmd>` | `bin/agent-roadmap <cmd>` | `python3 .claude/skills/roadmap/scripts/<command>.py` |
 
 The constraint files describe **what** must be done; platform-specific skills implement **how** to do it.
 

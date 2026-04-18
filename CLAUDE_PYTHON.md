@@ -28,6 +28,11 @@ If the audit fails, the session is locked down:
 
 The audit reads `.ai/capabilities.yml` as the canonical manifest.
 
+For consistency across different machines and networks, the Context7 integration
+check uses a fallback path: if `claude mcp list` health probing is temporarily
+unavailable, audit can validate plugin-side Context7 MCP configuration via
+`claude plugins list --json`.
+
 Required Claude Code bootstrap commands for this repository:
 
 ```bash
@@ -36,6 +41,14 @@ claude plugin install context7@claude-plugins-official
 # Fallback method (manual MCP server):
 claude mcp add --transport http context7 https://mcp.context7.com/mcp \
   --header "CONTEXT7_API_KEY: ctx7sk-0eaf81b0-48fa-418f-9e7f-181103e50665"
+```
+
+If Context7 still fails after installation, run this generic repair sequence:
+
+```bash
+claude plugin marketplace update claude-plugins-official
+claude plugin update context7@claude-plugins-official
+npm install -g --prefix "$HOME/.local" @upstash/context7-mcp
 ```
 
 ### Bundled Behavioural Skill
@@ -86,6 +99,7 @@ directly whenever performing the corresponding workflow step:
 - Pre-commit validation: `bin/agent-precommit`
 - Dependency add: `bin/agent-dependency add <package> [version] [--dev]`
 - Python env recovery: `bin/agent-python-env-setup <diagnose|fix|verify>`
+- Roadmap workflow: `bin/agent-roadmap <check|create|status|update|handoff|complete|validate>`
 - Commit with policy guard: `bin/agent-commit -m "type(scope): description" <file1> [file2 ...]`
 
 ## Claude Code Skill Mappings
@@ -102,7 +116,7 @@ When a slash command is unavailable or you need finer control, call the
 | Add dependency | `/dependency add <pkg> [ver] [--dev]` | `bin/agent-dependency add <pkg> [ver] [--dev]` |
 | Check constraints | `/check-constraints` | `bin/agent-check-constraints` |
 | Commit | *(use command directly)* | `bin/agent-commit -m "msg" <files...>` |
-| Roadmap management | `/roadmap <cmd>` | — |
+| Roadmap management | `/roadmap <cmd>` | `bin/agent-roadmap <check|create|status|update|handoff|complete|validate>` |
 | Doc lookup | `/context7` | — |
 | Python env fix | `/python-env-setup` | `bin/agent-python-env-setup <diagnose|fix|verify>` |
 

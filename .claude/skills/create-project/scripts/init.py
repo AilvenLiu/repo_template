@@ -128,6 +128,14 @@ def create_project(template_root: Path, target_dir: Path, project_type: str) -> 
                 'set(CMAKE_CXX_EXTENSIONS OFF)\n\n'
                 '# Add your targets here\n'
             )
+        conanfile = target_dir / "conanfile.txt"
+        if not conanfile.exists():
+            conanfile.write_text(
+                "[requires]\n\n"
+                "[generators]\n"
+                "CMakeDeps\n"
+                "CMakeToolchain\n"
+            )
     step += 1
 
     # 7. Create README.md

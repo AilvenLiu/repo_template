@@ -35,6 +35,7 @@ The repository requires British English for user-facing text.
 - Pre-commit validation: `bin/agent-precommit`
 - Dependency add: `bin/agent-dependency add <package> [version] [--dev]`
 - Python environment recovery: `bin/agent-python-env-setup <diagnose|fix|verify>`
+- Roadmap workflow: `bin/agent-roadmap <check|create|status|update|handoff|complete|validate>`
 - Commit with policy guard: `bin/agent-commit -m "type(scope): description" <file1> [file2 ...]`
 
 ## Absolute Prohibitions
