@@ -3,6 +3,18 @@
 > This document describes the phase `<PHASE_FOLDER_NAME>`.
 > It should be explicit enough for a fresh session with zero prior context.
 
+## 0. Authority Order
+
+This file is bound by the absolute authority order:
+
+1. `INVARIANTS.md` (overrides this file)
+2. `ROADMAP.md` (this file)
+3. `roadmap.yml`
+4. Latest file in `sessions/`
+5. `prompt.md`
+
+If this file conflicts with `INVARIANTS.md`, follow `INVARIANTS.md` and ask the user.
+
 ## 1. Goal
 
 Describe exactly what this phase must deliver and why it matters.

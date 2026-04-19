@@ -665,6 +665,75 @@ class RoadmapSchemaValidator:
                 )
 
 
+def validate_phase_folder_structure(phase_dir: Path) -> List[ValidationError]:
+    """Ensure the required phase files exist and declare the authority order."""
+
+    errors: List[ValidationError] = []
+    required_files = ("INVARIANTS.md", "ROADMAP.md", "roadmap.yml", "prompt.md")
+
+    for name in required_files:
+        target = phase_dir / name
+        if not target.exists():
+            errors.append(
+                ValidationError(
+                    severity=Severity.CRITICAL,
+                    category="Phase Structure",
+                    message=f"Missing required phase file '{name}'",
+                    location=str(target),
+                    remediation=(
+                        "Re-run the roadmap creation template, or copy "
+                        f".claude/skills/roadmap/templates/{name} into this phase "
+                        "and fill in placeholders."
+                    ),
+                )
+            )
+
+    sessions_dir = phase_dir / "sessions"
+    if not sessions_dir.exists() or not sessions_dir.is_dir():
+        errors.append(
+            ValidationError(
+                severity=Severity.CRITICAL,
+                category="Phase Structure",
+                message="Missing 'sessions/' directory for handoff files",
+                location=str(sessions_dir),
+                remediation="Create an empty sessions/ directory with a .gitkeep file",
+            )
+        )
+
+    authority_tokens = (
+        "INVARIANTS.md",
+        "ROADMAP.md",
+        "roadmap.yml",
+        "sessions",
+        "prompt.md",
+    )
+    for name in ("prompt.md", "INVARIANTS.md"):
+        target = phase_dir / name
+        if not target.exists():
+            continue
+        text = target.read_text(encoding="utf-8", errors="ignore")
+        missing = [token for token in authority_tokens if token not in text]
+        if missing:
+            errors.append(
+                ValidationError(
+                    severity=Severity.CRITICAL,
+                    category="Authority Order",
+                    message=(
+                        f"{name} is missing authority-order tokens: "
+                        + ", ".join(missing)
+                    ),
+                    location=str(target),
+                    remediation=(
+                        "Declare the exact order INVARIANTS.md > ROADMAP.md > "
+                        "roadmap.yml > sessions/ > prompt.md so fresh sessions "
+                        "pick up the rule without guessing."
+                    ),
+                )
+            )
+
+    return errors
+
+
 def validate_roadmap_file(roadmap_path: Path) -> List[ValidationError]:
     manager = RoadmapManager()
     try:
@@ -767,13 +836,20 @@ def main() -> None:
 
     roadmap_name = sys.argv[1]
     repo_root = Path.cwd()
-    roadmap_path = repo_root / "agent_roadmaps" / roadmap_name / "roadmap.yml"
+    phase_dir = repo_root / "agent_roadmaps" / roadmap_name
+    roadmap_path = phase_dir / "roadmap.yml"
 
-    if not roadmap_path.exists():
-        print(f"ERROR: Phase folder not found: {roadmap_path}")
+    if not phase_dir.exists():
+        print(f"ERROR: Phase folder not found: {phase_dir}")
         sys.exit(1)
 
-    errors = validate_roadmap_file(roadmap_path)
+    structure_errors = validate_phase_folder_structure(phase_dir)
+
+    if not roadmap_path.exists():
+        print_validation_results(structure_errors, roadmap_name)
+        sys.exit(1)
+
+    errors = structure_errors + validate_roadmap_file(roadmap_path)
     print_validation_results(errors, roadmap_name)
 
     critical_count = sum(1 for err in errors if err.severity == Severity.CRITICAL)

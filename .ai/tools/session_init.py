@@ -119,6 +119,7 @@ _ALWAYS_COMMON = [
     "common/karpathy-guidelines",
     "common/mcp-integration",
     "common/ascii-only",
+    "common/agentic-team",
 ]
 _ALWAYS_PYTHON = [
     "python/dependencies",
