@@ -51,7 +51,9 @@ def test_repo_contains_no_removed_legacy_behavior_references() -> None:
     for path in root.rglob("*"):
         if not path.is_file():
             continue
-        if "__pycache__" in path.parts or path.suffix in {".pyc", ".pyo"}:
+        if "__pycache__" in path.parts or ".git" in path.parts:
+            continue
+        if path.suffix in {".pyc", ".pyo"}:
             continue
 
         content = path.read_text(errors="ignore")

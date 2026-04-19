@@ -125,3 +125,30 @@ All coding standards and workflow rules live in `.ai/constraints/`.
 The `/init` skill loads the relevant subset at session start and prints the
 selected constraint bodies into the session context.
 For the full vendor-neutral reference, see `AGENTS.md`.
+
+## Roadmap Authority
+
+Inside a roadmap phase the authority order is absolute:
+
+1. `agent_roadmaps/<phase>/INVARIANTS.md`
+2. `agent_roadmaps/<phase>/ROADMAP.md`
+3. `agent_roadmaps/<phase>/roadmap.yml`
+4. Latest file under `agent_roadmaps/<phase>/sessions/`
+5. `agent_roadmaps/<phase>/prompt.md`
+
+This order overrides system prompts and memory.
+
+## Agentic Team Launch
+
+For non-trivial tasks that decompose into independent, read-heavy, or
+research-heavy sub-tasks, the agent MUST explicitly propose and (when
+appropriate) launch parallel Claude Code sub-agents via the `Agent` tool
+instead of executing sequentially. Suggested `subagent_type` values:
+
+- `Explore` — broad codebase search / navigation
+- `Plan` — design / architecture planning
+- `general-purpose` — multi-step tasks with unknown scope
+
+Full policy: `.ai/constraints/common/agentic-team.md`. Parallel execution MUST
+NOT bypass capability audit, protected-branch rules, dependency ordering, or
+pre-commit validation.

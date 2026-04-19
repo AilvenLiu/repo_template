@@ -143,6 +143,26 @@ When `agent_roadmaps/` contains an active roadmap:
 - MUST enforce dependency order (`depends_on_phases` and task `depends_on`) before activating work
 - MUST NOT reinterpret objectives or redesign architecture without explicit instruction
 - MUST update `roadmap.yml` and create a session handoff at end of every session
+- Authority order inside a phase is absolute: `INVARIANTS.md` > `ROADMAP.md` > `roadmap.yml` > `sessions/` > `prompt.md`
+
+---
+
+## Agentic Team Launch
+
+When the active task decomposes into independent, read-heavy or research-heavy
+sub-tasks, the agent MUST explicitly declare and (when appropriate) launch
+parallel sub-agents instead of executing serially. Full policy lives in
+`.ai/constraints/common/agentic-team.md`.
+
+Required before launching:
+- State the reason for parallelism
+- List each sub-agent with a self-contained prompt and expected artefact
+- Confirm no write-write conflicts and no dependency violations
+
+Forbidden:
+- Delegating final synthesis or user-facing summary to a sub-agent
+- Using parallel agents to bypass capability-audit, protected-branch, dependency
+  ordering, or pre-commit validation
 
 ---
 
@@ -189,4 +209,5 @@ Read each file completely before working on related code:
 - `.ai/constraints/common/git-workflow.md`
 - `.ai/constraints/common/session-discipline.md`
 - `.ai/constraints/common/mcp-integration.md`
+- `.ai/constraints/common/agentic-team.md`
 - `.ai/constraints/common/ascii-only.md`

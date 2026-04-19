@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import argparse
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -66,30 +67,65 @@ def generate_handoff(work_completed: str, decisions: str, blockers: str, next_st
     print(f"  Branch: {expected_branch}")
 
 
+def _prompt(label: str, hint: str) -> str:
+    print(label)
+    print(hint)
+    try:
+        value = input("> ")
+    except EOFError:
+        value = ""
+    print()
+    return value
+
+
 def main() -> None:
-    print("Session Handoff Generator")
-    print("=" * 50)
-    print()
+    parser = argparse.ArgumentParser(
+        description=(
+            "Generate a session handoff file. Pass --work/--decisions/--blockers/"
+            "--next-steps for non-interactive use, or run with no args for the "
+            "interactive prompt flow."
+        )
+    )
+    parser.add_argument("--work", default=None, help="Work completed this session")
+    parser.add_argument("--decisions", default=None, help="Decisions or architectural choices")
+    parser.add_argument("--blockers", default=None, help="Blockers or unresolved issues")
+    parser.add_argument("--next-steps", dest="next_steps", default=None, help="Guidance for next session")
+    parser.add_argument(
+        "--non-interactive",
+        action="store_true",
+        help="Never prompt; use empty string for unspecified fields (CI/agent use)",
+    )
+    args = parser.parse_args()
 
-    print("Work Completed:")
-    print("(Describe what was accomplished in this session)")
-    work_completed = input("> ")
-    print()
+    explicit_any = any(
+        v is not None for v in (args.work, args.decisions, args.blockers, args.next_steps)
+    )
 
-    print("Decisions Made:")
-    print("(List key decisions or architectural choices)")
-    decisions = input("> ")
-    print()
-
-    print("Open Issues / Blockers:")
-    print("(Describe blockers or unresolved issues)")
-    blockers = input("> ")
-    print()
-
-    print("Next Session Handoff:")
-    print("(Guidance for the next session)")
-    next_steps = input("> ")
-    print()
+    if args.non_interactive or explicit_any or not sys.stdin.isatty():
+        work_completed = args.work or "(none recorded)"
+        decisions = args.decisions or "(none recorded)"
+        blockers = args.blockers or "(none recorded)"
+        next_steps = args.next_steps or "(none recorded)"
+    else:
+        print("Session Handoff Generator")
+        print("=" * 50)
+        print()
+        work_completed = _prompt(
+            "Work Completed:",
+            "(Describe what was accomplished in this session)",
+        )
+        decisions = _prompt(
+            "Decisions Made:",
+            "(List key decisions or architectural choices)",
+        )
+        blockers = _prompt(
+            "Open Issues / Blockers:",
+            "(Describe blockers or unresolved issues)",
+        )
+        next_steps = _prompt(
+            "Next Session Handoff:",
+            "(Guidance for the next session)",
+        )
 
     generate_handoff(work_completed, decisions, blockers, next_steps)
 

@@ -21,6 +21,11 @@ CLAUDE_MIGRATION_PATHS = [
     Path(".claude/skills/pre-commit"),
     Path(".claude/skills/dependency"),
     Path(".claude/skills/karpathy-guidelines"),
+    Path(".claude/skills/roadmap"),
+    Path(".claude/skills/build"),
+    Path(".claude/skills/navigate"),
+    Path(".claude/skills/context7"),
+    Path(".claude/skills/python-env-setup"),
 ]
 
 
@@ -100,6 +105,9 @@ def migrate(source_root: Path, target_root: Path, force: bool, backup: bool) -> 
         cpp_python_env_skill = target_root / ".codex" / "skills" / "python-env-setup"
         if cpp_python_env_skill.is_dir():
             shutil.rmtree(cpp_python_env_skill)
+        claude_python_env_skill = target_root / ".claude" / "skills" / "python-env-setup"
+        if claude_python_env_skill.is_dir():
+            shutil.rmtree(claude_python_env_skill)
         cpp_python_env_wrapper = target_root / "bin" / "agent-python-env-setup"
         if cpp_python_env_wrapper.exists():
             cpp_python_env_wrapper.unlink()

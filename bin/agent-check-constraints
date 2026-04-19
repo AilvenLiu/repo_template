@@ -6,4 +6,36 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/_agent_common.sh"
 REPO_ROOT="$(agent_repo_root)"
 
-run_agent_python "$REPO_ROOT" "$REPO_ROOT/.ai/tools/constraints_check.py" --project-type auto "$@"
+# Pull --skip-forbidden-scan out of the args before forwarding the rest.
+SKIP_FORBIDDEN=0
+PASSTHROUGH=()
+for arg in "$@"; do
+  case "$arg" in
+    --skip-forbidden-scan)
+      SKIP_FORBIDDEN=1
+      ;;
+    *)
+      PASSTHROUGH+=("$arg")
+      ;;
+  esac
+done
+
+set +e
+run_agent_python "$REPO_ROOT" "$REPO_ROOT/.ai/tools/constraints_check.py" \
+  --project-type auto ${PASSTHROUGH[@]+"${PASSTHROUGH[@]}"}
+constraints_rc=$?
+set -e
+
+forbidden_rc=0
+if [[ "$SKIP_FORBIDDEN" -eq 0 ]]; then
+  echo
+  set +e
+  run_agent_python "$REPO_ROOT" "$REPO_ROOT/.ai/tools/forbidden_patterns.py" \
+    --project-type auto
+  forbidden_rc=$?
+  set -e
+fi
+
+if [[ "$constraints_rc" -ne 0 || "$forbidden_rc" -ne 0 ]]; then
+  exit 1
+fi
