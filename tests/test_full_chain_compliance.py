@@ -72,7 +72,13 @@ def _manifest() -> dict:
 
 
 def _expected_skills(manifest: dict, platform: str, project_type: str) -> set[str]:
-    """Skills that must exist on disk for a generated project of this type."""
+    """Skills that must exist on disk for a generated project of this type.
+
+    After the .codex/ removal, the platform argument is informational only —
+    every skill in common_requirements.project_skills is expected on both
+    platforms (under .ai/skills/<id>/SKILL.md).
+    """
+    del platform  # parity is now uniform across platforms
 
     skills: set[str] = set()
     for entry in manifest.get("common_requirements", {}).get("project_skills", []):
@@ -83,13 +89,6 @@ def _expected_skills(manifest: dict, platform: str, project_type: str) -> set[st
             continue
         if entry.get("required"):
             skills.add(entry["id"])
-    if platform == "codex":
-        for entry in manifest.get("platform_requirements", {}).get("codex", {}).get("codex_skills", []):
-            types = entry.get("project_types")
-            if types and project_type not in types:
-                continue
-            if entry.get("required"):
-                skills.add(entry["id"])
     return skills
 
 
@@ -116,29 +115,52 @@ def test_all_required_skills_present_on_disk(tmp_path: Path, platform: str, proj
     manifest = _manifest()
     expected = _expected_skills(manifest, platform, project_type)
 
-    skills_dir = project / (".claude/skills" if platform == "claude" else ".codex/skills")
-    found = {p.name for p in skills_dir.iterdir() if p.is_dir()}
-
-    missing = expected - found
-    assert not missing, (
-        f"[{platform}/{project_type}] Required skills missing on disk: {sorted(missing)}\n"
-        f"  Found: {sorted(found)}"
+    # Every required skill must have its canonical body under .ai/skills/.
+    ai_skills_dir = project / ".ai" / "skills"
+    found_ai = {p.name for p in ai_skills_dir.iterdir() if p.is_dir()}
+    missing_ai = expected - found_ai
+    assert not missing_ai, (
+        f"[{project_type}] Required skill bodies missing under .ai/skills/: "
+        f"{sorted(missing_ai)}\n  Found: {sorted(found_ai)}"
     )
+
+    if platform == "claude":
+        # Claude additionally requires the slash-command stub for discovery.
+        claude_skills_dir = project / ".claude" / "skills"
+        found_claude = {p.name for p in claude_skills_dir.iterdir() if p.is_dir()}
+        missing_claude = expected - found_claude
+        assert not missing_claude, (
+            f"[claude/{project_type}] Required Claude stubs missing under "
+            f".claude/skills/: {sorted(missing_claude)}"
+        )
 
 
 @pytest.mark.parametrize("project_type", PROJECT_TYPES)
-@pytest.mark.parametrize("platform", PLATFORMS)
-def test_every_skill_dir_has_skill_md(tmp_path: Path, platform: str, project_type: str) -> None:
+def test_every_ai_skill_has_skill_md_body(tmp_path: Path, project_type: str) -> None:
     project = _make_project(tmp_path, project_type)
-    skills_dir = project / (".claude/skills" if platform == "claude" else ".codex/skills")
+    skills_dir = project / ".ai" / "skills"
+    assert skills_dir.is_dir(), ".ai/skills/ must exist in generated projects"
+    for skill_dir in skills_dir.iterdir():
+        if not skill_dir.is_dir():
+            continue
+        skill_md = skill_dir / "SKILL.md"
+        assert skill_md.exists(), f"[{project_type}] .ai/skills/{skill_dir.name}/SKILL.md missing"
+        body = skill_md.read_text()
+        assert body.strip(), f"[{project_type}] .ai/skills/{skill_dir.name}/SKILL.md is empty"
+
+
+@pytest.mark.parametrize("project_type", PROJECT_TYPES)
+def test_every_claude_skill_has_frontmatter(tmp_path: Path, project_type: str) -> None:
+    project = _make_project(tmp_path, project_type)
+    skills_dir = project / ".claude" / "skills"
     for skill_dir in skills_dir.iterdir():
         if not skill_dir.is_dir() or skill_dir.name == "common":
             continue
         skill_md = skill_dir / "SKILL.md"
-        assert skill_md.exists(), f"[{platform}/{project_type}] {skill_dir.name}/SKILL.md missing"
+        assert skill_md.exists(), f"[claude/{project_type}] {skill_dir.name}/SKILL.md missing"
         body = skill_md.read_text()
-        assert body.strip(), f"[{platform}/{project_type}] {skill_dir.name}/SKILL.md is empty"
-        # Skill files MUST advertise the skill name in frontmatter.
+        assert body.strip(), f"[claude/{project_type}] {skill_dir.name}/SKILL.md is empty"
+        # Claude requires frontmatter for slash-command dispatch.
         assert re.search(r"name:\s*\S+", body), f"{skill_dir}/SKILL.md missing frontmatter name"
 
 
@@ -401,34 +423,28 @@ def test_check_constraints_passes_on_feature_branch(tmp_path: Path, project_type
 
 
 def test_every_manifest_skill_has_implementation_in_template() -> None:
+    """Every manifest skill must have a body under .ai/skills/ (vendor-neutral),
+    plus a Claude stub under .claude/skills/ for slash-command dispatch.
+    The 'create-project' skill is template-only and lives only on the Claude side.
+    """
     manifest = _manifest()
-    seen: set[str] = set()
-    for entry in manifest.get("common_requirements", {}).get("project_skills", []):
-        seen.add(entry["id"])
-    for entry in (
-        manifest.get("platform_requirements", {})
-        .get("codex", {})
-        .get("codex_skills", [])
-    ):
-        seen.add(entry["id"])
-
-    claude_skills = {p.name for p in (ROOT / ".claude" / "skills").iterdir() if p.is_dir()}
-    codex_skills = {p.name for p in (ROOT / ".codex" / "skills").iterdir() if p.is_dir()}
-
-    for skill in seen:
-        assert skill in claude_skills or skill == "create-project", (
-            f"Manifest declares Claude skill '{skill}' but no .claude/skills/{skill}/ directory exists"
-        )
-
-    common_codex = {
-        e["id"]
-        for e in manifest.get("platform_requirements", {})
-        .get("codex", {})
-        .get("codex_skills", [])
+    skill_ids: set[str] = {
+        entry["id"] for entry in manifest.get("common_requirements", {}).get("project_skills", [])
     }
-    for skill in common_codex:
-        assert skill in codex_skills, (
-            f"Manifest declares Codex skill '{skill}' but no .codex/skills/{skill}/ directory exists"
+
+    ai_skills = {p.name for p in (ROOT / ".ai" / "skills").iterdir() if p.is_dir()}
+    claude_skills = {p.name for p in (ROOT / ".claude" / "skills").iterdir() if p.is_dir()}
+
+    for skill_id in skill_ids:
+        # create-project is template-only; it has no .ai/skills/ body.
+        if skill_id != "create-project":
+            assert skill_id in ai_skills, (
+                f"Manifest declares skill '{skill_id}' but no .ai/skills/{skill_id}/ "
+                "directory exists"
+            )
+        assert skill_id in claude_skills, (
+            f"Manifest declares skill '{skill_id}' but no .claude/skills/{skill_id}/ "
+            "directory exists"
         )
 
 

@@ -5,14 +5,10 @@ description: "Session initialization — run at the start of EVERY session befor
 
 # /init
 
-Detects project type, loads constraint bodies into the conversation,
-writes `.ai/session_state.json` (and `.claude/session_state.json` for compatibility),
-and warns about protected branches
-and active roadmaps.
+Session initialization. The canonical, vendor-neutral procedure body lives at
+[`.ai/skills/init/SKILL.md`](../../../.ai/skills/init/SKILL.md).
 
 ## Execution
-
-Run:
 
 ```bash
 bin/agent-init --platform claude
@@ -21,5 +17,10 @@ bin/agent-init --platform claude
 ## Behaviour (guaranteed)
 
 1. Reads `.ai/project.yml` for project type; falls back to heuristic scan.
-2. Prints the full text of every selected constraint so the agent ingests it.
-3. Creates `.ai/session_state.json` + `.claude/session_state.json` — hooks and wrappers use this to gate mutations.
+2. Runs the capability audit defined by `.ai/capabilities.yml`.
+3. Prints the full text of every selected constraint so the agent ingests it.
+4. Creates `.ai/session_state.json` (+ `.claude/session_state.json` mirror).
+
+When the agent invokes this slash command, it should also open
+[`.ai/skills/init/SKILL.md`](../../../.ai/skills/init/SKILL.md) for the full
+guaranteed-behaviour spec and failure-mode handling.

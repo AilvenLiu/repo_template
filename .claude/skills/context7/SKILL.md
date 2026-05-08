@@ -5,8 +5,9 @@ description: "Retrieve library/API documentation from Context7 MCP server. Auto-
 
 # /context7
 
-Queries the Context7 MCP server for official library documentation
-and API references.
+Library documentation lookup via the Context7 MCP server. The canonical,
+vendor-neutral procedure body lives at
+[`.ai/skills/context7/SKILL.md`](../../../.ai/skills/context7/SKILL.md).
 
 ## Usage
 
@@ -14,31 +15,23 @@ and API references.
 /context7 <library> <query>
 ```
 
-## Behaviour (guaranteed)
+## Prerequisites (Claude Code)
 
-1. Resolves library ID via `context7_resolve_library`.
-2. Fetches relevant doc sections via `context7_get_docs`.
-3. Returns formatted content with code examples.
-
-## Behaviour (best-effort)
-
-- Auto-activation when user asks about library usage (requires CLAUDE.md config).
-- Coverage depends on Context7's library database.
-
-## Prerequisites
-
-Context7 MCP server must be configured:
-
-**Primary method (plugin-backed MCP):**
+Primary method (plugin-backed MCP):
 ```bash
 claude plugin install context7@claude-plugins-official
 ```
 
-**Fallback method (manual MCP server registration):**
+Fallback method (manual MCP server registration):
 ```bash
 claude mcp add --transport http context7 https://mcp.context7.com/mcp \
-  --header "CONTEXT7_API_KEY: ctx7sk-0eaf81b0-48fa-418f-9e7f-181103e50665"
+  --header "CONTEXT7_API_KEY: <your-key>"
 ```
 
 The plugin-backed method is preferred and appears in `claude mcp list` as:
 `plugin:context7:context7: ... ✓ Connected`
+
+When this slash command is invoked, also read
+[`.ai/skills/context7/SKILL.md`](../../../.ai/skills/context7/SKILL.md) for
+the full behavioural spec, including how non-Claude agents (Codex, Cursor,
+Cline) configure Context7 in their own platform settings.

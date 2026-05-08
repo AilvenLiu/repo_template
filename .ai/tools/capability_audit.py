@@ -247,22 +247,52 @@ def _audit_project_skills(
     is_template: bool,
     result: AuditResult,
 ) -> None:
-    skills_root = repo_root / ".claude" / "skills"
+    """Audit vendor-neutral skill manifests under .ai/skills/<id>/SKILL.md.
+
+    For Claude Code we additionally verify that the .claude/skills/<id>/SKILL.md
+    stub exists, since Claude relies on it for slash-command discovery.
+    """
+    ai_skills_root = repo_root / ".ai" / "skills"
+    claude_skills_root = repo_root / ".claude" / "skills"
+    is_claude_platform = result.platform == "claude"
+
     for entry in entries:
         if not _entry_enabled_for_repo(entry, is_template, repo_root):
             continue
 
         skill_id = entry.get("id", "")
         required = bool(entry.get("required", False))
-        skill_md = skills_root / skill_id / "SKILL.md"
+        template_only = bool(entry.get("template_only", False))
 
-        available = skill_md.is_file()
-        message = ""
-        if not available:
-            message = (
-                f"Project skill '{skill_id}' not found.\n"
-                f"  Expected: .claude/skills/{skill_id}/SKILL.md"
+        # The canonical body lives at .ai/skills/<id>/SKILL.md for non-template
+        # skills. Template-only skills (e.g. create-project) ship only on the
+        # Claude side because they apply to the template repo, not generated
+        # projects.
+        if template_only:
+            ai_skill_md = None
+        else:
+            ai_skill_md = ai_skills_root / skill_id / "SKILL.md"
+
+        claude_skill_md = claude_skills_root / skill_id / "SKILL.md"
+
+        ai_ok = ai_skill_md is None or ai_skill_md.is_file()
+        claude_ok = (not is_claude_platform) or claude_skill_md.is_file()
+
+        available = ai_ok and claude_ok
+        message_parts: List[str] = []
+        if ai_skill_md is not None and not ai_skill_md.is_file():
+            message_parts.append(
+                f"Skill body missing: .ai/skills/{skill_id}/SKILL.md"
             )
+        if is_claude_platform and not claude_skill_md.is_file():
+            message_parts.append(
+                f"Claude skill stub missing: .claude/skills/{skill_id}/SKILL.md"
+            )
+
+        method = "filesystem (.ai/skills/<id>/SKILL.md"
+        if is_claude_platform:
+            method += " + .claude/skills/<id>/SKILL.md stub"
+        method += ")"
 
         result.add(
             AuditEntry(
@@ -270,42 +300,8 @@ def _audit_project_skills(
                 capability_id=skill_id,
                 required=required,
                 available=available,
-                method="filesystem (.claude/skills/<id>/SKILL.md)",
-                message=message,
-            )
-        )
-
-
-def _audit_codex_skills(
-    entries: List[Dict[str, Any]],
-    repo_root: Path,
-    is_template: bool,
-    result: AuditResult,
-) -> None:
-    skills_root = repo_root / ".codex" / "skills"
-    for entry in entries:
-        if not _entry_enabled_for_repo(entry, is_template, repo_root):
-            continue
-
-        skill_id = entry.get("id", "")
-        required = bool(entry.get("required", False))
-        skill_md = skills_root / skill_id / "SKILL.md"
-        available = skill_md.is_file()
-        message = ""
-        if not available:
-            message = (
-                f"Codex skill '{skill_id}' not found.\n"
-                f"  Expected: .codex/skills/{skill_id}/SKILL.md"
-            )
-
-        result.add(
-            AuditEntry(
-                category="codex_skill",
-                capability_id=skill_id,
-                required=required,
-                available=available,
-                method="filesystem (.codex/skills/<id>/SKILL.md)",
-                message=message,
+                method=method,
+                message="\n".join(message_parts),
             )
         )
 
@@ -815,9 +811,6 @@ def run_audit(
         _audit_claude_plugins(platform_req.get("claude_plugins", []), result)
         _audit_claude_marketplaces(platform_req.get("claude_marketplaces", []), result)
         _audit_claude_plugin_skills(platform_req.get("claude_plugin_skills", []), result)
-
-    if platform == "codex":
-        _audit_codex_skills(platform_req.get("codex_skills", []), repo_root, is_template, result)
 
     _audit_integrations(common.get("integrations", []), result, platform)
     _audit_integrations(platform_req.get("integrations", []), result, platform)

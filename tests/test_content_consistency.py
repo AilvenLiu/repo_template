@@ -22,21 +22,21 @@ def test_codex_entrypoint_files_removed() -> None:
     assert not (root / "CODEX.md").exists()
 
 
-def test_codex_check_constraints_skill_uses_wrapper() -> None:
+def test_canonical_check_constraints_skill_uses_wrapper() -> None:
     root = Path(__file__).parent.parent
-    skill = (root / ".codex" / "skills" / "check-constraints" / "SKILL.md").read_text()
+    skill = (root / ".ai" / "skills" / "check-constraints" / "SKILL.md").read_text()
     assert "bin/agent-check-constraints" in skill
 
 
-def test_codex_build_skill_uses_wrapper() -> None:
+def test_canonical_build_skill_uses_wrapper() -> None:
     root = Path(__file__).parent.parent
-    skill = (root / ".codex" / "skills" / "build" / "SKILL.md").read_text()
+    skill = (root / ".ai" / "skills" / "build" / "SKILL.md").read_text()
     assert "bin/agent-build" in skill
 
 
-def test_codex_python_env_skill_uses_wrapper() -> None:
+def test_canonical_python_env_skill_uses_wrapper() -> None:
     root = Path(__file__).parent.parent
-    skill = (root / ".codex" / "skills" / "python-env-setup" / "SKILL.md").read_text()
+    skill = (root / ".ai" / "skills" / "python-env-setup" / "SKILL.md").read_text()
     assert "bin/agent-python-env-setup" in skill
 
 

@@ -21,9 +21,18 @@ def _write_manifest(repo: Path, data: dict) -> None:
 
 
 def _create_common_layout(repo: Path) -> None:
+    (repo / ".ai" / "skills").mkdir(parents=True, exist_ok=True)
     (repo / ".claude" / "skills").mkdir(parents=True, exist_ok=True)
-    (repo / ".codex" / "skills").mkdir(parents=True, exist_ok=True)
     (repo / "bin").mkdir(parents=True, exist_ok=True)
+
+
+def _create_skill(repo: Path, skill_id: str, *, with_claude_stub: bool = True) -> None:
+    """Create the .ai/skills/<id>/SKILL.md body and (optionally) the Claude stub."""
+    (repo / ".ai" / "skills" / skill_id).mkdir(parents=True, exist_ok=True)
+    (repo / ".ai" / "skills" / skill_id / "SKILL.md").write_text(f"# {skill_id}")
+    if with_claude_stub:
+        (repo / ".claude" / "skills" / skill_id).mkdir(parents=True, exist_ok=True)
+        (repo / ".claude" / "skills" / skill_id / "SKILL.md").write_text(f"# {skill_id}")
 
 
 def test_missing_manifest_fails() -> None:
@@ -48,9 +57,8 @@ def test_v1_manifest_backward_compatibility() -> None:
             },
         )
 
-        # Make project skill available.
-        (repo / ".claude" / "skills" / "init").mkdir(parents=True, exist_ok=True)
-        (repo / ".claude" / "skills" / "init" / "SKILL.md").write_text("# init")
+        # Make project skill available (both .ai body and Claude stub).
+        _create_skill(repo, "init")
 
         # Claude plugin check will fail because CLI isn't available, but loader should parse.
         result = run_audit(repo, platform="claude")
@@ -75,26 +83,19 @@ def test_codex_audit_passes_with_required_skills_and_commands() -> None:
                     }
                 ],
             },
-            "platform_requirements": {
-                "codex": {
-                    "codex_skills": [{"id": "init", "required": True}],
-                }
-            },
+            "platform_requirements": {"codex": {"integrations": []}},
         }
         _write_manifest(repo, manifest)
 
-        (repo / ".claude" / "skills" / "init").mkdir(parents=True, exist_ok=True)
-        (repo / ".claude" / "skills" / "init" / "SKILL.md").write_text("# init")
-
-        (repo / ".codex" / "skills" / "init").mkdir(parents=True, exist_ok=True)
-        (repo / ".codex" / "skills" / "init" / "SKILL.md").write_text("# init")
+        # Codex audit only requires the .ai/skills body (no Claude stub needed).
+        _create_skill(repo, "init", with_claude_stub=False)
 
         cmd = repo / "bin" / "agent-init"
         cmd.write_text("#!/bin/sh\nexit 0\n")
         cmd.chmod(0o755)
 
         result = run_audit(repo, platform="codex")
-        assert result.passed
+        assert result.passed, [e.to_dict() for e in result.entries if not e.available]
 
 
 def test_codex_audit_fails_when_command_missing() -> None:
@@ -331,8 +332,7 @@ def test_project_skills_can_be_filtered_by_project_type() -> None:
             },
         )
 
-        (repo / ".claude" / "skills" / "shared-skill").mkdir(parents=True, exist_ok=True)
-        (repo / ".claude" / "skills" / "shared-skill" / "SKILL.md").write_text("# shared")
+        _create_skill(repo, "shared-skill", with_claude_stub=False)
 
         result = run_audit(repo, platform="codex")
 

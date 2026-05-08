@@ -5,26 +5,14 @@ description: "Code quality validation before commits. Runs formatters, linters, 
 
 # /pre-commit
 
-Orchestrates code quality tools appropriate to the detected project type.
+Pre-commit validation. The canonical, vendor-neutral procedure body lives at
+[`.ai/skills/pre-commit/SKILL.md`](../../../.ai/skills/pre-commit/SKILL.md).
 
 ## Execution
-
-Run:
 
 ```bash
 bin/agent-precommit
 ```
-
-## Behaviour (guaranteed)
-
-1. Detects project type via shared `project_type.py`.
-2. Runs language-appropriate tools in sequence.
-3. Prints consolidated pass/fail summary with detailed errors.
-
-## Behaviour (best-effort)
-
-- Tool availability: warns and skips missing tools rather than failing.
-- C++ build check requires an existing `build/` directory.
 
 ## Python tools
 
@@ -33,3 +21,7 @@ ruff (format + lint + import order), mypy, pytest
 ## C++ tools
 
 clang-format, clang-tidy, cppcheck, cmake build
+
+When this slash command is invoked, also read
+[`.ai/skills/pre-commit/SKILL.md`](../../../.ai/skills/pre-commit/SKILL.md) for
+the full behavioural spec.

@@ -5,21 +5,18 @@ description: "Validate constraint compliance at any time during development."
 
 # /check-constraints
 
-Lightweight constraint compliance check without running full pre-commit.
+Lightweight constraint compliance check. The canonical, vendor-neutral
+procedure body lives at
+[`.ai/skills/check-constraints/SKILL.md`](../../../.ai/skills/check-constraints/SKILL.md).
 
 ## Execution
-
-Run:
 
 ```bash
 bin/agent-check-constraints
 ```
 
-## Behaviour (guaranteed)
+Exit `0` = no critical violations, exit `1` = violations found.
 
-- Checks dependency management compliance (Poetry, virtual environments)
-- Checks git workflow compliance (protected branches)
-- Checks Python version requirements
-- Checks lock file synchronisation
-
-Exit 0 = no critical violations, exit 1 = violations found.
+When this slash command is invoked, also read
+[`.ai/skills/check-constraints/SKILL.md`](../../../.ai/skills/check-constraints/SKILL.md)
+for the full behavioural spec.
