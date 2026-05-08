@@ -21,27 +21,25 @@ def fix_python_formatting(manager: PreCommitManager) -> None:
         print("No project Python files found")
         return
 
-    # Run black
-    if manager.check_tool_available("black"):
-        print("Running black...")
-        returncode, stdout, stderr = manager.run_command(["black"] + file_args)
+    # Run ruff (format + lint auto-fix; covers import order via the I rule)
+    if manager.check_tool_available("ruff"):
+        print("Running ruff format...")
+        returncode, _stdout, stderr = manager.run_command(["ruff", "format"] + file_args)
         if returncode == 0:
-            print("[OK] black formatting applied")
+            print("[OK] ruff format applied")
         else:
-            print(f"[ERROR] black failed: {stderr}")
-    else:
-        print("[INFO] black not installed")
+            print(f"[ERROR] ruff format failed: {stderr}")
 
-    # Run isort
-    if manager.check_tool_available("isort"):
-        print("Running isort...")
-        returncode, stdout, stderr = manager.run_command(["isort"] + file_args)
+        print("Running ruff check --fix...")
+        returncode, _stdout, stderr = manager.run_command(
+            ["ruff", "check", "--fix"] + file_args
+        )
         if returncode == 0:
-            print("[OK] isort applied")
+            print("[OK] ruff check --fix applied")
         else:
-            print(f"[ERROR] isort failed: {stderr}")
+            print(f"[ERROR] ruff check --fix failed: {stderr}")
     else:
-        print("[INFO] isort not installed")
+        print("[INFO] ruff not installed")
 
 
 def fix_cpp_formatting(manager: PreCommitManager) -> None:

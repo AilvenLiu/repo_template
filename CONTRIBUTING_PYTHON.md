@@ -32,9 +32,9 @@ This repository uses a modular constraint system. Instead of duplicating all tec
 
 ### Python-Specific Constraints
 - `python/testing.md` - pytest, coverage (80%+), test organisation
-- `python/formatting.md` - black, ruff, PEP 8, naming conventions
+- `python/formatting.md` - ruff (sole formatter, linter, and import sorter), PEP 8, naming conventions
 - `python/type-checking.md` - Type hints (mandatory), mypy configuration
-- `python/dependencies.md` - pip, poetry, requirements.txt management
+- `python/dependencies.md` - poetry-managed dependency workflow
 - `python/documentation.md` - Docstrings (Google-style), README, API docs
 - `python/error-handling.md` - Exception handling, context managers
 - `python/security.md` - Input validation, secrets management
@@ -142,8 +142,8 @@ Run the pre-commit validation:
 ```
 
 This checks:
-- Code formatting (black, isort/ruff)
-- Linting (ruff)
+- Code formatting (`ruff format --check`)
+- Linting and import order (`ruff check`)
 - Type checking (mypy)
 - Tests (pytest)
 - Coverage threshold
@@ -182,8 +182,8 @@ Review for:
 **Review checklist**:
 - [ ] Tests pass and provide good coverage
 - [ ] Type checking passes (mypy)
-- [ ] Code is formatted (black, isort/ruff)
-- [ ] Linting passes (ruff)
+- [ ] Code is formatted (`ruff format --check`)
+- [ ] Linting and import order pass (`ruff check`)
 - [ ] Documentation is clear and complete
 - [ ] requirements.txt updated if needed
 - [ ] No secrets or credentials
@@ -198,11 +198,14 @@ For detailed requirements, see `.ai/constraints/python/` and run `/init`.
 - Always use virtual environments
 
 ### Code Quality Tools
-- **Formatter**: black (line length 100)
-- **Linter**: ruff
+- **Formatter**: `ruff format` (line length 100)
+- **Linter / import sorter**: `ruff check` (includes the `I` rule for import order)
 - **Type checker**: mypy (strict mode)
 - **Test framework**: pytest
 - **Coverage**: pytest-cov (minimum 80%)
+
+`ruff` and `mypy` are the only sanctioned static-analysis tools. Adding `black`,
+`isort`, `flake8`, `pylint`, `autopep8`, or `yapf` is forbidden.
 
 ### Type Hints
 - **Mandatory** for all public functions, methods, and class attributes
@@ -241,8 +244,8 @@ Update version in:
 All PRs MUST pass CI checks:
 - All tests pass
 - Type checking passes (mypy)
-- Code formatting check (black, isort/ruff)
-- Linting passes (ruff)
+- Code formatting check (`ruff format --check`)
+- Linting and import order pass (`ruff check`)
 - Coverage threshold met (80%+)
 
 ## 9. Forbidden Practices
@@ -250,7 +253,7 @@ All PRs MUST pass CI checks:
 **STRICTLY FORBIDDEN**:
 - Committing code without running tests
 - Committing code without type hints on public APIs
-- Committing unformatted code (must run black/isort)
+- Committing unformatted code (must run `ruff format` and `ruff check --fix`)
 - Installing packages without updating requirements.txt
 - Using `import *` (except in `__init__.py` for re-exports)
 - Using mutable default arguments

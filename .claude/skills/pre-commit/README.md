@@ -15,7 +15,7 @@ This skill provides comprehensive code quality validation for Python and C++/CUD
 
 2. Install Python tools (for Python projects):
    ```bash
-   pip3 install black isort ruff mypy pytest
+   pip3 install ruff mypy pytest
    ```
 
 3. Install C++/CUDA tools (for C++/CUDA projects):
@@ -53,9 +53,8 @@ python3 .claude/skills/pre-commit/scripts/fix.py
 ## Validation Tools
 
 ### Python Projects
-- black (formatter)
-- isort (import sorter)
-- ruff (linter)
+- ruff format (formatter)
+- ruff check (linter, including import sorting via the `I` rule)
 - mypy (type checker)
 - pytest (test runner)
 

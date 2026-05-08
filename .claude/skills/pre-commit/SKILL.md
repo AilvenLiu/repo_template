@@ -28,7 +28,7 @@ bin/agent-precommit
 
 ## Python tools
 
-black, isort, ruff, mypy, pytest
+ruff (format + lint + import order), mypy, pytest
 
 ## C++ tools
 

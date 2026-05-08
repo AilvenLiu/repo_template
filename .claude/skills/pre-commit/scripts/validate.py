@@ -95,79 +95,27 @@ def validate_python(manager: PreCommitManager) -> list[ValidationResult]:
     python_files = manager.find_changed_python_files()
     file_args = [str(file.relative_to(manager.repo_root)) for file in python_files]
 
-    # Check for black (formatter)
-    if manager.check_tool_available("black"):
-        if file_args:
-            returncode, stdout, stderr = manager.run_command(
-                ["black", "--check", "--diff"] + file_args
-            )
-            results.append(
-                ValidationResult(
-                    "black (formatter)",
-                    returncode == 0,
-                    stdout,
-                    stderr,
-                )
-            )
-        else:
-            results.append(
-                ValidationResult(
-                    "black (formatter)",
-                    True,
-                    "No project Python files found",
-                    "",
-                )
-            )
-    else:
-        results.append(
-            ValidationResult(
-                "black (formatter)",
-                False,
-                "",
-                "black not installed. Install with: poetry add --group dev black",
-            )
-        )
-
-    # Check for isort (import sorter)
-    if manager.check_tool_available("isort"):
-        if file_args:
-            returncode, stdout, stderr = manager.run_command(
-                ["isort", "--check-only", "--diff"] + file_args
-            )
-            results.append(
-                ValidationResult(
-                    "isort (import sorter)",
-                    returncode == 0,
-                    stdout,
-                    stderr,
-                )
-            )
-        else:
-            results.append(
-                ValidationResult(
-                    "isort (import sorter)",
-                    True,
-                    "No project Python files found",
-                    "",
-                )
-            )
-    else:
-        results.append(
-            ValidationResult(
-                "isort (import sorter)",
-                False,
-                "",
-                "isort not installed. Install with: poetry add --group dev isort",
-            )
-        )
-
-    # Check for ruff (linter)
+    # Check for ruff (formatter + linter + import sorter)
     if manager.check_tool_available("ruff"):
         if file_args:
-            returncode, stdout, stderr = manager.run_command(["ruff", "check"] + file_args)
+            returncode, stdout, stderr = manager.run_command(
+                ["ruff", "format", "--check", "--diff"] + file_args
+            )
             results.append(
                 ValidationResult(
-                    "ruff (linter)",
+                    "ruff format (formatter)",
+                    returncode == 0,
+                    stdout,
+                    stderr,
+                )
+            )
+
+            returncode, stdout, stderr = manager.run_command(
+                ["ruff", "check"] + file_args
+            )
+            results.append(
+                ValidationResult(
+                    "ruff check (linter + import order)",
                     returncode == 0,
                     stdout,
                     stderr,
@@ -176,7 +124,15 @@ def validate_python(manager: PreCommitManager) -> list[ValidationResult]:
         else:
             results.append(
                 ValidationResult(
-                    "ruff (linter)",
+                    "ruff format (formatter)",
+                    True,
+                    "No project Python files found",
+                    "",
+                )
+            )
+            results.append(
+                ValidationResult(
+                    "ruff check (linter + import order)",
                     True,
                     "No project Python files found",
                     "",
@@ -185,7 +141,15 @@ def validate_python(manager: PreCommitManager) -> list[ValidationResult]:
     else:
         results.append(
             ValidationResult(
-                "ruff (linter)",
+                "ruff format (formatter)",
+                False,
+                "",
+                "ruff not installed. Install with: poetry add --group dev ruff",
+            )
+        )
+        results.append(
+            ValidationResult(
+                "ruff check (linter + import order)",
                 False,
                 "",
                 "ruff not installed. Install with: poetry add --group dev ruff",

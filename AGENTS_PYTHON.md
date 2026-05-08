@@ -176,8 +176,8 @@ Forbidden:
 |---------|----------|
 | Python version | 3.10+ (mandatory) |
 | Dependency tool | Poetry |
-| Formatter | black (line length 100) |
-| Linter | ruff |
+| Formatter | `ruff format` (line length 100) |
+| Linter | `ruff check` (includes import sorting via the `I` rule) |
 | Type checker | mypy (strict) |
 | Test framework | pytest |
 | Min coverage | 80% |

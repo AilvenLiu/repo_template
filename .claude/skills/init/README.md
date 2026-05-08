@@ -92,9 +92,9 @@ Constraints are organized by topic in `.ai/constraints/`:
 
 ### Python Constraints
 - `python/testing.md` - pytest, coverage, test organization
-- `python/formatting.md` - black, ruff, PEP 8, naming conventions
+- `python/formatting.md` - ruff (sole formatter, linter, and import sorter), PEP 8, naming conventions
 - `python/type-checking.md` - Type hints, mypy configuration
-- `python/dependencies.md` - pip, poetry, requirements.txt
+- `python/dependencies.md` - poetry-managed dependency workflow
 - `python/documentation.md` - Docstrings, README, API docs
 - `python/error-handling.md` - Exception handling, context managers
 - `python/security.md` - Input validation, secrets management

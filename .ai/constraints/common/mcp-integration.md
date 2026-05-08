@@ -30,7 +30,7 @@ Context7 MUST be used for:
 - Framework-specific patterns and best practices
 - Testing frameworks (pytest, unittest, hypothesis)
 - Type checking tools (mypy, pyright)
-- Linting and formatting tools (ruff, black, isort)
+- Linting and formatting tools (ruff)
 
 #### C++/CUDA Projects
 - C++ standard library APIs (C++17, C++20, C++23)

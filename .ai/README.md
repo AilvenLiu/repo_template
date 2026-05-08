@@ -105,7 +105,7 @@ The constraint files describe **what** must be done; platform-specific skills im
 - **security.md** - Input validation, secrets, SQL injection prevention
 - **documentation.md** - Docstrings, README, API docs
 - **testing.md** - pytest, coverage, test organisation
-- **formatting.md** - black, ruff, PEP 8
+- **formatting.md** - ruff (sole formatter, linter, and import sorter), PEP 8
 - **type-checking.md** - mypy, type hints
 - **forbidden-practices.md** - Banned patterns and anti-patterns
 

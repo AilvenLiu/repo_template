@@ -28,10 +28,11 @@ Protected branches include:
 ### 1.2 Committing Without Validation
 
 **FORBIDDEN**:
-- Committing code without running formatters (black, isort/ruff)
+- Committing code without running the formatter and linter (`ruff format`, `ruff check`)
 - Committing code with failing tests
 - Committing code without type checking (mypy)
 - Skipping pre-commit validation
+- Adding `black`, `isort`, `flake8`, or `pylint` to the project (ruff is the sole formatter/linter)
 
 ## 2. Environment and Dependencies
 
@@ -290,8 +291,8 @@ def process():
 ### 10.1 Pre-Commit Checks
 
 All forbidden practices MUST be caught by pre-commit validation:
-- black (formatting)
-- ruff (linting, including many forbidden practices)
+- ruff format (formatting)
+- ruff check (linting and import order, including many forbidden practices)
 - mypy (type checking)
 - pytest (tests must pass)
 
