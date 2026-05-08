@@ -15,18 +15,19 @@ copied and renamed to `AGENTS.md`.
 
 ## Purpose
 
-`AGENTS.md` serves as the vendor-neutral entrypoint for AI agents that:
-1. Don't have platform-specific instruction files (like `CLAUDE.md` / `CODEX.md`)
-2. Need a common reference for constraints and workflows
-3. Want to understand the project's coding standards and requirements
+`AGENTS.md` is the canonical entrypoint defined by the
+[agents.md spec](https://agents.md). It is loaded automatically by Codex CLI,
+Cursor, Cline, and other agents.md-aware tools. Claude Code reads `CLAUDE.md`
+natively and falls back to `AGENTS.md` for vendor-neutral content.
 
 ## Architecture
 
 The constraint system has three layers:
 
-1. **Platform-specific entrypoints** (e.g., `CLAUDE.md`, `CODEX.md`)
+1. **Platform-specific entrypoints**
+   - `CLAUDE.md` — Claude Code (native loader)
+   - `AGENTS.md` — Codex / Cursor / Cline / generic agents.md consumers (native loader)
    - Self-sufficient with critical rules inline
-   - Maps platform-specific skills to generic procedures
    - References this file for full constraint details
 
 2. **This file** (`AGENTS.md`)

@@ -32,7 +32,6 @@ _FILE_MAP = {
     "python": [
         ("AGENTS_PYTHON.md", "AGENTS.md"),
         ("CLAUDE_PYTHON.md", "CLAUDE.md"),
-        ("CODEX_PYTHON.md", "CODEX.md"),
         ("CONTRIBUTING_PYTHON.md", "CONTRIBUTING.md"),
         (".gitignore_python", ".gitignore"),
         (".ai/project_python.yml", ".ai/project.yml"),
@@ -40,7 +39,6 @@ _FILE_MAP = {
     "cpp": [
         ("AGENTS_CPP.md", "AGENTS.md"),
         ("CLAUDE_CPP.md", "CLAUDE.md"),
-        ("CODEX_CPP.md", "CODEX.md"),
         ("CONTRIBUTING_CPP.md", "CONTRIBUTING.md"),
         (".gitignore_cpp", ".gitignore"),
         (".ai/project_cpp.yml", ".ai/project.yml"),
@@ -48,14 +46,13 @@ _FILE_MAP = {
 }
 
 # Directories to copy verbatim
-_COPY_DIRS = [".ai", ".claude", ".codex", "agent_roadmaps", "bin", "scripts"]
+_COPY_DIRS = [".ai", ".claude", ".codex", "agent_roadmaps", "bin"]
 _COPY_IGNORE = shutil.ignore_patterns("__pycache__", "*.pyc", "*.pyo", ".DS_Store")
 
 # Template-only files that must NOT appear in real repos
 _TEMPLATE_ONLY = {
     "AGENTS_PYTHON.md", "AGENTS_CPP.md",
     "CLAUDE_PYTHON.md", "CLAUDE_CPP.md",
-    "CODEX_PYTHON.md", "CODEX_CPP.md",
     "CONTRIBUTING_PYTHON.md", "CONTRIBUTING_CPP.md",
     ".gitignore_python", ".gitignore_cpp",
     ".ai/project_python.yml", ".ai/project_cpp.yml",
@@ -185,8 +182,8 @@ def create_project(template_root: Path, target_dir: Path, project_type: str) -> 
     print("=" * 50)
     print("Done. Next steps:")
     print(f"  cd {target_dir}")
-    print("  # Start Claude Code and run /init, or Codex and run:")
-    print("  bin/agent-init --platform codex")
+    print("  # Claude Code: run /init")
+    print("  # Codex / Cursor / Cline: run bin/agent-init --platform codex")
 
 
 def main():

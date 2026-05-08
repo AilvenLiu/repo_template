@@ -37,58 +37,49 @@ results (`claude mcp list`) and falls back to plugin metadata
 (`claude plugins list --json`) when health probing is transiently unavailable.
 
 Both Claude and Codex use the shared audit runtime:
-- Claude: `/init` -> `.ai/tools/session_init.py --platform claude`
-- Codex: `bin/agent-init --platform codex`
+- Claude Code: `/init` -> `.ai/tools/session_init.py --platform claude`
+- Codex / Cursor / Cline / generic agents.md consumers:
+  `bin/agent-init --platform codex`
 
 ## How It Works
 
 1. **This directory is the source of truth** for all constraint content.
 2. **Shared runtime** (`.ai/tools`) implements deterministic checks and gates.
-3. **Vendor-specific wrappers** (`.claude/`, `.codex/`) call into the shared runtime.
-4. **Agent instruction file** (`AGENTS.md`) provides the vendor-neutral
-   operating instructions that reference these constraints.
-5. **Vendor-specific files** (`CLAUDE.md`, `CODEX.md`, etc.) are self-sufficient
-   entrypoints that embed critical rules inline and reference `AGENTS.md`
-   for the full constraint system.
+3. **Native platform entrypoints**:
+   - `CLAUDE.md` is loaded automatically by Claude Code.
+   - `AGENTS.md` is loaded automatically by Codex / Cursor / Cline /
+     other agents.md-aware tools (per the [agents.md spec](https://agents.md)).
+4. **Vendor-specific wrappers** (`.claude/skills/`, `bin/agent-*`) call into
+   the shared runtime. `.codex/skills/` holds Codex-side procedure manifests
+   that are read on demand from `AGENTS.md`.
 
 ## Adding a New AI Agent Platform
 
 To support a new agent platform:
 
-1. Create the platform's config directory (e.g. `.newagent/`)
-2. Create an instruction file (e.g. `NEWAGENT.md`) that:
-   - References `AGENTS.md` for constraints
-   - Adds any platform-specific skill mappings
-3. Map platform-specific skills to the generic procedures described in
-   the constraint files (session init, pre-commit validation, dependency
-   management, etc.)
-
-### Example: Codex Integration
-
-For Codex:
-
-1. **Codex uses `CODEX.md` as the platform entrypoint**
-2. **Session init uses `bin/agent-init --platform codex`**
-3. **Shared checks run from `.ai/tools`**
-4. **Codex skills are bundled in `.codex/skills`**
-
-Key differences from Claude Code:
-- **Claude Code**: `CLAUDE.md` + `/init` -> shared `.ai/tools` runtime
-- **Codex**: `CODEX.md` + `bin/agent-init --platform codex` -> shared `.ai/tools` runtime
-- **Other agents**: Can use either pattern depending on their file discovery mechanism
+1. If the platform reads `AGENTS.md` natively (most agents.md-aware tools), no
+   new entrypoint is needed — `AGENTS.md` already covers it.
+2. Otherwise, add a single platform-specific entrypoint at the project root
+   that points back to `AGENTS.md` and lists `bin/agent-*` wrappers.
+3. Map the platform's invocation style (slash command, native skill loader,
+   plain shell, etc.) onto the wrappers in `bin/`.
 
 ### Platform-Specific Skill Mappings
 
 Different platforms have different ways to invoke procedures:
 
-| Procedure | Claude Code | Codex | Generic |
-|-----------|-------------|-------|---------|
-| Session init | `/init` | `bin/agent-init --platform codex` | `python3 .ai/tools/session_init.py --platform <platform>` |
-| Pre-commit | `/pre-commit validate` | `bin/agent-precommit` | `python3 .ai/tools/constraints_check.py` (+ platform validators) |
-| Add dependency | `/dependency add <pkg>` | `bin/agent-dependency add <pkg>` | `python3 .claude/skills/dependency/scripts/add.py` |
-| Roadmap workflow | `/roadmap <cmd>` | `bin/agent-roadmap <cmd>` | `python3 .claude/skills/roadmap/scripts/<command>.py` |
+| Procedure | Claude Code | Codex / Cursor / Cline / generic |
+|-----------|-------------|----------------------------------|
+| Session init | `/init` | `bin/agent-init --platform codex` |
+| Pre-commit | `/pre-commit validate` | `bin/agent-precommit` |
+| Add dependency | `/dependency add <pkg>` | `bin/agent-dependency add <pkg>` |
+| Roadmap workflow | `/roadmap <cmd>` | `bin/agent-roadmap <cmd>` |
+| Constraint check | `/check-constraints` | `bin/agent-check-constraints` |
+| Build orchestration | `/build` | `bin/agent-build <subcommand>` |
+| Commit with policy | _(not exposed)_ | `bin/agent-commit -m "..." <files...>` |
 
-The constraint files describe **what** must be done; platform-specific skills implement **how** to do it.
+The constraint files describe **what** must be done; the wrappers implement
+**how** to do it.
 
 ## Constraint Categories
 

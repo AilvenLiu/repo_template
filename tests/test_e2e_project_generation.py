@@ -62,7 +62,9 @@ def _assert_common_generated_assets(target: Path, project_type: str) -> None:
     assert (target / "bin" / "agent-check-constraints").exists()
     assert (target / "bin" / "agent-roadmap").exists()
     assert (target / "bin" / "_agent_common.sh").exists()
-    assert (target / "CODEX.md").exists()
+    assert not (target / "CODEX.md").exists()
+    assert not (target / "CODEX_PYTHON.md").exists()
+    assert not (target / "CODEX_CPP.md").exists()
     assert not any(target.rglob("__pycache__"))
     assert not any(target.rglob("*.pyc"))
 
@@ -70,6 +72,10 @@ def _assert_common_generated_assets(target: Path, project_type: str) -> None:
 def _assert_template_only_removed(target: Path) -> None:
     assert not (target / "AGENTS_PYTHON.md").exists()
     assert not (target / "AGENTS_CPP.md").exists()
+    assert not (target / "CLAUDE_PYTHON.md").exists()
+    assert not (target / "CLAUDE_CPP.md").exists()
+    assert not (target / "CONTRIBUTING_PYTHON.md").exists()
+    assert not (target / "CONTRIBUTING_CPP.md").exists()
     assert not (target / ".claude" / "skills" / "create-project").exists()
 
 

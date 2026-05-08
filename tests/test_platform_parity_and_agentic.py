@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Tests guaranteeing dual-platform (Claude/Codex) parity and agentic-team wiring."""
+"""Tests guaranteeing dual-platform (Claude/Codex via AGENTS.md) parity and agentic-team wiring.
+
+After the CODEX axis was removed, AGENTS.md is the canonical Codex entrypoint
+(per the agents.md spec). These tests assert that AGENTS_*.md carries every
+critical rule and procedure mapping that the deleted CODEX_*.md used to carry.
+"""
 
 from pathlib import Path
 
@@ -42,8 +47,9 @@ def test_claude_entrypoints_reference_agentic_team() -> None:
         assert "Agent` tool" in body or "`Agent`" in body
 
 
-def test_codex_entrypoints_reference_agentic_team() -> None:
-    for name in ("CODEX_PYTHON.md", "CODEX_CPP.md"):
+def test_agents_entrypoints_reference_agentic_team_with_parallel() -> None:
+    """Agents.md (codex-native) entrypoints must mention parallel sub-agents."""
+    for name in ("AGENTS_PYTHON.md", "AGENTS_CPP.md"):
         body = _read(name)
         assert "agentic-team.md" in body
         assert "parallel" in body.lower()
@@ -53,8 +59,9 @@ def _required_prohibitions(body: str, items: list[str]) -> list[str]:
     return [item for item in items if item.lower() not in body.lower()]
 
 
-def test_codex_python_parity_with_claude_python() -> None:
-    body = _read("CODEX_PYTHON.md")
+def test_agents_python_critical_rules_parity() -> None:
+    """AGENTS_PYTHON.md must enforce every critical rule (was previously in CODEX_PYTHON.md)."""
+    body = _read("AGENTS_PYTHON.md")
     required = [
         "master",
         "main",
@@ -62,7 +69,7 @@ def test_codex_python_parity_with_claude_python() -> None:
         "release/*",
         "hotfix/*",
         "pre-commit",
-        "secrets",
+        "secret",
         "bare `except",
         "mutable default",
         "eval()",
@@ -70,11 +77,12 @@ def test_codex_python_parity_with_claude_python() -> None:
         "capability audit",
     ]
     missing = _required_prohibitions(body, required)
-    assert not missing, f"CODEX_PYTHON.md missing parity items: {missing}"
+    assert not missing, f"AGENTS_PYTHON.md missing parity items: {missing}"
 
 
-def test_codex_cpp_parity_with_claude_cpp() -> None:
-    body = _read("CODEX_CPP.md")
+def test_agents_cpp_critical_rules_parity() -> None:
+    """AGENTS_CPP.md must enforce every critical rule (was previously in CODEX_CPP.md)."""
+    body = _read("AGENTS_CPP.md")
     required = [
         "master",
         "main",
@@ -82,22 +90,22 @@ def test_codex_cpp_parity_with_claude_cpp() -> None:
         "release/*",
         "hotfix/*",
         "pre-commit",
-        "secrets",
+        "secret",
         "AI attribution",
         "capability audit",
         "Conan",
         "vcpkg",
-        "smart pointers",
+        "smart pointer",
         "static_cast",
         "CUDA",
         "Werror",
     ]
     missing = _required_prohibitions(body, required)
-    assert not missing, f"CODEX_CPP.md missing parity items: {missing}"
+    assert not missing, f"AGENTS_CPP.md missing parity items: {missing}"
 
 
-def test_codex_entrypoints_declare_authority_hierarchy() -> None:
-    for name in ("CODEX_PYTHON.md", "CODEX_CPP.md"):
+def test_agents_entrypoints_declare_authority_hierarchy() -> None:
+    for name in ("AGENTS_PYTHON.md", "AGENTS_CPP.md"):
         body = _read(name)
         assert "Authority Hierarchy" in body
         assert "INVARIANTS.md" in body
@@ -107,12 +115,20 @@ def test_codex_entrypoints_declare_authority_hierarchy() -> None:
         assert "prompt.md" in body
 
 
-def test_codex_entrypoints_have_skill_mapping_table() -> None:
-    for name in ("CODEX_PYTHON.md", "CODEX_CPP.md"):
+def test_agents_entrypoints_have_procedures_table() -> None:
+    """The procedures table replaces the old 'Codex Skill Mappings' table."""
+    for name in ("AGENTS_PYTHON.md", "AGENTS_CPP.md"):
         body = _read(name)
-        assert "Codex Skill Mappings" in body
+        assert "Procedures and Wrappers" in body
         assert "| Procedure |" in body
-        assert "bin/agent-init --platform codex" in body
+        assert "bin/agent-init --platform" in body
+        assert "bin/agent-precommit" in body
+
+
+def test_codex_axis_files_are_gone() -> None:
+    """The CODEX*.md files were intentionally removed; agents.md spec replaces them."""
+    for name in ("CODEX.md", "CODEX_PYTHON.md", "CODEX_CPP.md"):
+        assert not (ROOT / name).exists(), f"{name} should not exist after CODEX axis removal"
 
 
 def test_roadmap_prompt_template_declares_authority_order() -> None:

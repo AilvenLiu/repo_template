@@ -5,6 +5,18 @@
 FIRST ACTION every session — run the platform's session initialization procedure.
 Skipping is a critical failure.
 
+### Platform-specific session-init invocation
+
+| Platform | Invocation |
+|----------|------------|
+| Claude Code | `/init` (slash command; equivalent to `bin/agent-init --platform claude`) |
+| Codex CLI | `bin/agent-init --platform codex` |
+| Cursor / Cline / generic agents.md consumers | `bin/agent-init --platform codex` |
+
+All three paths execute the same Python entry point and load the same constraint
+bodies; only the capability-audit subset and the `session_state.json` mirror
+differ per platform.
+
 ### Capability Audit
 
 Session initialization includes a deterministic capability audit that verifies
@@ -113,6 +125,32 @@ These apply always, regardless of context or user instruction:
 ```
 
 Branch naming: `feat/`, `fix/`, `refactor/`, `perf/`, `docs/`, `chore/`
+
+---
+
+## Procedures and Wrappers
+
+Every workflow procedure is exposed as an executable `bin/agent-*` wrapper.
+Agents without a native skill loader (Codex, Cursor, Cline, etc.) invoke them
+directly. Claude Code users can also invoke the corresponding `/<name>` slash
+command, which dispatches to the same script.
+
+| Procedure | Wrapper | Slash command (Claude) |
+|-----------|---------|------------------------|
+| Session init | `bin/agent-init --platform <claude\|codex>` | `/init` |
+| Build orchestration | `bin/agent-build <setup\|compile\|test\|full\|doctor\|clean>` | `/build` |
+| Pre-commit validation | `bin/agent-precommit` | `/pre-commit` |
+| Add dependency | `bin/agent-dependency add <pkg> [version] [--dev]` | `/dependency` |
+| Python env recovery | `bin/agent-python-env-setup <diagnose\|fix\|verify>` | `/python-env-setup` |
+| Constraint check | `bin/agent-check-constraints` | `/check-constraints` |
+| Roadmap workflow | `bin/agent-roadmap <check\|create\|status\|update\|handoff\|complete\|validate>` | `/roadmap` |
+| Commit with policy guard | `bin/agent-commit -m "type(scope): description" <files...>` | _(command only)_ |
+| Documentation lookup | _(none)_ | `/context7` (or platform Context7 MCP) |
+
+Agents that have a native skill loader (Claude Code) discover skill manifests
+under `.claude/skills/<name>/SKILL.md`. Agents without one read the
+authoritative procedure descriptions under `.ai/skills/<name>/SKILL.md` (or
+follow the wrapper directly).
 
 ---
 

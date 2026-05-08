@@ -14,11 +14,12 @@ def test_readme_no_missing_codex_integration_doc_reference() -> None:
     assert "CODEX_INTEGRATION.md" not in readme
 
 
-def test_codex_entrypoint_files_exist() -> None:
+def test_codex_entrypoint_files_removed() -> None:
+    """The CODEX axis was deleted in favour of AGENTS.md as the sole codex entrypoint."""
     root = Path(__file__).parent.parent
-    assert (root / "CODEX_PYTHON.md").exists()
-    assert (root / "CODEX_CPP.md").exists()
-    assert (root / "CODEX.md").exists()
+    assert not (root / "CODEX_PYTHON.md").exists()
+    assert not (root / "CODEX_CPP.md").exists()
+    assert not (root / "CODEX.md").exists()
 
 
 def test_codex_check_constraints_skill_uses_wrapper() -> None:

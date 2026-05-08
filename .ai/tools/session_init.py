@@ -149,7 +149,6 @@ _DOC_FILENAMES = {
     "CONTRIBUTING.md",
     "AGENTS.md",
     "CLAUDE.md",
-    "CODEX.md",
 }
 
 

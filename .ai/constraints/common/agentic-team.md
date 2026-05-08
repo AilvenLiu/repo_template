@@ -81,7 +81,7 @@ Agentic-team use is subordinate to:
 - Roadmap authority order:
   `INVARIANTS.md` > `ROADMAP.md` > `roadmap.yml` > `sessions/` > `prompt.md`
 - `.ai/constraints/common/*.md`
-- Platform-specific entrypoint (`CLAUDE.md`, `CODEX.md`)
+- Platform-specific entrypoint (`CLAUDE.md` for Claude Code; `AGENTS.md` for Codex / Cursor / Cline / generic agents.md consumers)
 
 Parallel execution MUST NOT be used to bypass capability-audit failures,
 protected-branch rules, dependency order, or pre-commit validation.
