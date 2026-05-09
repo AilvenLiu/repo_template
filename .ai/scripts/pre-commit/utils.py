@@ -7,12 +7,12 @@ import subprocess
 import sys
 from pathlib import Path
 
-# Use shared detection
-_COMMON_DIR = Path(__file__).resolve().parents[1] / "common"
-if str(_COMMON_DIR) not in sys.path:
-    sys.path.insert(0, str(_COMMON_DIR))
+# Use shared detection from .ai/scripts/project_type.py
+_SCRIPTS_DIR = Path(__file__).resolve().parents[1]
+if str(_SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS_DIR))
 
-from project_type import (  # type: ignore[import-not-found]  # noqa: E402  # isort: skip
+from project_type import (  # type: ignore[import-not-found]  # noqa: E402
     ProjectType,
     detect as detect_project_type,
 )

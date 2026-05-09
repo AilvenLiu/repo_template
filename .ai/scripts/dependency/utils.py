@@ -8,10 +8,10 @@ from enum import Enum
 from pathlib import Path
 from typing import List, Optional, Tuple
 
-# Use shared detection
-_COMMON_DIR = Path(__file__).resolve().parents[2] / "common"
-if str(_COMMON_DIR) not in sys.path:
-    sys.path.insert(0, str(_COMMON_DIR))
+# Use shared detection from .ai/scripts/project_type.py
+_SCRIPTS_DIR = Path(__file__).resolve().parents[1]
+if str(_SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS_DIR))
 
 from project_type import ProjectType, detect as _detect  # noqa: E402
 

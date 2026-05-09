@@ -194,9 +194,10 @@ class SkillVerifier:
 
 def main():
     """Main entry point."""
-    # Find repository root by walking up from script location
+    # Find repository root by walking up from script location:
+    # .ai/scripts/common/<this>.py -> common/ -> scripts/ -> .ai/ -> repo/
     script_path = Path(__file__).resolve()
-    repo_root = script_path.parent.parent.parent.parent  # common/ -> skills/ -> .claude/ -> repo/
+    repo_root = script_path.parent.parent.parent.parent
 
     verifier = SkillVerifier(repo_root)
     success = verifier.verify_all()
