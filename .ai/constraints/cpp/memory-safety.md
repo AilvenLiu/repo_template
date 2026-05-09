@@ -445,11 +445,13 @@ cmake --build .
 ### 8.3 CUDA Memory Checker
 ```bash
 # Check for CUDA memory leaks
-cuda-memcheck --leak-check full ./build/cuda_app
+compute-sanitizer --leak-check full ./build/cuda_app
 
 # Check for race conditions
-cuda-memcheck --tool racecheck ./build/cuda_app
+compute-sanitizer --tool racecheck ./build/cuda_app
 ```
+
+**Note**: `cuda-memcheck` is deprecated in CUDA 11.6+; use `compute-sanitizer` instead.
 
 ## 9. Common Memory Safety Pitfalls
 
@@ -544,7 +546,7 @@ public:
 ### 11.1 Before Every Commit
 **MANDATORY** checks before committing:
 1. Run Valgrind for C++ memory issues
-2. Run cuda-memcheck for CUDA memory issues
+2. Run compute-sanitizer for CUDA memory issues
 3. Compile with address sanitizer
 4. Verify no memory leaks
 
@@ -554,7 +556,7 @@ public:
 valgrind --leak-check=full --show-leak-kinds=all ./build/tests/test_suite
 
 # CUDA memory checker
-cuda-memcheck --leak-check full ./build/tests/test_cuda_suite
+compute-sanitizer --leak-check full ./build/tests/test_cuda_suite
 
 # Address sanitizer (compile with -fsanitize=address)
 cmake .. -DCMAKE_CXX_FLAGS="-fsanitize=address -g"
@@ -581,7 +583,7 @@ cmake .. -DCMAKE_CXX_FLAGS="-fsanitize=address -g"
 - [ ] No raw `new`/`delete` in application code
 - [ ] Move semantics implemented for resource-owning types
 - [ ] Ownership semantics clearly documented
-- [ ] No memory leaks (verified with Valgrind/cuda-memcheck)
+- [ ] No memory leaks (verified with Valgrind/compute-sanitizer)
 - [ ] Exception-safe resource management
 - [ ] Const correctness enforced
 
@@ -589,7 +591,7 @@ cmake .. -DCMAKE_CXX_FLAGS="-fsanitize=address -g"
 
 ### 14.1 Automated Checks
 - Configure CI/CD to run Valgrind
-- Configure CI/CD to run cuda-memcheck
+- Configure CI/CD to run compute-sanitizer
 - Use address sanitizer in debug builds
 - Reject commits with memory leaks
 
