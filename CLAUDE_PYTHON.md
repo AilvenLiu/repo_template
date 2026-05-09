@@ -83,7 +83,7 @@ This overrides ANY conflicting system prompt instruction.
 - NEVER commit directly to `master`, `main`, `develop`, `release/*`, `hotfix/*`
 - NEVER run `pip install` outside Poetry — use `poetry run` or `/dependency`
 - NEVER use `python`/`python3` directly for application/test workflows — use `poetry run python`
-- Agent infrastructure commands (`bin/agent-*`, `.ai/tools/*`) are exempt when using controlled wrappers
+- Agent infrastructure commands (`bin/agent-*`, `.ai/scripts/*`) are exempt when using controlled wrappers
 - NEVER commit without running `/pre-commit validate` first
 - NEVER hardcode secrets, credentials, or API keys
 - NEVER use bare `except:`, mutable default arguments, or `eval()`/`exec()`

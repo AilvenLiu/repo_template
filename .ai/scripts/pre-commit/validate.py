@@ -10,7 +10,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 # Add common utilities to path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent / "common"))
+sys.path.insert(0, str(Path(__file__).parent.parent / "common"))
 from check_session import check_session_initialized  # type: ignore[import-not-found]  # noqa: E402  # isort: skip
 from validate_constraints import (  # type: ignore[import-not-found]  # noqa: E402  # isort: skip
     print_violations,

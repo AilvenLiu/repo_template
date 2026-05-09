@@ -7,7 +7,7 @@ Uses an ordered verification strategy:
 2. Verify MCP connectivity via `claude mcp list` (checks for plugin-backed MCP)
 
 Usage:
-    python3 .claude/skills/context7/scripts/check_mcp.py
+    python3 .ai/scripts/context7/check_mcp.py
 """
 
 import subprocess

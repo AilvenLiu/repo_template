@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Constraint-check adapter to shared .ai/tools implementation."""
+"""Constraint-check adapter to shared .ai/scripts implementation."""
 
 import subprocess
 import sys

@@ -21,6 +21,6 @@ if [[ "$SUBCMD" != "add" ]]; then
 fi
 
 RAW_CMD="add $*"
-run_agent_python "$REPO_ROOT" "$REPO_ROOT/.ai/tools/policy_gate.py" --op dependency --command "$RAW_CMD"
+run_agent_python "$REPO_ROOT" "$REPO_ROOT/.ai/scripts/policy_gate.py" --op dependency --command "$RAW_CMD"
 
-run_agent_python "$REPO_ROOT" "$REPO_ROOT/.claude/skills/dependency/scripts/add.py" "$@"
+run_agent_python "$REPO_ROOT" "$REPO_ROOT/.ai/scripts/dependency/add.py" "$@"

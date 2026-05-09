@@ -38,9 +38,9 @@ Before session initialization (`session_state.json` does not exist):
 |---------|--------|--------|
 | Any `Write`/`Edit`/`MultiEdit` tool | BLOCK | No mutations before init |
 | Any `Bash` command that is not exactly the init invocation | BLOCK | Fail-closed before init |
-| `python3 .claude/skills/init/scripts/init.py` | ALLOW | Exact init invocation |
-| `python3 .claude/skills/init/scripts/init.py --verbose` | ALLOW | Exact init invocation with verbose |
-| `python .claude/skills/init/scripts/init.py` (± `--verbose`) | ALLOW | Same, without the `3` suffix |
+| `python3 bin/agent-init` | ALLOW | Exact init invocation |
+| `python3 bin/agent-init --verbose` | ALLOW | Exact init invocation with verbose |
+| `python bin/agent-init` (± `--verbose`) | ALLOW | Same, without the `3` suffix |
 
 **Security note**: The allowlist enforces a two-stage check:
 1. Reject any command containing shell metacharacters (`; & | < > $ \` \``)
@@ -49,7 +49,7 @@ Before session initialization (`session_state.json` does not exist):
 This prevents prefix-match bypass attacks such as:
 
 ```
-python3 .claude/skills/init/scripts/init.py && echo hacked > .claude/session_state.json
+python3 bin/agent-init && echo hacked > .claude/session_state.json
 ```
 
 The above is blocked by stage 1 (detects `&`).
@@ -67,7 +67,7 @@ The above is blocked by stage 1 (detects `&`).
 | `brew install <non-toolchain>` | BLOCK | Enforces Conan for C++ libraries |
 | `rm -rf src/lib/include/tests/.claude` | BLOCK | Protects source and config |
 
-`bash_gate.sh` delegates policy decisions to `.ai/tools/policy_gate.py --op bash`,
+`bash_gate.sh` delegates policy decisions to `.ai/scripts/policy_gate.py --op bash`,
 so Codex and Claude enforce the same command-level policy.
 
 ### write_gate.sh
@@ -78,7 +78,7 @@ so Codex and Claude enforce the same command-level policy.
 | Write to `.git/` | BLOCK | Git internals must not be modified directly |
 | Write to `.claude/settings.json` | WARN | Changes affect enforcement itself |
 
-`write_gate.sh` uses `.ai/tools/policy_gate.py --op mutate` for shared init/audit
+`write_gate.sh` uses `.ai/scripts/policy_gate.py --op mutate` for shared init/audit
 gating, then applies write-specific file protections.
 
 ## Design Principles

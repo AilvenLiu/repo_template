@@ -37,14 +37,14 @@ results (`claude mcp list`) and falls back to plugin metadata
 (`claude plugins list --json`) when health probing is transiently unavailable.
 
 Both Claude and Codex use the shared audit runtime:
-- Claude Code: `/init` -> `.ai/tools/session_init.py --platform claude`
+- Claude Code: `/init` -> `.ai/scripts/session_init.py --platform claude`
 - Codex / Cursor / Cline / generic agents.md consumers:
   `bin/agent-init --platform codex`
 
 ## How It Works
 
 1. **This directory is the source of truth** for all constraint content.
-2. **Shared runtime** (`.ai/tools`) implements deterministic checks and gates.
+2. **Shared runtime** (`.ai/scripts`) implements deterministic checks and gates.
 3. **Native platform entrypoints**:
    - `CLAUDE.md` is loaded automatically by Claude Code.
    - `AGENTS.md` is loaded automatically by Codex / Cursor / Cline /

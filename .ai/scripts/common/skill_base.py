@@ -34,7 +34,7 @@ class SkillBase:
         if not self._validate_structure():
             raise RuntimeError(
                 f"Skill structure validation failed.\n"
-                f"Expected: repo/.claude/skills/<skill-name>/scripts/<script>.py\n"
+                f"Expected: repo/.ai/scripts/<skill-name>/<script>.py\n"
                 f"Got: {self.script_path}"
             )
 

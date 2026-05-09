@@ -6,7 +6,7 @@ Verifies that all skills in .claude/skills/ are properly configured and discover
 by Claude Code. Run this after copying the template to a new project.
 
 Usage:
-    python3 .claude/skills/common/verify_skills.py
+    python3 .ai/scripts/common/verify_skills.py
 """
 
 import sys

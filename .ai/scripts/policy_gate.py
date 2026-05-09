@@ -65,8 +65,6 @@ def _is_init_command(command: str) -> bool:
         return False
 
     patterns = [
-        r"^python3?\s+\.claude/skills/init/scripts/init\.py\s*$",
-        r"^python3?\s+\.claude/skills/init/scripts/init\.py\s+--verbose\s*$",
         r"^bin/agent-init(\s+--platform\s+(claude|codex))?(\s+--verbose)?\s*$",
     ]
     return any(re.match(pattern, command) for pattern in patterns)
@@ -109,7 +107,7 @@ def _check_bash_command(command: str, project_type: ProjectType, repo_root: Path
                 return False, "BLOCKED: Direct pip install is forbidden. Use dependency workflow."
 
         if re.search(r"^\s*(python|python3)\s+", command):
-            if re.search(r"\.claude/skills/|\.claude/hooks/|\.ai/tools/", command):
+            if re.search(r"\.claude/skills/|\.claude/hooks/|\.ai/scripts/", command):
                 return True, ""
             if "poetry run" in command:
                 return True, ""

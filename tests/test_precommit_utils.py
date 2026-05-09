@@ -5,7 +5,11 @@ from pathlib import Path
 
 sys.path.insert(
     0,
-    str(Path(__file__).parent.parent / ".claude" / "skills" / "pre-commit" / "scripts"),
+    str(Path(__file__).parent.parent / ".ai" / "scripts" / "pre-commit"),
+)
+sys.path.insert(
+    0,
+    str(Path(__file__).parent.parent / ".ai" / "scripts"),
 )
 
 from utils import PreCommitManager  # type: ignore[import-not-found]
@@ -18,15 +22,15 @@ def test_find_python_files_excludes_agent_infrastructure_dirs() -> None:
         (root / "src" / "app.py").write_text("print('ok')\n")
         (root / ".claude" / "skills").mkdir(parents=True)
         (root / ".claude" / "skills" / "tool.py").write_text("print('agent')\n")
-        (root / ".ai" / "tools").mkdir(parents=True)
-        (root / ".ai" / "tools" / "gate.py").write_text("print('agent')\n")
+        (root / ".ai" / "scripts").mkdir(parents=True)
+        (root / ".ai" / "scripts" / "gate.py").write_text("print('agent')\n")
 
         manager = PreCommitManager(root)
         files = [str(path.relative_to(root)) for path in manager.find_python_files()]
 
         assert "src/app.py" in files
         assert ".claude/skills/tool.py" not in files
-        assert ".ai/tools/gate.py" not in files
+        assert ".ai/scripts/gate.py" not in files
 
 
 def test_find_mypy_targets_falls_back_to_python_files_outside_git() -> None:

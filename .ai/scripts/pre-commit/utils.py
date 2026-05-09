@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 
 # Use shared detection
-_COMMON_DIR = Path(__file__).resolve().parents[2] / "common"
+_COMMON_DIR = Path(__file__).resolve().parents[1] / "common"
 if str(_COMMON_DIR) not in sys.path:
     sys.path.insert(0, str(_COMMON_DIR))
 

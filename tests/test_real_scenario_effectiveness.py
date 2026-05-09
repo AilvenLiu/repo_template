@@ -25,7 +25,7 @@ import pytest
 
 ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(ROOT / ".claude" / "skills" / "create-project" / "scripts"))
-sys.path.insert(0, str(ROOT / ".ai" / "tools"))
+sys.path.insert(0, str(ROOT / ".ai" / "scripts"))
 
 from init import create_project  # noqa: E402
 
@@ -281,7 +281,7 @@ def _findings_for(project: Path) -> list[dict]:
     scan = _run(
         [
             "python3",
-            str(project / ".ai" / "tools" / "forbidden_patterns.py"),
+            str(project / ".ai" / "scripts" / "forbidden_patterns.py"),
             "--project-type",
             "auto",
             "--json",

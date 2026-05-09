@@ -86,7 +86,7 @@ Option 3: Download from python.org
 - **NEVER** install packages globally
 - **NEVER** use `pip install` directly without Poetry or activated venv
 - **NEVER** use raw `python` or `python3` commands for application/test workflows - use `poetry run`
-- Agent infrastructure wrappers (`bin/agent-*`, `.ai/tools/*`) may use controlled interpreter fallback
+- Agent infrastructure wrappers (`bin/agent-*`, `.ai/scripts/*`) may use controlled interpreter fallback
 
 **Poetry Virtual Environment Configuration:**
 

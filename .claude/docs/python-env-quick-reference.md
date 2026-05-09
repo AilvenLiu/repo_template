@@ -22,17 +22,17 @@ source ~/.zshrc
 
 ### Diagnose Issues
 ```bash
-python3 .claude/skills/python-env-setup/scripts/diagnose.py
+python3 .ai/scripts/python-env-setup/diagnose.py
 ```
 
 ### Fix Issues
 ```bash
-python3 .claude/skills/python-env-setup/scripts/fix.py
+python3 .ai/scripts/python-env-setup/fix.py
 ```
 
 ### Verify Configuration
 ```bash
-python3 .claude/skills/python-env-setup/scripts/verify.py
+python3 .ai/scripts/python-env-setup/verify.py
 ```
 
 ## Common Scenarios
@@ -45,7 +45,7 @@ Current Python version (X.X.X) is not allowed by the project (^Y.Y)
 ```
 
 **Solution:**
-1. Run diagnostics: `python3 .claude/skills/python-env-setup/scripts/diagnose.py`
+1. Run diagnostics: `python3 .ai/scripts/python-env-setup/diagnose.py`
 2. Check for VIRTUAL_ENV: `env | grep VIRTUAL_ENV`
 3. If set, unset it: `unset VIRTUAL_ENV`
 4. Add to ~/.zshrc: `echo "unset VIRTUAL_ENV" >> ~/.zshrc`
@@ -123,7 +123,7 @@ poetry env use 3.12.13
 poetry install
 
 # 9. Verify
-python3 .claude/skills/python-env-setup/scripts/verify.py
+python3 .ai/scripts/python-env-setup/verify.py
 ```
 
 ## Verification Checklist
@@ -196,13 +196,13 @@ See the full documentation:
 
 ```bash
 # Diagnostics
-python3 .claude/skills/python-env-setup/scripts/diagnose.py
+python3 .ai/scripts/python-env-setup/diagnose.py
 
 # Fix
-python3 .claude/skills/python-env-setup/scripts/fix.py
+python3 .ai/scripts/python-env-setup/fix.py
 
 # Verify
-python3 .claude/skills/python-env-setup/scripts/verify.py
+python3 .ai/scripts/python-env-setup/verify.py
 
 # Check VIRTUAL_ENV
 env | grep VIRTUAL_ENV

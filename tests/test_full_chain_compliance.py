@@ -28,7 +28,7 @@ import yaml
 
 ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(ROOT / ".claude" / "skills" / "create-project" / "scripts"))
-sys.path.insert(0, str(ROOT / ".ai" / "tools"))
+sys.path.insert(0, str(ROOT / ".ai" / "scripts"))
 
 from init import create_project  # noqa: E402
 
@@ -451,7 +451,7 @@ def test_every_manifest_skill_has_implementation_in_template() -> None:
 def test_every_constraint_file_resolves_via_loader() -> None:
     """Every .ai/constraints/**/*.md should be loadable by session_init.load_constraint."""
 
-    sys.path.insert(0, str(ROOT / ".ai" / "tools"))
+    sys.path.insert(0, str(ROOT / ".ai" / "scripts"))
     from session_init import load_constraint  # noqa: WPS433
 
     for md in (ROOT / ".ai" / "constraints").rglob("*.md"):

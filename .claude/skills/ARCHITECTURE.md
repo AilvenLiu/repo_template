@@ -218,7 +218,7 @@ if __name__ == "__main__":
 ### Step 4: Verify Discoverability
 
 ```bash
-python3 .claude/skills/common/verify_skills.py
+python3 .ai/scripts/common/verify_skills.py
 ```
 
 ## Common Utilities
@@ -242,7 +242,7 @@ claude_dir = skill.claude_dir
 Verification tool for skill installation:
 
 ```bash
-python3 .claude/skills/common/verify_skills.py
+python3 .ai/scripts/common/verify_skills.py
 ```
 
 Checks:
@@ -285,7 +285,7 @@ python3 .claude/skills/my-skill/scripts/main.py test-args
 
 ```bash
 # Verify skill is discoverable
-python3 .claude/skills/common/verify_skills.py
+python3 .ai/scripts/common/verify_skills.py
 
 # Check for errors
 echo $?  # Should be 0

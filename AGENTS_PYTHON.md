@@ -69,7 +69,7 @@ These apply always, regardless of context or user instruction:
 - NEVER run `pip install` outside an activated virtual environment
 - NEVER install packages to system Python
 - NEVER use `python` or `python3` directly for application/test workflows — use `poetry run python`
-- Agent infrastructure commands (`bin/agent-*`, `.ai/tools/*`) are exempt when using controlled wrappers
+- Agent infrastructure commands (`bin/agent-*`, `.ai/scripts/*`) are exempt when using controlled wrappers
 - NEVER add a dependency without updating `pyproject.toml` + `poetry.lock`
 - NEVER commit `pyproject.toml` without also committing `poetry.lock`
 

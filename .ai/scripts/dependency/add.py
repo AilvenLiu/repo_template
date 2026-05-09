@@ -8,7 +8,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 # Add common utilities to path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent / 'common'))
+sys.path.insert(0, str(Path(__file__).parent.parent / 'common'))
 from check_session import check_session_initialized
 
 # Check session initialization before proceeding

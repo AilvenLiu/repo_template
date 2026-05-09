@@ -178,7 +178,7 @@ class EnvironmentFixer:
 
         if not self.diagnostics.has_critical_issues():
             print("No critical issues found. Run diagnostics for details:")
-            print("  python3 .claude/skills/python-env-setup/scripts/diagnose.py")
+            print("  bin/agent-python-env-setup diagnose")
             return True
 
         print("=" * 70)
@@ -202,7 +202,7 @@ class EnvironmentFixer:
         print("2. Navigate to your project directory")
         print("3. Run: poetry env use <python-version>")
         print("4. Run: poetry install")
-        print("5. Verify: python3 .claude/skills/python-env-setup/scripts/verify.py")
+        print("5. Verify: bin/agent-python-env-setup verify")
         print()
 
         return True

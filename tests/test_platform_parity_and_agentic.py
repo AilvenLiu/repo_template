@@ -26,7 +26,7 @@ def test_agentic_team_constraint_file_exists() -> None:
 
 
 def test_session_init_loads_agentic_team_constraint() -> None:
-    body = _read(".ai/tools/session_init.py")
+    body = _read(".ai/scripts/session_init.py")
     assert '"common/agentic-team"' in body, (
         "session_init.py must include common/agentic-team in its always-on list "
         "so the constraint is printed at session start."
@@ -132,19 +132,19 @@ def test_codex_axis_files_are_gone() -> None:
 
 
 def test_roadmap_prompt_template_declares_authority_order() -> None:
-    body = _read(".claude/skills/roadmap/templates/prompt.md")
+    body = _read(".ai/scripts/roadmap/templates/prompt.md")
     for token in ("INVARIANTS.md", "ROADMAP.md", "roadmap.yml", "sessions", "prompt.md"):
         assert token in body, f"prompt.md template missing token: {token}"
     assert "Authority Order" in body or "Absolute Authority" in body
 
 
 def test_roadmap_invariants_template_declares_full_authority_order() -> None:
-    body = _read(".claude/skills/roadmap/templates/INVARIANTS.md")
+    body = _read(".ai/scripts/roadmap/templates/INVARIANTS.md")
     for token in ("INVARIANTS.md", "ROADMAP.md", "roadmap.yml", "sessions", "prompt.md"):
         assert token in body, f"INVARIANTS.md template missing token: {token}"
 
 
 def test_roadmap_roadmap_template_declares_authority_order() -> None:
-    body = _read(".claude/skills/roadmap/templates/ROADMAP.md")
+    body = _read(".ai/scripts/roadmap/templates/ROADMAP.md")
     for token in ("INVARIANTS.md", "ROADMAP.md", "roadmap.yml", "sessions", "prompt.md"):
         assert token in body, f"ROADMAP.md template missing token: {token}"

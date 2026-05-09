@@ -30,7 +30,7 @@ import yaml
 
 ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(ROOT / ".claude" / "skills" / "create-project" / "scripts"))
-sys.path.insert(0, str(ROOT / ".ai" / "tools"))
+sys.path.insert(0, str(ROOT / ".ai" / "scripts"))
 
 from init import create_project  # noqa: E402
 
@@ -193,7 +193,7 @@ def compliance(tmp_path_factory) -> list[Scenario]:
             scenarios.append(scenario)
 
     # Template-level authority-order coverage (shared across scenarios)
-    template_dir = ROOT / ".claude" / "skills" / "roadmap" / "templates"
+    template_dir = ROOT / ".ai" / "scripts" / "roadmap" / "templates"
     tokens = {"INVARIANTS.md", "ROADMAP.md", "roadmap.yml", "sessions", "prompt.md"}
     for target_file in ("prompt.md", "INVARIANTS.md", "ROADMAP.md"):
         body = (template_dir / target_file).read_text()

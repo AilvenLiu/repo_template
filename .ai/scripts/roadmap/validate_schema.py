@@ -14,7 +14,7 @@ from typing import Any, Dict, List, Set
 sys.path.insert(0, str(Path(__file__).parent))
 
 # Add common utilities to path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent / "common"))
+sys.path.insert(0, str(Path(__file__).parent.parent / "common"))
 from check_session import check_session_initialized
 
 from utils import RoadmapManager
@@ -682,7 +682,7 @@ def validate_phase_folder_structure(phase_dir: Path) -> List[ValidationError]:
                     location=str(target),
                     remediation=(
                         "Re-run the roadmap creation template, or copy "
-                        f".claude/skills/roadmap/templates/{name} into this phase "
+                        f".ai/scripts/roadmap/templates/{name} into this phase "
                         "and fill in placeholders."
                     ),
                 )

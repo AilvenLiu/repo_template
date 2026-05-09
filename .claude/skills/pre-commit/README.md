@@ -32,13 +32,13 @@ This skill provides comprehensive code quality validation for Python and C++/CUD
 ### Run Validation
 
 ```bash
-python3 .claude/skills/pre-commit/scripts/validate.py
+python3 .ai/scripts/pre-commit/validate.py
 ```
 
 ### Auto-Fix Formatting
 
 ```bash
-python3 .claude/skills/pre-commit/scripts/fix.py
+python3 .ai/scripts/pre-commit/fix.py
 ```
 
 ## Features

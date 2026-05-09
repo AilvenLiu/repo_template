@@ -299,7 +299,7 @@ class EnvironmentDiagnostics:
                     print(f"{action_num}. {issue.fix}")
                     action_num += 1
             print()
-            print("Run: python3 .claude/skills/python-env-setup/scripts/fix.py")
+            print("Run: python3 bin/agent-python-env-setup fix")
 
     def has_critical_issues(self) -> bool:
         """Check if there are any critical issues."""

@@ -14,13 +14,13 @@ This skill manages roadmap phases under `agent_roadmaps/phase-*/` with:
 ### Session-start check
 
 ```bash
-python3 .claude/skills/roadmap/scripts/check.py
+python3 .ai/scripts/roadmap/check.py
 ```
 
 ### Create a roadmap phase series
 
 ```bash
-python3 .claude/skills/roadmap/scripts/create.py strategy-upgrade \
+python3 .ai/scripts/roadmap/create.py strategy-upgrade \
   --phases 3 \
   --phase-names foundation execution hardening
 ```
@@ -28,22 +28,22 @@ python3 .claude/skills/roadmap/scripts/create.py strategy-upgrade \
 ### Validate schema
 
 ```bash
-python3 .claude/skills/roadmap/scripts/validate_schema.py phase-0-foundation
+python3 .ai/scripts/roadmap/validate_schema.py phase-0-foundation
 ```
 
 ### View status
 
 ```bash
-python3 .claude/skills/roadmap/scripts/status.py
+python3 .ai/scripts/roadmap/status.py
 ```
 
 ### Progress work
 
 ```bash
-python3 .claude/skills/roadmap/scripts/update.py complete-task
-python3 .claude/skills/roadmap/scripts/update.py set-focus task-0-2
-python3 .claude/skills/roadmap/scripts/handoff.py
-python3 .claude/skills/roadmap/scripts/complete.py
+python3 .ai/scripts/roadmap/update.py complete-task
+python3 .ai/scripts/roadmap/update.py set-focus task-0-2
+python3 .ai/scripts/roadmap/handoff.py
+python3 .ai/scripts/roadmap/complete.py
 ```
 
 ## Core Guarantees

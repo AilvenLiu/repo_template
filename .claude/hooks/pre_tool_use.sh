@@ -50,31 +50,22 @@ print(d.get('tool_input', {}).get('command', ''))
                 exit 1
             fi
 
-            # ALLOWLIST: Only permit the exact init script invocation
-            # We must validate the ENTIRE command to prevent injection attacks.
+            # ALLOWLIST: Only permit the canonical session-init wrapper.
             # Allowed forms:
-            #   python3 .claude/skills/init/scripts/init.py
-            #   python3 .claude/skills/init/scripts/init.py --verbose
-            #   python .claude/skills/init/scripts/init.py
-            #   python .claude/skills/init/scripts/init.py --verbose
+            #   bin/agent-init
+            #   bin/agent-init --platform claude
+            #   bin/agent-init --platform codex
             #
             # First, reject any command containing shell metacharacters that could
             # be used for command chaining, injection, or redirection.
             if echo "$COMMAND" | grep -qE '[;&|<>$`\\]'; then
                 echo "BLOCKED: Shell metacharacters detected in command." >&2
-                echo "  Only the plain init script invocation is allowed before initialization." >&2
+                echo "  Only the plain init wrapper is allowed before initialization." >&2
                 exit 1
             fi
 
-            # Now validate against exact allowed patterns (entire command must match)
-            if echo "$COMMAND" | grep -qE '^\s*python3?\s+\.claude/skills/init/scripts/init\.py\s*$'; then
-                # Init script with no arguments - allow
-                exit 0
-            elif echo "$COMMAND" | grep -qE '^\s*python3?\s+\.claude/skills/init/scripts/init\.py\s+--verbose\s*$'; then
-                # Init script with --verbose flag - allow
-                exit 0
-            elif echo "$COMMAND" | grep -qE '^\s*bin/agent-init(\s+--platform\s+(claude|codex))?\s*$'; then
-                # bin/agent-init wrapper (with optional --platform flag) - allow
+            # Validate against exact allowed pattern (entire command must match)
+            if echo "$COMMAND" | grep -qE '^\s*bin/agent-init(\s+--platform\s+(claude|codex))?\s*$'; then
                 exit 0
             fi
 

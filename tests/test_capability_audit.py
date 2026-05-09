@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests for shared capability audit runtime (.ai/tools/capability_audit.py)."""
+"""Tests for shared capability audit runtime (.ai/scripts/capability_audit.py)."""
 
 import tempfile
 from pathlib import Path
@@ -7,7 +7,7 @@ from pathlib import Path
 import yaml
 
 import sys
-sys.path.insert(0, str(Path(__file__).parent.parent / ".ai" / "tools"))
+sys.path.insert(0, str(Path(__file__).parent.parent / ".ai" / "scripts"))
 
 import capability_audit
 from capability_audit import run_audit

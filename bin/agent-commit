@@ -48,7 +48,7 @@ done
 "$REPO_ROOT/bin/agent-precommit"
 
 BRANCH="$(git -C "$REPO_ROOT" branch --show-current || true)"
-run_agent_python "$REPO_ROOT" "$REPO_ROOT/.ai/tools/policy_gate.py" --op commit --message "$MESSAGE" --branch "$BRANCH"
+run_agent_python "$REPO_ROOT" "$REPO_ROOT/.ai/scripts/policy_gate.py" --op commit --message "$MESSAGE" --branch "$BRANCH"
 
 git -C "$REPO_ROOT" add "${FILES[@]}"
 exec git -C "$REPO_ROOT" commit -m "$MESSAGE"

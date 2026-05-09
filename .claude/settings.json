@@ -4,7 +4,7 @@
       "Bash(source:*)",
       "Bash(python -m pytest:*)",
       "Bash(python3 -m pytest:*)",
-      "Bash(python3 .claude/skills/init/scripts/init.py)",
+      "Bash(python3 .ai/scripts/**)",
       "Bash(python3 .claude/skills/**)",
       "Bash(bin/agent-init:*)",
       "Bash(bin/agent-build:*)",

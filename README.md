@@ -54,7 +54,7 @@ template-only artifacts, and creates an initial git commit.
 
 - `.ai/project.yml` -- machine-readable project type (source of truth)
 - `.ai/constraints/` -- vendor-neutral constraint files (common, python, cpp)
-- `.ai/tools/` -- shared runtime enforcement tools for all agent platforms
+- `.ai/scripts/` -- shared runtime enforcement tools for all agent platforms
 - `.claude/` -- Claude Code skills, hooks, and settings (native loader)
 - `.codex/` -- Codex skill manifests (read on demand from `AGENTS.md`)
 - `bin/` -- platform-neutral guarded workflow commands (`agent-*`)
@@ -85,7 +85,7 @@ In a real (non-template) repo, the key entrypoints are:
   by Codex CLI / Cursor / Cline / other [agents.md](https://agents.md)-aware tools
 - `.ai/project.yml` -- deterministic project type detection
 - `.ai/constraints/` -- modular constraint files loaded by init workflows
-- `.ai/tools/` -- shared init/audit/policy enforcement core used by adapters
+- `.ai/scripts/` -- shared init/audit/policy enforcement core used by adapters
 
 `CLAUDE.md` and `AGENTS.md` are the only first-class entrypoints; everything
 else routes through them.

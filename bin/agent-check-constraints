@@ -21,7 +21,7 @@ for arg in "$@"; do
 done
 
 set +e
-run_agent_python "$REPO_ROOT" "$REPO_ROOT/.ai/tools/constraints_check.py" \
+run_agent_python "$REPO_ROOT" "$REPO_ROOT/.ai/scripts/constraints_check.py" \
   --project-type auto ${PASSTHROUGH[@]+"${PASSTHROUGH[@]}"}
 constraints_rc=$?
 set -e
@@ -30,7 +30,7 @@ forbidden_rc=0
 if [[ "$SKIP_FORBIDDEN" -eq 0 ]]; then
   echo
   set +e
-  run_agent_python "$REPO_ROOT" "$REPO_ROOT/.ai/tools/forbidden_patterns.py" \
+  run_agent_python "$REPO_ROOT" "$REPO_ROOT/.ai/scripts/forbidden_patterns.py" \
     --project-type auto
   forbidden_rc=$?
   set -e

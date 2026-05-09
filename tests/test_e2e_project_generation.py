@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 
 # Add import roots
-sys.path.insert(0, str(Path(__file__).parent.parent / ".ai" / "tools"))
+sys.path.insert(0, str(Path(__file__).parent.parent / ".ai" / "scripts"))
 sys.path.insert(0, str(Path(__file__).parent.parent / ".claude" / "skills" / "create-project" / "scripts"))
 
 from capability_audit import run_audit
@@ -28,7 +28,7 @@ def _assert_common_generated_assets(target: Path, project_type: str) -> None:
     assert (target / ".ai" / "capabilities.yml").exists()
     assert (target / ".ai" / "constraints" / "common" / "karpathy-guidelines.md").exists()
     assert (target / ".ai" / "project.yml").exists()
-    assert (target / ".ai" / "tools" / "session_init.py").exists()
+    assert (target / ".ai" / "scripts" / "session_init.py").exists()
     # .codex/ has been deleted; codex consumes AGENTS.md + .ai/skills/ instead.
     assert not (target / ".codex").exists()
     # Canonical skill bodies live under .ai/skills/<name>/SKILL.md.

@@ -17,7 +17,7 @@ import yaml
 sys.path.insert(0, str(Path(__file__).parent))
 
 # Add common utilities to path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent / "common"))
+sys.path.insert(0, str(Path(__file__).parent.parent / "common"))
 from check_session import check_session_initialized
 
 from utils import RoadmapManager
@@ -162,7 +162,7 @@ def create_roadmap(name: str, phases: int, phase_names: List[str], description: 
     repo_root = Path.cwd()
     manager = RoadmapManager(repo_root)
     roadmaps_dir = manager.roadmaps_dir
-    templates_dir = Path(__file__).parent.parent / "templates"
+    templates_dir = Path(__file__).parent / "templates"
 
     active = manager.find_active_roadmap()
     if active:
@@ -236,7 +236,7 @@ def create_roadmap(name: str, phases: int, phase_names: List[str], description: 
     print("1. Edit each phase's INVARIANTS.md, ROADMAP.md, roadmap.yml, and prompt.md")
     print("2. Confirm or adjust depends_on_phases and task-level depends_on values")
     print(f"3. Create branch: git checkout -b roadmap/{first_folder}")
-    print(f"4. Validate: python3 .claude/skills/roadmap/scripts/validate_schema.py {first_folder}")
+    print(f"4. Validate: python3 .ai/scripts/roadmap/validate_schema.py {first_folder}")
 
 
 def _parse_args(argv=None):

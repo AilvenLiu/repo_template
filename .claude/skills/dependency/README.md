@@ -60,16 +60,16 @@ sudo dnf install python3.10
 
 ```bash
 # Production dependency
-python3 .claude/skills/dependency/scripts/add.py requests 2.31.0
+python3 .ai/scripts/dependency/add.py requests 2.31.0
 
 # Development dependency
-python3 .claude/skills/dependency/scripts/add.py pytest 7.3.0 --dev
+python3 .ai/scripts/dependency/add.py pytest 7.3.0 --dev
 ```
 
 ### Add a C++/CUDA Dependency
 
 ```bash
-python3 .claude/skills/dependency/scripts/add.py Eigen 3.4
+python3 .ai/scripts/dependency/add.py Eigen 3.4
 ```
 
 ## Features
