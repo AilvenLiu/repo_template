@@ -34,14 +34,14 @@ def test_session_init_loads_agentic_team_constraint() -> None:
 
 
 def test_agents_files_reference_agentic_team_constraint() -> None:
-    for name in ("AGENTS_PYTHON.md", "AGENTS_CPP.md"):
+    for name in ("templates/python/AGENTS.md", "templates/cpp/AGENTS.md"):
         body = _read(name)
         assert "agentic-team.md" in body, f"{name} must reference agentic-team constraint"
         assert "Agentic Team" in body, f"{name} must have an Agentic Team section"
 
 
 def test_claude_entrypoints_reference_agentic_team() -> None:
-    for name in ("CLAUDE_PYTHON.md", "CLAUDE_CPP.md"):
+    for name in ("templates/python/CLAUDE.md", "templates/cpp/CLAUDE.md"):
         body = _read(name)
         assert "agentic-team.md" in body
         assert "Agent` tool" in body or "`Agent`" in body
@@ -49,7 +49,7 @@ def test_claude_entrypoints_reference_agentic_team() -> None:
 
 def test_agents_entrypoints_reference_agentic_team_with_parallel() -> None:
     """Agents.md (codex-native) entrypoints must mention parallel sub-agents."""
-    for name in ("AGENTS_PYTHON.md", "AGENTS_CPP.md"):
+    for name in ("templates/python/AGENTS.md", "templates/cpp/AGENTS.md"):
         body = _read(name)
         assert "agentic-team.md" in body
         assert "parallel" in body.lower()
@@ -60,8 +60,8 @@ def _required_prohibitions(body: str, items: list[str]) -> list[str]:
 
 
 def test_agents_python_critical_rules_parity() -> None:
-    """AGENTS_PYTHON.md must enforce every critical rule (was previously in CODEX_PYTHON.md)."""
-    body = _read("AGENTS_PYTHON.md")
+    """templates/python/AGENTS.md must enforce every critical rule (was previously in CODEX_PYTHON.md)."""
+    body = _read("templates/python/AGENTS.md")
     required = [
         "master",
         "main",
@@ -77,12 +77,12 @@ def test_agents_python_critical_rules_parity() -> None:
         "capability audit",
     ]
     missing = _required_prohibitions(body, required)
-    assert not missing, f"AGENTS_PYTHON.md missing parity items: {missing}"
+    assert not missing, f"templates/python/AGENTS.md missing parity items: {missing}"
 
 
 def test_agents_cpp_critical_rules_parity() -> None:
-    """AGENTS_CPP.md must enforce every critical rule (was previously in CODEX_CPP.md)."""
-    body = _read("AGENTS_CPP.md")
+    """templates/cpp/AGENTS.md must enforce every critical rule (was previously in CODEX_CPP.md)."""
+    body = _read("templates/cpp/AGENTS.md")
     required = [
         "master",
         "main",
@@ -101,11 +101,11 @@ def test_agents_cpp_critical_rules_parity() -> None:
         "Werror",
     ]
     missing = _required_prohibitions(body, required)
-    assert not missing, f"AGENTS_CPP.md missing parity items: {missing}"
+    assert not missing, f"templates/cpp/AGENTS.md missing parity items: {missing}"
 
 
 def test_agents_entrypoints_declare_authority_hierarchy() -> None:
-    for name in ("AGENTS_PYTHON.md", "AGENTS_CPP.md"):
+    for name in ("templates/python/AGENTS.md", "templates/cpp/AGENTS.md"):
         body = _read(name)
         assert "Authority Hierarchy" in body
         assert "INVARIANTS.md" in body
@@ -117,7 +117,7 @@ def test_agents_entrypoints_declare_authority_hierarchy() -> None:
 
 def test_agents_entrypoints_have_procedures_table() -> None:
     """The procedures table replaces the old 'Codex Skill Mappings' table."""
-    for name in ("AGENTS_PYTHON.md", "AGENTS_CPP.md"):
+    for name in ("templates/python/AGENTS.md", "templates/cpp/AGENTS.md"):
         body = _read(name)
         assert "Procedures and Wrappers" in body
         assert "| Procedure |" in body

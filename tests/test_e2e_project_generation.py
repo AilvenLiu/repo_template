@@ -77,12 +77,18 @@ def _assert_common_generated_assets(target: Path, project_type: str) -> None:
 
 
 def _assert_template_only_removed(target: Path) -> None:
+    """Generated projects must NOT contain the legacy suffix names or the
+    nested templates/ overlay tree.
+    """
     assert not (target / "AGENTS_PYTHON.md").exists()
     assert not (target / "AGENTS_CPP.md").exists()
     assert not (target / "CLAUDE_PYTHON.md").exists()
     assert not (target / "CLAUDE_CPP.md").exists()
     assert not (target / "CONTRIBUTING_PYTHON.md").exists()
     assert not (target / "CONTRIBUTING_CPP.md").exists()
+    assert not (target / "templates").exists(), (
+        "Generated project must not contain the templates/ overlay tree"
+    )
     assert not (target / ".claude" / "skills" / "create-project").exists()
 
 
