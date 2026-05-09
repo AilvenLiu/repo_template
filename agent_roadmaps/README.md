@@ -1,67 +1,121 @@
-# Agent Roadmaps - Authoritative Guide
+# Agent Roadmaps - AI Infra Optimisation Series
 
-This document is authoritative for all AI agents operating in this repository.
-Violating these roadmap rules is a critical failure.
+**This document is authoritative for all AI agents operating in this repository.**
+Any violation of the rules defined here is a critical failure.
 
-## 1. Purpose
+Read this file at the start of every session.
 
-`agent_roadmaps/` is the single source of truth for long-running, multi-session
-work that requires durable constraints and explicit dependency management.
+## 1. Roadmap Overview
 
-## 2. Global Rules
+- **Roadmap name**: `AI Infra Optimisation`
+- **Roadmap slug**: `ai-infra-optimisation`
+- **Description**:
+  Re-shape this template so it is genuinely usable on AI infra projects
+  (Apache TVM family, MLC-LLM, FlashInfer, xgrammar, CUTLASS-derived work,
+  Google LiteRT-LM) without contributors having to override or delete its
+  constraints on day one. The Python overlay is battle-tested and stays
+  largely untouched; the C++/CUDA overlay and the missing hybrid
+  Python+C++/CUDA story are the targets.
 
-- At most one phase may be active at any time.
-- Every phase must live in `agent_roadmaps/phase-N-name/`.
-- Phase and task dependencies must be declared explicitly in `roadmap.yml`.
-- Work must happen on branch `roadmap/<phase-folder-name>`.
+## 2. Phase Series Status
 
-## 3. Active Phase Status (Update Every Session)
+At most one phase may be active at any time.
 
-- **Active phase**: None
-- **Path**: N/A
-- **Current task**: N/A
-- **Status**: inactive
+| Phase | Folder | Status | Depends On |
+|-------|--------|--------|------------|
+| 0 | `phase-0-cleanup` | active | none |
+| 1 | `phase-1-profile-architecture` | pending | `phase-0-cleanup` |
+| 2 | `phase-2-ai-infra-content` | pending | `phase-1-profile-architecture` |
+| 3 | `phase-3-advanced-optional` | pending | `phase-2-ai-infra-content` |
 
-When a phase becomes active, update this section immediately.
+**Active phase**: `phase-0-cleanup`
 
-## 4. Required Phase Structure
+## 3. Dependency Graph
+
+```text
+phase-0-cleanup -> phase-1-profile-architecture -> phase-2-ai-infra-content -> phase-3-advanced-optional
+```
+
+Rules:
+- A phase may be activated only when every `depends_on_phases` entry is completed.
+- The phase branch MUST be `roadmap/<phase-folder-name>`.
+- Next phase activation is blocked until previous phase PR/MR is merged.
+
+## 4. Branching Protocol
+
+Each phase has a dedicated git branch:
+- Branch name: `roadmap/<phase-folder-name>`
+- Created from: `master` (this repository's default branch)
+- Merged via: PR to `master` after phase completion and review
+
+The roadmap files themselves were created on
+`chore/create-ai-infra-optimisation-roadmap`. After that branch lands on
+master, each phase branch is cut from master.
+
+## 5. Per-Phase Folder Structure
 
 ```text
 agent_roadmaps/
-  phase-N-name/
+  phase-0-cleanup/
     INVARIANTS.md
     ROADMAP.md
     roadmap.yml
     prompt.md
     sessions/
+  phase-1-profile-architecture/
+    ...
+  phase-2-ai-infra-content/
+    ...
+  phase-3-advanced-optional/
+    ...
 ```
 
-## 5. Canonical State Fields
-
-Each phase `roadmap.yml` must define:
-- `phase`
-- `name`
-- `status` (`active`, `blocked`, `started_at`, `completed_at`)
-- `depends_on_phases`
-- `tasks` (with task-level `depends_on`)
-- `focus` (`current_task`, `notes`)
-
-## 6. Startup Checklist
+## 6. Startup Checklist (Mandatory)
 
 At every session start:
-1. Read this file.
-2. Detect active phase.
-3. If active, read its `INVARIANTS.md`, `ROADMAP.md`, `roadmap.yml`, and latest handoff.
-4. Verify branch is `roadmap/<active-phase-folder>`.
-5. Verify dependencies are satisfied before implementing.
+1. Run `/init` (or `bin/agent-init --platform claude`). The capability audit
+   may report Context7 missing; install Context7 before mutation work, see
+   `templates/python/CLAUDE.md` or `templates/cpp/CLAUDE.md` for the install
+   commands.
+2. Read this file.
+3. Identify the active phase from the table above.
+4. Read the active phase's `INVARIANTS.md`, `ROADMAP.md`, `roadmap.yml`, and
+   the latest file in its `sessions/`.
+5. Confirm the current branch is `roadmap/<active-phase-folder-name>`. If the
+   chore branch has not yet merged to master, the next session must coordinate
+   with the user before cutting phase branches.
+6. Confirm the active phase's `depends_on_phases` are all completed.
 
-## 7. Session-End Checklist
+## 7. Session Handoff Rules
 
-For roadmap sessions:
-1. Update `roadmap.yml` task/phase state.
-2. Create `sessions/session-YYYY-MM-DD-HH-MM.md`.
-3. Record work completed, decisions, blockers, and next steps.
+For every roadmap session:
+1. Create `sessions/session-YYYY-MM-DD-HH-MM.md` with work completed,
+   decisions taken, blockers, and next steps.
+2. Update `roadmap.yml` (task statuses, `focus.current_task`, `focus.notes`).
+3. Commit handoff and roadmap state together; do not split.
 
-## 8. Enforcement
+## 8. Out-of-Scope for This Roadmap Series
 
-If unsure whether an action is allowed, stop and ask the user.
+- Any rewrite of the battle-tested Python constraints. Phase 1 must compose
+  with them, not replace them.
+- New LLM product surface (chat, RAG, agent loops). This roadmap is about
+  infrastructure scaffolding, not application templates.
+- Speculative skills (autotuning, HIP/ROCm, WebGPU, SPIR-V) without a real
+  consuming project. These belong in Phase 3 and remain dormant unless
+  the user explicitly invokes them with a project name.
+
+## 9. Reading Order on First Pickup
+
+A fresh session with no prior context should read in this order:
+1. Repository `CLAUDE.md` and `MEMORY.md` (auto-loaded).
+2. This file.
+3. `agent_roadmaps/phase-0-cleanup/INVARIANTS.md`.
+4. `agent_roadmaps/phase-0-cleanup/ROADMAP.md`.
+5. `agent_roadmaps/phase-0-cleanup/roadmap.yml`.
+6. Latest file in `agent_roadmaps/phase-0-cleanup/sessions/` (none on first
+   pickup).
+7. `agent_roadmaps/phase-0-cleanup/prompt.md`.
+
+## 10. Final Enforcement Rule
+
+If uncertain whether an action is allowed, stop and ask the user.
