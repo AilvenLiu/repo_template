@@ -5,35 +5,22 @@ description: "Diagnose and fix pyenv+Poetry environment issues. Use when poetry 
 
 # /python-env-setup
 
-Systematically detects and resolves pyenv+Poetry configuration problems,
-especially the VIRTUAL_ENV interference issue where a system-set variable
-overrides pyenv's Python selection.
+Pyenv+Poetry environment diagnosis and repair. The canonical, vendor-neutral
+procedure body lives at
+[`.ai/skills/python-env-setup/SKILL.md`](../../../.ai/skills/python-env-setup/SKILL.md).
 
-## Commands
-
-- `/python-env-setup diagnose` — identify environment issues
-- `/python-env-setup fix` — automatically fix detected issues
-- `/python-env-setup verify` — confirm environment is correct
-
-Direct wrapper:
+## Execution
 
 ```bash
 bin/agent-python-env-setup <diagnose|fix|verify>
 ```
 
-## Behaviour (guaranteed)
+## Subcommands
 
-1. Checks VIRTUAL_ENV, Python version, pyenv config, Poetry config, PATH order.
-2. Reports issues with severity (CRITICAL / WARNING / INFO).
-3. Fix mode: unsets VIRTUAL_ENV, configures shell, recreates Poetry venv.
+- `diagnose` — identify environment issues
+- `fix` — automatically fix detected issues
+- `verify` — confirm environment is correct
 
-## Behaviour (best-effort)
-
-- pyenv/Poetry installation if missing (requires network).
-- Shell config edits (~/.zshrc) — may need manual `source`.
-
-## Trigger conditions
-
-- `poetry install` fails with Python version error
-- `poetry env info` shows wrong Python version
-- Setting up a new Python project with pyenv+Poetry
+When this slash command is invoked, also read
+[`.ai/skills/python-env-setup/SKILL.md`](../../../.ai/skills/python-env-setup/SKILL.md)
+for the full behavioural spec and trigger conditions.

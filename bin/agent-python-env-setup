@@ -18,13 +18,13 @@ main() {
 
   case "$command" in
     diagnose)
-      run_agent_python "$REPO_ROOT" "$REPO_ROOT/.claude/skills/python-env-setup/scripts/diagnose.py" "$@"
+      run_agent_python "$REPO_ROOT" "$REPO_ROOT/.ai/scripts/python-env-setup/diagnose.py" "$@"
       ;;
     fix)
-      run_agent_python "$REPO_ROOT" "$REPO_ROOT/.claude/skills/python-env-setup/scripts/fix.py" "$@"
+      run_agent_python "$REPO_ROOT" "$REPO_ROOT/.ai/scripts/python-env-setup/fix.py" "$@"
       ;;
     verify)
-      run_agent_python "$REPO_ROOT" "$REPO_ROOT/.claude/skills/python-env-setup/scripts/verify.py" "$@"
+      run_agent_python "$REPO_ROOT" "$REPO_ROOT/.ai/scripts/python-env-setup/verify.py" "$@"
       ;;
     *)
       usage

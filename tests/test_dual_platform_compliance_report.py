@@ -30,7 +30,7 @@ import yaml
 
 ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(ROOT / ".claude" / "skills" / "create-project" / "scripts"))
-sys.path.insert(0, str(ROOT / ".ai" / "tools"))
+sys.path.insert(0, str(ROOT / ".ai" / "scripts"))
 
 from init import create_project  # noqa: E402
 
@@ -143,19 +143,27 @@ def compliance(tmp_path_factory) -> list[Scenario]:
 
             scenario = Scenario(platform=platform, project_type=project_type)
 
-            # Skill presence
-            skills_dir = target / (".claude/skills" if platform == "claude" else ".codex/skills")
-            on_disk = {p.name for p in skills_dir.iterdir() if p.is_dir()}
+            # Skill body presence (canonical, vendor-neutral location).
+            ai_skills_dir = target / ".ai" / "skills"
+            on_disk = {p.name for p in ai_skills_dir.iterdir() if p.is_dir()}
             expected_skills = _expected_skills(manifest, platform, project_type)
             scenario.add("skills_present", on_disk, expected_skills)
 
             # Skill SKILL.md validity
             valid_skill_md = {
                 p.name
-                for p in skills_dir.iterdir()
+                for p in ai_skills_dir.iterdir()
                 if p.is_dir() and (p / "SKILL.md").exists() and (p / "SKILL.md").read_text().strip()
             }
             scenario.add("skill_md_valid", valid_skill_md, expected_skills)
+
+            # Claude additionally requires a frontmatter stub for each skill.
+            if platform == "claude":
+                claude_skills_dir = target / ".claude" / "skills"
+                claude_stubs = {
+                    p.name for p in claude_skills_dir.iterdir() if p.is_dir() and (p / "SKILL.md").exists()
+                }
+                scenario.add("claude_stubs_present", claude_stubs, expected_skills)
 
             # Wrappers
             wrappers_expected = _expected_wrappers(manifest, project_type)
@@ -185,7 +193,7 @@ def compliance(tmp_path_factory) -> list[Scenario]:
             scenarios.append(scenario)
 
     # Template-level authority-order coverage (shared across scenarios)
-    template_dir = ROOT / ".claude" / "skills" / "roadmap" / "templates"
+    template_dir = ROOT / ".ai" / "scripts" / "roadmap" / "templates"
     tokens = {"INVARIANTS.md", "ROADMAP.md", "roadmap.yml", "sessions", "prompt.md"}
     for target_file in ("prompt.md", "INVARIANTS.md", "ROADMAP.md"):
         body = (template_dir / target_file).read_text()
@@ -217,22 +225,24 @@ def test_report_prints_and_every_required_rate_is_100pct(compliance: list[Scenar
     assert not offenders, "Compliance gaps detected:\n  - " + "\n  - ".join(offenders)
 
 
-def test_skill_parity_between_claude_and_codex() -> None:
+def test_skill_parity_between_ai_skills_and_claude_stubs() -> None:
+    """Every .ai/skills/<name>/ must have a matching .claude/skills/<name>/ stub
+    (and vice versa, except for the template-only create-project + the Claude
+    'common' utility folder).
+    """
+    ai_skills = {p.name for p in (ROOT / ".ai" / "skills").iterdir() if p.is_dir()}
     claude_skills = {p.name for p in (ROOT / ".claude" / "skills").iterdir() if p.is_dir()}
-    codex_skills = {p.name for p in (ROOT / ".codex" / "skills").iterdir() if p.is_dir()}
 
     # Known, documented asymmetries:
-    # - Claude-only 'create-project' is a template-only generator (removed from real projects)
-    # - Claude-only 'common' holds shared utility code, not a user-facing skill
-    # - Claude-only 'ARCHITECTURE.md' is documentation, not a skill directory
+    # - 'create-project' is a template-only Claude skill; no .ai/skills body.
+    # - 'common' holds shared utility code, not a user-facing skill.
     claude_only_allowed = {"create-project", "common"}
-    # Shape check: every non-exempt Claude skill must exist on Codex, and vice versa.
-    claude_minus_codex = claude_skills - codex_skills - claude_only_allowed
-    codex_minus_claude = codex_skills - claude_skills
+    claude_minus_ai = claude_skills - ai_skills - claude_only_allowed
+    ai_minus_claude = ai_skills - claude_skills
 
-    assert not claude_minus_codex, (
-        f"Skills present for Claude but missing for Codex: {sorted(claude_minus_codex)}"
+    assert not claude_minus_ai, (
+        f"Claude skills with no .ai/skills body: {sorted(claude_minus_ai)}"
     )
-    assert not codex_minus_claude, (
-        f"Skills present for Codex but missing for Claude: {sorted(codex_minus_claude)}"
+    assert not ai_minus_claude, (
+        f".ai/skills entries with no Claude stub: {sorted(ai_minus_claude)}"
     )

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Bash Gate adapter: delegates command policy checks to .ai/tools/policy_gate.py
+# Bash Gate adapter: delegates command policy checks to .ai/scripts/policy_gate.py
 
 set -euo pipefail
 
@@ -27,4 +27,4 @@ cmd=sys.argv[1]
 print(json.dumps({"command": cmd}))
 ' "$COMMAND")"
 
-python3 "$REPO_ROOT/.ai/tools/policy_gate.py" --op bash --context "$CONTEXT_JSON"
+python3 "$REPO_ROOT/.ai/scripts/policy_gate.py" --op bash --context "$CONTEXT_JSON"

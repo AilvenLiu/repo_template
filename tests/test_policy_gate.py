@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Tests for shared policy gate (.ai/tools/policy_gate.py)."""
+"""Tests for shared policy gate (.ai/scripts/policy_gate.py)."""
 
 import json
 import tempfile
 from pathlib import Path
 
 import sys
-sys.path.insert(0, str(Path(__file__).parent.parent / ".ai" / "tools"))
+sys.path.insert(0, str(Path(__file__).parent.parent / ".ai" / "scripts"))
 
 import policy_gate
 
@@ -32,7 +32,10 @@ def test_bash_preinit_allows_only_init() -> None:
     with tempfile.TemporaryDirectory() as tmp:
         repo = Path(tmp)
 
-        allowed, _ = policy_gate.gate_bash(repo, {"command": "python3 .claude/skills/init/scripts/init.py"})
+        allowed, _ = policy_gate.gate_bash(repo, {"command": "bin/agent-init"})
+        assert allowed
+
+        allowed, _ = policy_gate.gate_bash(repo, {"command": "bin/agent-init --platform claude"})
         assert allowed
 
         allowed, _ = policy_gate.gate_bash(repo, {"command": "ls -la"})

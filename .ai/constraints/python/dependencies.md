@@ -86,7 +86,7 @@ Option 3: Download from python.org
 - **NEVER** install packages globally
 - **NEVER** use `pip install` directly without Poetry or activated venv
 - **NEVER** use raw `python` or `python3` commands for application/test workflows - use `poetry run`
-- Agent infrastructure wrappers (`bin/agent-*`, `.ai/tools/*`) may use controlled interpreter fallback
+- Agent infrastructure wrappers (`bin/agent-*`, `.ai/scripts/*`) may use controlled interpreter fallback
 
 **Poetry Virtual Environment Configuration:**
 
@@ -210,17 +210,12 @@ requests = "^2.31.0"
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.3.0"
 pytest-cov = "^4.0.0"
-black = "^23.3.0"
 mypy = "^1.3.0"
-ruff = "^0.0.272"
+ruff = "^0.6.0"
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
-
-[tool.black]
-line-length = 100
-target-version = ['py310', 'py311', 'py312']
 
 [tool.mypy]
 python_version = "3.10"
@@ -231,7 +226,12 @@ warn_unused_configs = true
 [tool.ruff]
 line-length = 100
 target-version = "py310"
+
+[tool.ruff.lint]
 select = ["E", "F", "I", "N", "W", "B", "C4", "UP"]
+
+[tool.ruff.format]
+quote-style = "double"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -317,7 +317,8 @@ poetry shell
 # Run command in virtual environment (without activating)
 poetry run python script.py
 poetry run pytest
-poetry run black .
+poetry run ruff format .
+poetry run ruff check .
 
 # Exit virtual environment
 exit
@@ -463,9 +464,8 @@ poetry install --with dev
 
 ### Development Dependencies
 - **pytest** (^7.3.0): Testing framework
-- **black** (^23.3.0): Code formatter
+- **ruff** (^0.6.0): Formatter, linter, and import sorter (sole formatting/linting tool)
 - **mypy** (^1.3.0): Static type checker
-- **ruff** (^0.0.272): Fast Python linter
 ```
 
 ### 6.2 Dependency Justification

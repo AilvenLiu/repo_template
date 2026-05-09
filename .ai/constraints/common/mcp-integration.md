@@ -30,7 +30,7 @@ Context7 MUST be used for:
 - Framework-specific patterns and best practices
 - Testing frameworks (pytest, unittest, hypothesis)
 - Type checking tools (mypy, pyright)
-- Linting and formatting tools (ruff, black, isort)
+- Linting and formatting tools (ruff)
 
 #### C++/CUDA Projects
 - C++ standard library APIs (C++17, C++20, C++23)
@@ -72,7 +72,7 @@ If configuration fails:
 2. Explain what Context7 provides
 3. Provide the canonical setup commands for this repository:
    - Claude workflows: see `CLAUDE.md`
-   - Codex workflows: see `CODEX.md`
+   - Codex / Cursor / Cline / generic `agents.md` consumers: see `AGENTS.md`
 
 4. Ask the user to resolve the configuration issue
 5. Do NOT proceed with guessing or using potentially outdated knowledge
@@ -102,7 +102,7 @@ If Context7 is unavailable or returns an error:
 2. Inform the user that Context7 is unavailable
 3. Provide the repository's canonical setup commands:
    - Claude workflows: see `CLAUDE.md`
-   - Codex workflows: see `CODEX.md`
+   - Codex / Cursor / Cline / generic `agents.md` consumers: see `AGENTS.md`
 
 4. Ask if the user wants to proceed with potentially outdated information
 

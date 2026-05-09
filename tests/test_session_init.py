@@ -7,7 +7,7 @@ import tempfile
 
 import yaml
 
-sys.path.insert(0, str(Path(__file__).parent.parent / ".ai" / "tools"))
+sys.path.insert(0, str(Path(__file__).parent.parent / ".ai" / "scripts"))
 
 from project_type import ProjectType
 from session_init import find_active_roadmap, resolve_constraints

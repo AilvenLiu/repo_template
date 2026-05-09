@@ -83,7 +83,7 @@ Normal `/init` already prints the selected constraint bodies. If you need to
 run the adapter directly while debugging the skill path, you can still invoke:
 
 ```bash
-python3 .claude/skills/init/scripts/init.py --verbose
+python3 bin/agent-init --verbose
 ```
 
 ## Constraint Files
@@ -92,9 +92,9 @@ Constraints are organized by topic in `.ai/constraints/`:
 
 ### Python Constraints
 - `python/testing.md` - pytest, coverage, test organization
-- `python/formatting.md` - black, ruff, PEP 8, naming conventions
+- `python/formatting.md` - ruff (sole formatter, linter, and import sorter), PEP 8, naming conventions
 - `python/type-checking.md` - Type hints, mypy configuration
-- `python/dependencies.md` - pip, poetry, requirements.txt
+- `python/dependencies.md` - poetry-managed dependency workflow
 - `python/documentation.md` - Docstrings, README, API docs
 - `python/error-handling.md` - Exception handling, context managers
 - `python/security.md` - Input validation, secrets management
@@ -228,7 +228,7 @@ The skill defaults to Python if detection fails. You can:
 
 If roadmap checking fails:
 - Ensure `/roadmap` skill is installed
-- Check that `.claude/skills/roadmap/scripts/check.py` exists
+- Check that `.ai/scripts/roadmap/check.py` exists
 - This is optional - `/init` will continue without it
 
 ### Git Commands Fail
@@ -258,7 +258,7 @@ The main documentation files remain as comprehensive references. The `/init` ski
 ## Contributing
 
 To improve the `/init` skill:
-1. Modify `.claude/skills/init/scripts/init.py` for detection logic
+1. Modify `bin/agent-init` for detection logic
 2. Update `.claude/skills/init/SKILL.md` for documentation
 3. Add new constraint files to `.ai/constraints/` as needed
 4. Test with both Python and C++/CUDA projects

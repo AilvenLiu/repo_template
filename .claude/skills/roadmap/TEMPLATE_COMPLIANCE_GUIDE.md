@@ -13,7 +13,7 @@ Quick checklist for dependency-aware roadmap files.
 - [ ] Task dependencies reference valid task IDs
 - [ ] Dependency graph has no cycles
 - [ ] Active phase has exactly one active task and matching `focus.current_task`
-- [ ] Validation passes: `python3 .claude/skills/roadmap/scripts/validate_schema.py <phase-folder>`
+- [ ] Validation passes: `python3 .ai/scripts/roadmap/validate_schema.py <phase-folder>`
 
 ## Minimal Schema
 

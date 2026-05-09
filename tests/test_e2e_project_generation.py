@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 
 # Add import roots
-sys.path.insert(0, str(Path(__file__).parent.parent / ".ai" / "tools"))
+sys.path.insert(0, str(Path(__file__).parent.parent / ".ai" / "scripts"))
 sys.path.insert(0, str(Path(__file__).parent.parent / ".claude" / "skills" / "create-project" / "scripts"))
 
 from capability_audit import run_audit
@@ -22,19 +22,24 @@ def template_root():
 
 
 def _assert_common_generated_assets(target: Path, project_type: str) -> None:
-    codex_skill_dirs = {path.name for path in (target / ".codex" / "skills").iterdir() if path.is_dir()}
+    ai_skill_dirs = {path.name for path in (target / ".ai" / "skills").iterdir() if path.is_dir()}
+    claude_skill_dirs = {path.name for path in (target / ".claude" / "skills").iterdir() if path.is_dir()}
 
     assert (target / ".ai" / "capabilities.yml").exists()
     assert (target / ".ai" / "constraints" / "common" / "karpathy-guidelines.md").exists()
     assert (target / ".ai" / "project.yml").exists()
-    assert (target / ".ai" / "tools" / "session_init.py").exists()
+    assert (target / ".ai" / "scripts" / "session_init.py").exists()
+    # .codex/ has been deleted; codex consumes AGENTS.md + .ai/skills/ instead.
+    assert not (target / ".codex").exists()
+    # Canonical skill bodies live under .ai/skills/<name>/SKILL.md.
+    assert (target / ".ai" / "skills" / "build" / "SKILL.md").exists()
+    assert (target / ".ai" / "skills" / "init" / "SKILL.md").exists()
+    assert (target / ".ai" / "skills" / "karpathy-guidelines" / "SKILL.md").exists()
+    assert (target / ".ai" / "skills" / "navigate" / "SKILL.md").exists()
+    # Claude stubs (frontmatter for slash-command discovery) must exist for each.
     assert (target / ".claude" / "skills" / "karpathy-guidelines" / "SKILL.md").exists()
-    assert (target / ".codex" / "skills" / "build" / "SKILL.md").exists()
-    assert (target / ".codex" / "skills" / "init" / "SKILL.md").exists()
-    assert (target / ".codex" / "skills" / "karpathy-guidelines" / "SKILL.md").exists()
-    assert (target / ".codex" / "skills" / "navigate" / "SKILL.md").exists()
     assert (target / "bin" / "agent-build").exists()
-    expected_codex_skills = {
+    expected_skills = {
         "build",
         "check-constraints",
         "context7",
@@ -46,30 +51,44 @@ def _assert_common_generated_assets(target: Path, project_type: str) -> None:
         "roadmap",
     }
     if project_type == "python":
+        assert (target / ".ai" / "skills" / "python-env-setup" / "SKILL.md").exists()
         assert (target / ".claude" / "skills" / "python-env-setup" / "SKILL.md").exists()
-        expected_codex_skills.add("python-env-setup")
-        assert (target / ".codex" / "skills" / "python-env-setup" / "SKILL.md").exists()
+        expected_skills.add("python-env-setup")
         assert (target / "bin" / "agent-python-env-setup").exists()
     else:
+        assert not (target / ".ai" / "skills" / "python-env-setup").exists()
         assert not (target / ".claude" / "skills" / "python-env-setup").exists()
         assert not (target / ".claude" / "docs" / "python-env-quick-reference.md").exists()
-        assert not (target / ".codex" / "skills" / "python-env-setup").exists()
         assert not (target / "bin" / "agent-python-env-setup").exists()
         assert (target / "conanfile.txt").exists()
-    assert codex_skill_dirs == expected_codex_skills
+    assert ai_skill_dirs == expected_skills
+    # Claude has the same skills + the 'common' utility folder.
+    assert (claude_skill_dirs - {"common"}) == expected_skills
     assert (target / "bin" / "agent-init").exists()
     assert (target / "bin" / "agent-precommit").exists()
     assert (target / "bin" / "agent-check-constraints").exists()
     assert (target / "bin" / "agent-roadmap").exists()
     assert (target / "bin" / "_agent_common.sh").exists()
-    assert (target / "CODEX.md").exists()
+    assert not (target / "CODEX.md").exists()
+    assert not (target / "CODEX_PYTHON.md").exists()
+    assert not (target / "CODEX_CPP.md").exists()
     assert not any(target.rglob("__pycache__"))
     assert not any(target.rglob("*.pyc"))
 
 
 def _assert_template_only_removed(target: Path) -> None:
+    """Generated projects must NOT contain the legacy suffix names or the
+    nested templates/ overlay tree.
+    """
     assert not (target / "AGENTS_PYTHON.md").exists()
     assert not (target / "AGENTS_CPP.md").exists()
+    assert not (target / "CLAUDE_PYTHON.md").exists()
+    assert not (target / "CLAUDE_CPP.md").exists()
+    assert not (target / "CONTRIBUTING_PYTHON.md").exists()
+    assert not (target / "CONTRIBUTING_CPP.md").exists()
+    assert not (target / "templates").exists(), (
+        "Generated project must not contain the templates/ overlay tree"
+    )
     assert not (target / ".claude" / "skills" / "create-project").exists()
 
 

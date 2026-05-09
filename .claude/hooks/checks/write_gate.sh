@@ -1,5 +1,5 @@
 #!/bin/bash
-# Write Gate: delegates init/audit policy to .ai/tools/policy_gate.py and keeps file guards.
+# Write Gate: delegates init/audit policy to .ai/scripts/policy_gate.py and keeps file guards.
 
 set -euo pipefail
 
@@ -8,7 +8,7 @@ HOOK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 REPO_ROOT="$(cd "$HOOK_DIR/../.." && pwd)"
 
 # Shared mutate gate (session initialized + audit passed)
-python3 "$REPO_ROOT/.ai/tools/policy_gate.py" --op mutate --context '{}' >/dev/null
+python3 "$REPO_ROOT/.ai/scripts/policy_gate.py" --op mutate --context '{}' >/dev/null
 
 FILE_PATH="$(echo "$INPUT" | python3 -c '
 import json,sys

@@ -10,8 +10,9 @@ import sys
 import pytest
 import yaml
 
-SCRIPTS_DIR = Path(__file__).parent.parent / ".claude" / "skills" / "roadmap" / "scripts"
+SCRIPTS_DIR = Path(__file__).parent.parent / ".ai" / "scripts" / "roadmap"
 sys.path.insert(0, str(SCRIPTS_DIR))
+sys.path.insert(0, str(Path(__file__).parent.parent / ".ai" / "scripts" / "common"))
 
 
 def _load_module(module_name: str, file_path: Path):

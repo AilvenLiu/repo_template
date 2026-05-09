@@ -6,27 +6,28 @@ This is the **template repository**. In real projects created from this template
 this file contains vendor-neutral agent operating constraints that work across
 different AI agent platforms (Claude Code, Codex, Cursor, etc.).
 
-The template maintains language-specific variants:
-- `AGENTS_PYTHON.md` — becomes `AGENTS.md` in Python projects
-- `AGENTS_CPP.md` — becomes `AGENTS.md` in C++/CUDA projects
+The template maintains language-specific overlays under `templates/`:
+- `templates/python/AGENTS.md` — becomes `AGENTS.md` in Python projects
+- `templates/cpp/AGENTS.md` — becomes `AGENTS.md` in C++/CUDA projects
 
-When you create a project using `/create-project`, the appropriate variant is
-copied and renamed to `AGENTS.md`.
+When you create a project using `/create-project`, the appropriate overlay
+is copied to the project root with the generic name `AGENTS.md`.
 
 ## Purpose
 
-`AGENTS.md` serves as the vendor-neutral entrypoint for AI agents that:
-1. Don't have platform-specific instruction files (like `CLAUDE.md` / `CODEX.md`)
-2. Need a common reference for constraints and workflows
-3. Want to understand the project's coding standards and requirements
+`AGENTS.md` is the canonical entrypoint defined by the
+[agents.md spec](https://agents.md). It is loaded automatically by Codex CLI,
+Cursor, Cline, and other agents.md-aware tools. Claude Code reads `CLAUDE.md`
+natively and falls back to `AGENTS.md` for vendor-neutral content.
 
 ## Architecture
 
 The constraint system has three layers:
 
-1. **Platform-specific entrypoints** (e.g., `CLAUDE.md`, `CODEX.md`)
+1. **Platform-specific entrypoints**
+   - `CLAUDE.md` — Claude Code (native loader)
+   - `AGENTS.md` — Codex / Cursor / Cline / generic agents.md consumers (native loader)
    - Self-sufficient with critical rules inline
-   - Maps platform-specific skills to generic procedures
    - References this file for full constraint details
 
 2. **This file** (`AGENTS.md`)
@@ -62,8 +63,9 @@ The script will:
 ## For Real Projects
 
 If you're reading this in a real project (not the template), see the sections
-below for your project's specific constraints. The content will be either from
-`AGENTS_PYTHON.md` or `AGENTS_CPP.md` depending on your project type.
+below for your project's specific constraints. The content will have been
+copied from `templates/python/AGENTS.md` or `templates/cpp/AGENTS.md`
+depending on your project type.
 
 ---
 

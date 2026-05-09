@@ -13,7 +13,7 @@ Skipping `/init` is a critical failure. It loads project constraints that overri
 If `/init` reports missing required Claude Code capabilities, the session
 remains blocked until they are installed and `/init` is re-run. The canonical
 bootstrap commands live in `.ai/constraints/common/session-discipline.md` and
-the language-specific `CLAUDE_*.md` files.
+the per-language `templates/<python|cpp>/CLAUDE.md` files.
 
 ## Bundled Behavioural Skill
 
@@ -41,10 +41,13 @@ described there using Claude Code's tool and hook system.
 
 ## Project-Specific Instructions
 
-This is the **template repository**. It maintains paired files for each language:
+This is the **template repository**. Language-specific source files for
+generated projects live under `templates/`:
 
-- **Python projects**: See `CLAUDE_PYTHON.md` (references `AGENTS_PYTHON.md`)
-- **C++/CUDA projects**: See `CLAUDE_CPP.md` (references `AGENTS_CPP.md`)
+- **Python projects**: see `templates/python/CLAUDE.md` and `templates/python/AGENTS.md`
+- **C++/CUDA projects**: see `templates/cpp/CLAUDE.md` and `templates/cpp/AGENTS.md`
 
-When a real project is created from this template, the appropriate variant is
-copied and renamed to the generic name (`CLAUDE.md`, `AGENTS.md`, etc.).
+When a real project is generated via `/create-project`, the appropriate
+`templates/<language>/` overlay is copied to the project root, so each file
+arrives with its generic name (`CLAUDE.md`, `AGENTS.md`, `CONTRIBUTING.md`,
+`.gitignore`, `.ai/project.yml`).

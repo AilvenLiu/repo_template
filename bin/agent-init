@@ -23,7 +23,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ ${#ARGS[@]} -gt 0 ]]; then
-  run_agent_python "$REPO_ROOT" "$REPO_ROOT/.ai/tools/session_init.py" --platform "$PLATFORM" "${ARGS[@]}"
+  run_agent_python "$REPO_ROOT" "$REPO_ROOT/.ai/scripts/session_init.py" --platform "$PLATFORM" "${ARGS[@]}"
 else
-  run_agent_python "$REPO_ROOT" "$REPO_ROOT/.ai/tools/session_init.py" --platform "$PLATFORM"
+  run_agent_python "$REPO_ROOT" "$REPO_ROOT/.ai/scripts/session_init.py" --platform "$PLATFORM"
 fi

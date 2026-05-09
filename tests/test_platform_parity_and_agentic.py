@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Tests guaranteeing dual-platform (Claude/Codex) parity and agentic-team wiring."""
+"""Tests guaranteeing dual-platform (Claude/Codex via AGENTS.md) parity and agentic-team wiring.
+
+After the CODEX axis was removed, AGENTS.md is the canonical Codex entrypoint
+(per the agents.md spec). These tests assert that AGENTS_*.md carries every
+critical rule and procedure mapping that the deleted CODEX_*.md used to carry.
+"""
 
 from pathlib import Path
 
@@ -21,7 +26,7 @@ def test_agentic_team_constraint_file_exists() -> None:
 
 
 def test_session_init_loads_agentic_team_constraint() -> None:
-    body = _read(".ai/tools/session_init.py")
+    body = _read(".ai/scripts/session_init.py")
     assert '"common/agentic-team"' in body, (
         "session_init.py must include common/agentic-team in its always-on list "
         "so the constraint is printed at session start."
@@ -29,21 +34,22 @@ def test_session_init_loads_agentic_team_constraint() -> None:
 
 
 def test_agents_files_reference_agentic_team_constraint() -> None:
-    for name in ("AGENTS_PYTHON.md", "AGENTS_CPP.md"):
+    for name in ("templates/python/AGENTS.md", "templates/cpp/AGENTS.md"):
         body = _read(name)
         assert "agentic-team.md" in body, f"{name} must reference agentic-team constraint"
         assert "Agentic Team" in body, f"{name} must have an Agentic Team section"
 
 
 def test_claude_entrypoints_reference_agentic_team() -> None:
-    for name in ("CLAUDE_PYTHON.md", "CLAUDE_CPP.md"):
+    for name in ("templates/python/CLAUDE.md", "templates/cpp/CLAUDE.md"):
         body = _read(name)
         assert "agentic-team.md" in body
         assert "Agent` tool" in body or "`Agent`" in body
 
 
-def test_codex_entrypoints_reference_agentic_team() -> None:
-    for name in ("CODEX_PYTHON.md", "CODEX_CPP.md"):
+def test_agents_entrypoints_reference_agentic_team_with_parallel() -> None:
+    """Agents.md (codex-native) entrypoints must mention parallel sub-agents."""
+    for name in ("templates/python/AGENTS.md", "templates/cpp/AGENTS.md"):
         body = _read(name)
         assert "agentic-team.md" in body
         assert "parallel" in body.lower()
@@ -53,8 +59,9 @@ def _required_prohibitions(body: str, items: list[str]) -> list[str]:
     return [item for item in items if item.lower() not in body.lower()]
 
 
-def test_codex_python_parity_with_claude_python() -> None:
-    body = _read("CODEX_PYTHON.md")
+def test_agents_python_critical_rules_parity() -> None:
+    """templates/python/AGENTS.md must enforce every critical rule (was previously in CODEX_PYTHON.md)."""
+    body = _read("templates/python/AGENTS.md")
     required = [
         "master",
         "main",
@@ -62,7 +69,7 @@ def test_codex_python_parity_with_claude_python() -> None:
         "release/*",
         "hotfix/*",
         "pre-commit",
-        "secrets",
+        "secret",
         "bare `except",
         "mutable default",
         "eval()",
@@ -70,11 +77,12 @@ def test_codex_python_parity_with_claude_python() -> None:
         "capability audit",
     ]
     missing = _required_prohibitions(body, required)
-    assert not missing, f"CODEX_PYTHON.md missing parity items: {missing}"
+    assert not missing, f"templates/python/AGENTS.md missing parity items: {missing}"
 
 
-def test_codex_cpp_parity_with_claude_cpp() -> None:
-    body = _read("CODEX_CPP.md")
+def test_agents_cpp_critical_rules_parity() -> None:
+    """templates/cpp/AGENTS.md must enforce every critical rule (was previously in CODEX_CPP.md)."""
+    body = _read("templates/cpp/AGENTS.md")
     required = [
         "master",
         "main",
@@ -82,22 +90,22 @@ def test_codex_cpp_parity_with_claude_cpp() -> None:
         "release/*",
         "hotfix/*",
         "pre-commit",
-        "secrets",
+        "secret",
         "AI attribution",
         "capability audit",
         "Conan",
         "vcpkg",
-        "smart pointers",
+        "smart pointer",
         "static_cast",
         "CUDA",
         "Werror",
     ]
     missing = _required_prohibitions(body, required)
-    assert not missing, f"CODEX_CPP.md missing parity items: {missing}"
+    assert not missing, f"templates/cpp/AGENTS.md missing parity items: {missing}"
 
 
-def test_codex_entrypoints_declare_authority_hierarchy() -> None:
-    for name in ("CODEX_PYTHON.md", "CODEX_CPP.md"):
+def test_agents_entrypoints_declare_authority_hierarchy() -> None:
+    for name in ("templates/python/AGENTS.md", "templates/cpp/AGENTS.md"):
         body = _read(name)
         assert "Authority Hierarchy" in body
         assert "INVARIANTS.md" in body
@@ -107,28 +115,36 @@ def test_codex_entrypoints_declare_authority_hierarchy() -> None:
         assert "prompt.md" in body
 
 
-def test_codex_entrypoints_have_skill_mapping_table() -> None:
-    for name in ("CODEX_PYTHON.md", "CODEX_CPP.md"):
+def test_agents_entrypoints_have_procedures_table() -> None:
+    """The procedures table replaces the old 'Codex Skill Mappings' table."""
+    for name in ("templates/python/AGENTS.md", "templates/cpp/AGENTS.md"):
         body = _read(name)
-        assert "Codex Skill Mappings" in body
+        assert "Procedures and Wrappers" in body
         assert "| Procedure |" in body
-        assert "bin/agent-init --platform codex" in body
+        assert "bin/agent-init --platform" in body
+        assert "bin/agent-precommit" in body
+
+
+def test_codex_axis_files_are_gone() -> None:
+    """The CODEX*.md files were intentionally removed; agents.md spec replaces them."""
+    for name in ("CODEX.md", "CODEX_PYTHON.md", "CODEX_CPP.md"):
+        assert not (ROOT / name).exists(), f"{name} should not exist after CODEX axis removal"
 
 
 def test_roadmap_prompt_template_declares_authority_order() -> None:
-    body = _read(".claude/skills/roadmap/templates/prompt.md")
+    body = _read(".ai/scripts/roadmap/templates/prompt.md")
     for token in ("INVARIANTS.md", "ROADMAP.md", "roadmap.yml", "sessions", "prompt.md"):
         assert token in body, f"prompt.md template missing token: {token}"
     assert "Authority Order" in body or "Absolute Authority" in body
 
 
 def test_roadmap_invariants_template_declares_full_authority_order() -> None:
-    body = _read(".claude/skills/roadmap/templates/INVARIANTS.md")
+    body = _read(".ai/scripts/roadmap/templates/INVARIANTS.md")
     for token in ("INVARIANTS.md", "ROADMAP.md", "roadmap.yml", "sessions", "prompt.md"):
         assert token in body, f"INVARIANTS.md template missing token: {token}"
 
 
 def test_roadmap_roadmap_template_declares_authority_order() -> None:
-    body = _read(".claude/skills/roadmap/templates/ROADMAP.md")
+    body = _read(".ai/scripts/roadmap/templates/ROADMAP.md")
     for token in ("INVARIANTS.md", "ROADMAP.md", "roadmap.yml", "sessions", "prompt.md"):
         assert token in body, f"ROADMAP.md template missing token: {token}"

@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Initialize a new project from the repo_template.
 
-Copies the template, renames language-specific files to their generic
-names (CLAUDE.md, AGENTS.md, CONTRIBUTING.md, .gitignore), writes
-.ai/project.yml, and creates an initial git commit.
+Copies the shared template tree (.ai/, .claude/, bin/, agent_roadmaps/)
+verbatim, then overlays the language-specific files from
+templates/<language>/ onto the target directory using the language's
+generic file names (CLAUDE.md, AGENTS.md, CONTRIBUTING.md, .gitignore).
 """
 
 import shutil
@@ -27,39 +28,30 @@ def prompt_project_type() -> str:
             print("Invalid choice. Please enter 1 or 2.")
 
 
-# Map of (template source, real-repo target) for each project type.
+# Files to copy from templates/<language>/<src> to <target>/<dst>.
+# (The source directory is templates/<language>/, the dst path is relative to
+# the target project root.)
 _FILE_MAP = {
     "python": [
-        ("AGENTS_PYTHON.md", "AGENTS.md"),
-        ("CLAUDE_PYTHON.md", "CLAUDE.md"),
-        ("CODEX_PYTHON.md", "CODEX.md"),
-        ("CONTRIBUTING_PYTHON.md", "CONTRIBUTING.md"),
-        (".gitignore_python", ".gitignore"),
-        (".ai/project_python.yml", ".ai/project.yml"),
+        ("AGENTS.md", "AGENTS.md"),
+        ("CLAUDE.md", "CLAUDE.md"),
+        ("CONTRIBUTING.md", "CONTRIBUTING.md"),
+        (".gitignore", ".gitignore"),
+        ("project.yml", ".ai/project.yml"),
+        ("poetry.toml", "poetry.toml"),
     ],
     "cpp": [
-        ("AGENTS_CPP.md", "AGENTS.md"),
-        ("CLAUDE_CPP.md", "CLAUDE.md"),
-        ("CODEX_CPP.md", "CODEX.md"),
-        ("CONTRIBUTING_CPP.md", "CONTRIBUTING.md"),
-        (".gitignore_cpp", ".gitignore"),
-        (".ai/project_cpp.yml", ".ai/project.yml"),
+        ("AGENTS.md", "AGENTS.md"),
+        ("CLAUDE.md", "CLAUDE.md"),
+        ("CONTRIBUTING.md", "CONTRIBUTING.md"),
+        (".gitignore", ".gitignore"),
+        ("project.yml", ".ai/project.yml"),
     ],
 }
 
 # Directories to copy verbatim
-_COPY_DIRS = [".ai", ".claude", ".codex", "agent_roadmaps", "bin", "scripts"]
+_COPY_DIRS = [".ai", ".claude", "agent_roadmaps", "bin"]
 _COPY_IGNORE = shutil.ignore_patterns("__pycache__", "*.pyc", "*.pyo", ".DS_Store")
-
-# Template-only files that must NOT appear in real repos
-_TEMPLATE_ONLY = {
-    "AGENTS_PYTHON.md", "AGENTS_CPP.md",
-    "CLAUDE_PYTHON.md", "CLAUDE_CPP.md",
-    "CODEX_PYTHON.md", "CODEX_CPP.md",
-    "CONTRIBUTING_PYTHON.md", "CONTRIBUTING_CPP.md",
-    ".gitignore_python", ".gitignore_cpp",
-    ".ai/project_python.yml", ".ai/project_cpp.yml",
-}
 
 
 def create_project(template_root: Path, target_dir: Path, project_type: str) -> None:
@@ -68,7 +60,7 @@ def create_project(template_root: Path, target_dir: Path, project_type: str) -> 
 
     target_dir.mkdir(parents=True, exist_ok=True)
 
-    # 1. Copy directories
+    # 1. Copy shared directories
     step = 1
     for dirname in _COPY_DIRS:
         src = template_root / dirname
@@ -82,10 +74,17 @@ def create_project(template_root: Path, target_dir: Path, project_type: str) -> 
             )
             step += 1
 
-    # 2. Copy and rename language-specific files
-    print(f"[{step}] Renaming language-specific files...")
+    # 2. Overlay language-specific files from templates/<language>/
+    print(f"[{step}] Applying {project_type} template overlay...")
+    language_dir = template_root / "templates" / project_type
+    if not language_dir.is_dir():
+        raise FileNotFoundError(
+            f"Template directory missing: {language_dir}. "
+            f"Expected templates/{project_type}/ at the template root."
+        )
+
     for src_name, dst_name in _FILE_MAP[project_type]:
-        src = template_root / src_name
+        src = language_dir / src_name
         if src.exists():
             dst = target_dir / dst_name
             dst.parent.mkdir(parents=True, exist_ok=True)
@@ -97,19 +96,7 @@ def create_project(template_root: Path, target_dir: Path, project_type: str) -> 
     if license_file.exists():
         shutil.copy2(license_file, target_dir / "LICENSE")
 
-    # 4. Remove template-only files that may have been copied via directory copy
-    for name in _TEMPLATE_ONLY:
-        leftover = target_dir / name
-        if leftover.exists():
-            leftover.unlink()
-
-    # 5. Remove the .ai/project.yml template variants (keep only the correct one)
-    for variant in ("project_python.yml", "project_cpp.yml"):
-        leftover = target_dir / ".ai" / variant
-        if leftover.exists():
-            leftover.unlink()
-
-    # 6. Create directory structure
+    # 4. Create directory structure
     print(f"[{step}] Creating directory structure...")
     if project_type == "python":
         (target_dir / "src").mkdir(exist_ok=True)
@@ -138,37 +125,36 @@ def create_project(template_root: Path, target_dir: Path, project_type: str) -> 
             )
     step += 1
 
-    # 7. Create README.md
+    # 5. Create README.md
     print(f"[{step}] Creating README.md...")
     (target_dir / "README.md").write_text(
         "# Project Name\n\nSee [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines.\n"
     )
     step += 1
 
-    # 8. Remove create-project skill (template-only)
+    # 6. Remove create-project skill (template-only)
     create_skill = target_dir / ".claude" / "skills" / "create-project"
     if create_skill.is_dir():
         shutil.rmtree(create_skill)
 
-    # 8b. Remove language-specific extras that do not help the generated project.
+    # 6b. Remove language-specific extras that do not help the generated project.
     if project_type == "cpp":
-        python_env_skill = target_dir / ".claude" / "skills" / "python-env-setup"
-        if python_env_skill.is_dir():
-            shutil.rmtree(python_env_skill)
+        for path in [
+            target_dir / ".claude" / "skills" / "python-env-setup",
+            target_dir / ".ai" / "skills" / "python-env-setup",
+        ]:
+            if path.is_dir():
+                shutil.rmtree(path)
 
         python_env_doc = target_dir / ".claude" / "docs" / "python-env-quick-reference.md"
         if python_env_doc.exists():
             python_env_doc.unlink()
 
-        codex_python_env_skill = target_dir / ".codex" / "skills" / "python-env-setup"
-        if codex_python_env_skill.is_dir():
-            shutil.rmtree(codex_python_env_skill)
-
         python_env_wrapper = target_dir / "bin" / "agent-python-env-setup"
         if python_env_wrapper.exists():
             python_env_wrapper.unlink()
 
-    # 9. Git init + initial commit
+    # 7. Git init + initial commit
     print(f"[{step}] Initializing git repository...")
     try:
         subprocess.run(["git", "init"], cwd=target_dir, capture_output=True, check=True)
@@ -185,8 +171,8 @@ def create_project(template_root: Path, target_dir: Path, project_type: str) -> 
     print("=" * 50)
     print("Done. Next steps:")
     print(f"  cd {target_dir}")
-    print("  # Start Claude Code and run /init, or Codex and run:")
-    print("  bin/agent-init --platform codex")
+    print("  # Claude Code: run /init")
+    print("  # Codex / Cursor / Cline: run bin/agent-init --platform codex")
 
 
 def main():

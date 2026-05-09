@@ -412,14 +412,13 @@ pytest --cov=src --cov-report=html
 
 ```bash
 # Format code
-black .
-isort .
+ruff format .
+
+# Linting (includes import order via the I rule)
+ruff check .
 
 # Type checking
 mypy src/
-
-# Linting
-ruff check .
 ```
 
 ## Dependencies
@@ -431,7 +430,7 @@ ruff check .
 
 ### Development Dependencies
 - **pytest** (7.3.0+): Testing framework
-- **black** (23.3.0+): Code formatter
+- **ruff** (0.6.0+): Formatter, linter, and import sorter
 - **mypy** (1.3.0+): Static type checker
 
 ## Contributing

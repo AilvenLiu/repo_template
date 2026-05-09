@@ -1,23 +1,10 @@
 {
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Bash|Write|Edit|MultiEdit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": ".claude/hooks/pre_tool_use.sh"
-          }
-        ]
-      }
-    ]
-  },
   "permissions": {
     "allow": [
       "Bash(source:*)",
       "Bash(python -m pytest:*)",
       "Bash(python3 -m pytest:*)",
-      "Bash(python3 .claude/skills/init/scripts/init.py)",
+      "Bash(python3 .ai/scripts/**)",
       "Bash(python3 .claude/skills/**)",
       "Bash(bin/agent-init:*)",
       "Bash(bin/agent-build:*)",
@@ -44,6 +31,19 @@
       "WebFetch",
       "WebSearch",
       "MCP"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/pre_tool_use.sh"
+          }
+        ]
+      }
     ]
   }
 }

@@ -1,11 +1,13 @@
-# Capability Manifest v2
+# Capability Manifest v3
 #
-# This manifest supports dual-platform auditing:
-# - common_requirements: shared across Claude and Codex
-# - platform_requirements: platform-specific capabilities
+# Skill bodies live at .ai/skills/<id>/SKILL.md (vendor-neutral).
+# Claude Code additionally requires a frontmatter stub at
+# .claude/skills/<id>/SKILL.md for slash-command discovery; the audit
+# enforces that for the claude platform.
 #
-# Backward compatibility:
-# The loader supports legacy v1 manifests during migration.
+# Codex / Cursor / Cline / generic agents.md consumers read AGENTS.md
+# natively; the procedures table there points back at .ai/skills/<id>/SKILL.md
+# and bin/agent-<id> wrappers. There is no Codex-side folder.
 
 common_requirements:
   project_skills:
@@ -108,78 +110,8 @@ platform_requirements:
           Fallback: claude mcp add --transport http context7 https://mcp.context7.com/mcp --header "CONTEXT7_API_KEY: <key>"
 
   codex:
-    codex_skills:
-      - id: init
-        required: true
-
-      - id: pre-commit
-        required: true
-
-      - id: dependency
-        required: true
-
-      - id: build
-        required: true
-
-      - id: navigate
-        required: true
-
-      - id: roadmap
-        required: true
-
-      - id: check-constraints
-        required: true
-
-      - id: context7
-        required: true
-
-      - id: karpathy-guidelines
-        required: true
-        notes: Bundled Karpathy-inspired behavioural guidance for non-trivial work
-
-      - id: python-env-setup
-        required: true
-        project_types: [python]
-        notes: Diagnose and recover Poetry or pyenv-related environment issues
-
-    repo_commands:
-      - id: agent-init
-        path: bin/agent-init
-        required: true
-        executable: true
-
-      - id: agent-build
-        path: bin/agent-build
-        required: true
-        executable: true
-
-      - id: agent-precommit
-        path: bin/agent-precommit
-        required: true
-        executable: true
-
-      - id: agent-dependency
-        path: bin/agent-dependency
-        required: true
-        executable: true
-
-      - id: agent-python-env-setup
-        path: bin/agent-python-env-setup
-        required: true
-        executable: true
-        project_types: [python]
-
-      - id: agent-commit
-        path: bin/agent-commit
-        required: true
-        executable: true
-
-      - id: agent-check-constraints
-        path: bin/agent-check-constraints
-        required: true
-        executable: true
-
-      - id: agent-roadmap
-        path: bin/agent-roadmap
-        required: true
-        executable: true
+    # Codex / Cursor / Cline / generic agents.md consumers read AGENTS.md
+    # natively. They do not need a skill folder; the project_skills above
+    # are audited against .ai/skills/<id>/SKILL.md, and the bin/agent-*
+    # wrappers are audited via the shared repo_commands list.
+    integrations: []

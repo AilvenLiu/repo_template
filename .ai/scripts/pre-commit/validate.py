@@ -1,0 +1,473 @@
+#!/usr/bin/env python3
+"""Main validation orchestrator for pre-commit checks."""
+
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+# Add scripts directory to path for imports
+sys.path.insert(0, str(Path(__file__).parent))
+
+# Add common utilities to path
+sys.path.insert(0, str(Path(__file__).parent.parent / "common"))
+from check_session import check_session_initialized  # type: ignore[import-not-found]  # noqa: E402  # isort: skip
+from validate_constraints import (  # type: ignore[import-not-found]  # noqa: E402  # isort: skip
+    print_violations,
+    validate_all_constraints,
+)
+
+# Check session initialization
+session_state = check_session_initialized("pre-commit")
+
+from utils import PreCommitManager, ProjectType, ValidationResult  # noqa: E402  # isort: skip
+
+
+def _emit(message: str = "") -> None:
+    """Write a single console line."""
+    sys.stdout.write(f"{message}\n")
+
+
+def validate_python(manager: PreCommitManager) -> list[ValidationResult]:
+    """Run Python validation checks."""
+    results: list[ValidationResult] = []
+
+    # CRITICAL: Check for managed Python environment (Poetry or local venv)
+    venv_paths = [".venv", "venv", ".virtualenv"]
+    venv_exists = any((manager.repo_root / venv).exists() for venv in venv_paths)
+    poetry_lock = manager.repo_root / "poetry.lock"
+    pyproject = manager.repo_root / "pyproject.toml"
+    poetry_managed = pyproject.exists() and poetry_lock.exists()
+
+    if poetry_managed:
+        results.append(
+            ValidationResult(
+                "python environment",
+                True,
+                "Poetry-managed environment detected (pyproject.toml + poetry.lock)",
+                "",
+            )
+        )
+    elif venv_exists:
+        venv_name = next(venv for venv in venv_paths if (manager.repo_root / venv).exists())
+        results.append(
+            ValidationResult(
+                "python environment",
+                True,
+                f"Found virtual environment: {venv_name}",
+                "",
+            )
+        )
+    else:
+        results.append(
+            ValidationResult(
+                "python environment",
+                False,
+                "",
+                "No Poetry lockfile or local virtual environment found.\n"
+                "Use Poetry (`poetry install`) or create `.venv` before validating.",
+            )
+        )
+
+    # Check for dependency manifest
+    requirements_file = manager.repo_root / "requirements.txt"
+    if poetry_managed or requirements_file.exists():
+        detail = "Poetry lockfile exists" if poetry_managed else "requirements.txt exists"
+        results.append(
+            ValidationResult(
+                "dependency manifest",
+                True,
+                detail,
+                "",
+            )
+        )
+    else:
+        results.append(
+            ValidationResult(
+                "dependency manifest",
+                False,
+                "",
+                "No dependency manifest found. Use Poetry (`poetry add` + `poetry lock`) "
+                "or provide requirements.txt.",
+            )
+        )
+
+    python_files = manager.find_changed_python_files()
+    file_args = [str(file.relative_to(manager.repo_root)) for file in python_files]
+
+    # Check for ruff (formatter + linter + import sorter)
+    if manager.check_tool_available("ruff"):
+        if file_args:
+            returncode, stdout, stderr = manager.run_command(
+                ["ruff", "format", "--check", "--diff"] + file_args
+            )
+            results.append(
+                ValidationResult(
+                    "ruff format (formatter)",
+                    returncode == 0,
+                    stdout,
+                    stderr,
+                )
+            )
+
+            returncode, stdout, stderr = manager.run_command(
+                ["ruff", "check"] + file_args
+            )
+            results.append(
+                ValidationResult(
+                    "ruff check (linter + import order)",
+                    returncode == 0,
+                    stdout,
+                    stderr,
+                )
+            )
+        else:
+            results.append(
+                ValidationResult(
+                    "ruff format (formatter)",
+                    True,
+                    "No project Python files found",
+                    "",
+                )
+            )
+            results.append(
+                ValidationResult(
+                    "ruff check (linter + import order)",
+                    True,
+                    "No project Python files found",
+                    "",
+                )
+            )
+    else:
+        results.append(
+            ValidationResult(
+                "ruff format (formatter)",
+                False,
+                "",
+                "ruff not installed. Install with: poetry add --group dev ruff",
+            )
+        )
+        results.append(
+            ValidationResult(
+                "ruff check (linter + import order)",
+                False,
+                "",
+                "ruff not installed. Install with: poetry add --group dev ruff",
+            )
+        )
+
+    # Check for mypy (type checker)
+    if manager.check_tool_available("mypy"):
+        mypy_targets = manager.find_mypy_targets()
+        if mypy_targets:
+            mypy_cmd = ["mypy"]
+            if (manager.repo_root / "src").exists() and any(
+                target.startswith("src/") for target in mypy_targets
+            ):
+                mypy_cmd.extend(["--namespace-packages", "--explicit-package-bases"])
+            returncode, stdout, stderr = manager.run_command(mypy_cmd + mypy_targets)
+            results.append(
+                ValidationResult(
+                    "mypy (type checker)",
+                    returncode == 0,
+                    stdout,
+                    stderr,
+                )
+            )
+        else:
+            results.append(
+                ValidationResult(
+                    "mypy (type checker)",
+                    True,
+                    "No project Python files found",
+                    "",
+                )
+            )
+    else:
+        results.append(
+            ValidationResult(
+                "mypy (type checker)",
+                False,
+                "",
+                "mypy not installed. Install with: poetry add --group dev mypy",
+            )
+        )
+
+    # Run pytest
+    if manager.check_tool_available("pytest"):
+        returncode, stdout, stderr = manager.run_command(
+            ["pytest", "--tb=short", "-q", "-x"],
+            timeout=600,
+        )
+        results.append(
+            ValidationResult(
+                "pytest (tests)",
+                returncode == 0,
+                stdout,
+                stderr,
+            )
+        )
+    else:
+        results.append(
+            ValidationResult(
+                "pytest (tests)",
+                False,
+                "",
+                "pytest not installed. Install with: poetry add --group dev pytest",
+            )
+        )
+
+    return results
+
+
+def validate_cpp(manager: PreCommitManager) -> list[ValidationResult]:
+    """Run C++/CUDA validation checks."""
+    results: list[ValidationResult] = []
+
+    # CRITICAL: Check for package manager configuration (dependency management)
+    conan_file = manager.repo_root / "conanfile.txt"
+    vcpkg_file = manager.repo_root / "vcpkg.json"
+    has_package_manager = conan_file.exists() or vcpkg_file.exists()
+
+    if has_package_manager:
+        pkg_mgr = "conanfile.txt" if conan_file.exists() else "vcpkg.json"
+        results.append(
+            ValidationResult(
+                "package manager",
+                True,
+                f"Found package manager configuration: {pkg_mgr}",
+                "",
+            )
+        )
+    else:
+        results.append(
+            ValidationResult(
+                "package manager",
+                False,
+                "",
+                "No package manager configuration found (conanfile.txt or vcpkg.json).\n"
+                "CRITICAL: NEVER install C++ libraries system-wide (apt, yum, brew).\n"
+                "Create conanfile.txt or vcpkg.json for dependency management.",
+            )
+        )
+
+    # Check for clang-format
+    cpp_files = manager.find_cpp_files()
+    if manager.check_tool_available("clang-format"):
+        if cpp_files:
+            # Check formatting
+            all_formatted = True
+            output_lines = []
+            for file in cpp_files:
+                returncode, stdout, stderr = manager.run_command(
+                    ["clang-format", "--dry-run", "-Werror", str(file)]
+                )
+                if returncode != 0:
+                    all_formatted = False
+                    output_lines.append(f"Formatting issues in {file}")
+                    if stderr:
+                        output_lines.append(stderr)
+
+            results.append(
+                ValidationResult(
+                    "clang-format (formatter)",
+                    all_formatted,
+                    "\n".join(output_lines) if output_lines else "All files formatted correctly",
+                    "",
+                )
+            )
+        else:
+            results.append(
+                ValidationResult(
+                    "clang-format (formatter)",
+                    True,
+                    "No C++ files found",
+                    "",
+                )
+            )
+    else:
+        results.append(
+            ValidationResult(
+                "clang-format (formatter)",
+                False,
+                "",
+                "clang-format not installed",
+            )
+        )
+
+    # Check for clang-tidy
+    if manager.check_tool_available("clang-tidy"):
+        if cpp_files:
+            returncode, stdout, stderr = manager.run_command(
+                ["clang-tidy"] + [str(f) for f in cpp_files[:10]]  # Limit to first 10 files
+            )
+            results.append(
+                ValidationResult(
+                    "clang-tidy (linter)",
+                    returncode == 0,
+                    stdout,
+                    stderr,
+                )
+            )
+        else:
+            results.append(
+                ValidationResult(
+                    "clang-tidy (linter)",
+                    True,
+                    "No C++ files found",
+                    "",
+                )
+            )
+    else:
+        results.append(
+            ValidationResult(
+                "clang-tidy (linter)",
+                False,
+                "",
+                "clang-tidy not installed",
+            )
+        )
+
+    # Check for cppcheck
+    if manager.check_tool_available("cppcheck"):
+        if cpp_files:
+            returncode, stdout, stderr = manager.run_command(
+                ["cppcheck", "--enable=all", "--error-exitcode=1", "."]
+            )
+            results.append(
+                ValidationResult(
+                    "cppcheck (static analyser)",
+                    returncode == 0,
+                    stdout,
+                    stderr,
+                )
+            )
+        else:
+            results.append(
+                ValidationResult(
+                    "cppcheck (static analyser)",
+                    True,
+                    "No C++ files found",
+                    "",
+                )
+            )
+    else:
+        results.append(
+            ValidationResult(
+                "cppcheck (static analyser)",
+                False,
+                "",
+                "cppcheck not installed",
+            )
+        )
+
+    # Check for CMake build
+    if (manager.repo_root / "CMakeLists.txt").exists():
+        build_dir = manager.repo_root / "build"
+        if build_dir.exists():
+            returncode, stdout, stderr = manager.run_command(
+                ["cmake", "--build", "build"], cwd=manager.repo_root
+            )
+            results.append(
+                ValidationResult(
+                    "cmake build",
+                    returncode == 0,
+                    stdout,
+                    stderr,
+                )
+            )
+        else:
+            results.append(
+                ValidationResult(
+                    "cmake build",
+                    False,
+                    "",
+                    "Build directory not found. Run: cmake -B build",
+                )
+            )
+
+    return results
+
+
+def main() -> None:
+    """Main entry point for validation."""
+    repo_root = Path.cwd()
+    manager = PreCommitManager(repo_root)
+
+    # Detect project type
+    project_type = manager.detect_project_type()
+
+    _emit("Pre-Commit Validation")
+    _emit("=" * 50)
+    _emit(f"Project Type: {project_type.value}")
+    _emit()
+
+    # Run constraint validation first
+    _emit("=" * 50)
+    _emit("CONSTRAINT VALIDATION")
+    _emit("=" * 50)
+    _emit()
+
+    constraint_violations = validate_all_constraints()
+    print_violations(constraint_violations)
+
+    # If critical constraint violations, fail immediately
+    critical = [
+        violation for violation in constraint_violations if violation.severity == "CRITICAL"
+    ]
+    if critical:
+        _emit()
+        _emit("=" * 50)
+        _emit("FAILED: Critical constraint violations must be fixed before committing")
+        _emit("=" * 50)
+        sys.exit(1)
+
+    _emit()
+
+    # Run appropriate validations
+    results: list[ValidationResult] = []
+    if project_type == ProjectType.PYTHON:
+        results = validate_python(manager)
+    elif project_type == ProjectType.CPP:
+        results = validate_cpp(manager)
+    else:
+        _emit("ERROR: Unknown project type")
+        _emit("Could not detect Python or C++/CUDA project")
+        sys.exit(1)
+
+    # Display results
+    _emit("Validation Results:")
+    _emit("-" * 50)
+    passed_count = 0
+    failed_count = 0
+
+    for result in results:
+        _emit(str(result))
+        if result.passed:
+            passed_count += 1
+        else:
+            failed_count += 1
+
+    _emit()
+    _emit(f"Passed: {passed_count}/{len(results)}")
+    _emit(f"Failed: {failed_count}/{len(results)}")
+
+    # Show detailed errors
+    if failed_count > 0:
+        _emit()
+        _emit("Detailed Errors:")
+        _emit("-" * 50)
+        for result in results:
+            if not result.passed:
+                _emit(f"\n{result.tool}:")
+                if result.error:
+                    _emit(f"  Error: {result.error}")
+                if result.output:
+                    _emit(f"  Output: {result.output[:500]}")
+
+    # Exit with appropriate code
+    sys.exit(0 if failed_count == 0 else 1)
+
+
+if __name__ == "__main__":
+    main()

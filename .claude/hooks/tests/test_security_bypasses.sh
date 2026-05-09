@@ -117,24 +117,24 @@ echo ""
 echo "=== Policy 2: Only Init Script Allowed via Bash ==="
 echo ""
 
-test_allowed "Init script with python3" '{
+test_allowed "Init wrapper bare" '{
   "tool_name": "Bash",
   "tool_input": {
-    "command": "python3 .claude/skills/init/scripts/init.py"
+    "command": "bin/agent-init"
   }
 }'
 
-test_allowed "Init script with python" '{
+test_allowed "Init wrapper with --platform claude" '{
   "tool_name": "Bash",
   "tool_input": {
-    "command": "python .claude/skills/init/scripts/init.py"
+    "command": "bin/agent-init --platform claude"
   }
 }'
 
-test_allowed "Init script with --verbose flag" '{
+test_allowed "Init wrapper with --platform codex" '{
   "tool_name": "Bash",
   "tool_input": {
-    "command": "python3 .claude/skills/init/scripts/init.py --verbose"
+    "command": "bin/agent-init --platform codex"
   }
 }'
 
@@ -259,7 +259,7 @@ echo ""
 # Policy Test 5: Init-prefix bypass attempts all blocked
 #
 # These test the specific vulnerability reported:
-#   "python3 .claude/skills/init/scripts/init.py && echo hacked"
+#   "bin/agent-init && echo hacked"
 # passes the OLD prefix-match check but must be blocked by the new code.
 # ============================================================================
 echo "=== Policy 5: Init-Prefix Bypass Attempts Blocked ==="
@@ -270,84 +270,84 @@ echo ""
 test_blocked "init && command chaining (&&)" '{
   "tool_name": "Bash",
   "tool_input": {
-    "command": "python3 .claude/skills/init/scripts/init.py && echo hacked > .claude/session_state.json"
+    "command": "bin/agent-init && echo hacked > .claude/session_state.json"
   }
 }'
 
 test_blocked "init ; command chaining (;)" '{
   "tool_name": "Bash",
   "tool_input": {
-    "command": "python3 .claude/skills/init/scripts/init.py; echo hacked > .claude/session_state.json"
+    "command": "bin/agent-init; echo hacked > .claude/session_state.json"
   }
 }'
 
 test_blocked "init | pipe injection" '{
   "tool_name": "Bash",
   "tool_input": {
-    "command": "python3 .claude/skills/init/scripts/init.py | tee .claude/session_state.json"
+    "command": "bin/agent-init | tee .claude/session_state.json"
   }
 }'
 
 test_blocked "init with dollar-paren command substitution" '{
   "tool_name": "Bash",
   "tool_input": {
-    "command": "python3 .claude/skills/init/scripts/init.py $(echo hacked)"
+    "command": "bin/agent-init $(echo hacked)"
   }
 }'
 
 test_blocked "init with backtick command substitution" '{
   "tool_name": "Bash",
   "tool_input": {
-    "command": "python3 .claude/skills/init/scripts/init.py `echo hacked`"
+    "command": "bin/agent-init `echo hacked`"
   }
 }'
 
 test_blocked "init with newline-separated suffix" '{
   "tool_name": "Bash",
   "tool_input": {
-    "command": "python3 .claude/skills/init/scripts/init.py\necho hacked > .claude/session_state.json"
+    "command": "bin/agent-init\necho hacked > .claude/session_state.json"
   }
 }'
 
 test_blocked "init with unknown flag (not in allowlist)" '{
   "tool_name": "Bash",
   "tool_input": {
-    "command": "python3 .claude/skills/init/scripts/init.py --unknown-flag"
+    "command": "bin/agent-init --unknown-flag"
   }
 }'
 
 test_blocked "init with extra positional argument" '{
   "tool_name": "Bash",
   "tool_input": {
-    "command": "python3 .claude/skills/init/scripts/init.py extra_arg"
+    "command": "bin/agent-init extra_arg"
   }
 }'
 
 test_blocked "init with redirect output" '{
   "tool_name": "Bash",
   "tool_input": {
-    "command": "python3 .claude/skills/init/scripts/init.py > .claude/session_state.json"
+    "command": "bin/agent-init > .claude/session_state.json"
   }
 }'
 
 test_blocked "init with input redirect" '{
   "tool_name": "Bash",
   "tool_input": {
-    "command": "python3 .claude/skills/init/scripts/init.py < /etc/passwd"
+    "command": "bin/agent-init < /etc/passwd"
   }
 }'
 
 test_blocked "init with env var expansion" '{
   "tool_name": "Bash",
   "tool_input": {
-    "command": "python3 .claude/skills/init/scripts/init.py $HOME"
+    "command": "bin/agent-init $HOME"
   }
 }'
 
 test_blocked "init with || chaining" '{
   "tool_name": "Bash",
   "tool_input": {
-    "command": "python3 .claude/skills/init/scripts/init.py || echo hacked > .claude/session_state.json"
+    "command": "bin/agent-init || echo hacked > .claude/session_state.json"
   }
 }'
 

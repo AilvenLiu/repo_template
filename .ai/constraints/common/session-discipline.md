@@ -161,7 +161,7 @@ remain blocked until those capabilities are installed.
 
 Bootstrap commands are platform-specific:
 - Claude workflows: see `CLAUDE.md`
-- Codex workflows: see `CODEX.md`
+- Codex / Cursor / Cline / generic `agents.md` consumers: see `AGENTS.md`
 
 All platforms MUST:
 - report the exact missing capability
