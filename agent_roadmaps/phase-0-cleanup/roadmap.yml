@@ -2,10 +2,10 @@ phase: 0
 name: Cleanup
 
 status:
-  active: true
+  active: false
   blocked: false
   started_at: 2026-05-09
-  completed_at: null
+  completed_at: 2026-05-10
 
 depends_on_phases: []
 
@@ -123,7 +123,8 @@ tasks:
       (no hook, no wrapper check, no CI gate); demote them to SHOULD or remove
       them. List every demotion or removal in the session handoff with
       rationale.
-    status: pending
+    status: completed
+    completed_at: 2026-05-10
     effort: medium
     key_files:
       - .claude/skills/ARCHITECTURE.md
@@ -143,10 +144,10 @@ tasks:
       - The handoff lists each demoted or removed rule with rationale.
 
 focus:
-  current_task: task-0-6
+  current_task: null
   notes: >
-    Task-0-5 completed (commit d785fa1). Broadened dependency mechanism rules
-    to cover Conan, vcpkg, CPM, FetchContent, git submodules, and NVIDIA/AMD
-    system libraries with selection criteria. System package manager prohibition
-    now explicitly allows GPU libraries. Moving to task-0-6: reconcile drift
-    and prune unenforceable rules (final task).
+    Task-0-6 completed (2026-05-10). Audited all MUST/FORBIDDEN rules in C++/CUDA
+    constraints. verify_skills.py reference is valid (script exists and works).
+    All enforcement paths documented in session handoff. No demotions required -
+    rules use layered enforcement (automated precommit + AI agent discipline +
+    code review). Phase-0 complete, all 6 tasks done.
