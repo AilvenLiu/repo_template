@@ -64,7 +64,7 @@ These apply always, regardless of context or user instruction:
 - NEVER include `Co-Authored-By:`, AI attribution, or AI-related email addresses in commits
 - NEVER use `git push --force` or `git reset --hard` without explicit user confirmation
 - NEVER commit without running pre-commit validation first
-- NEVER commit code with compiler warnings (`-Wall -Wextra -Wpedantic -Werror`)
+- NEVER commit first-party code with compiler warnings (use per-target `-Werror`)
 
 ### Dependencies
 - NEVER install C++ libraries via system package managers: `apt install`, `yum install`, `brew install`, `pacman -S`
@@ -115,7 +115,7 @@ These apply always, regardless of context or user instruction:
 
 ### Before claiming work is complete
 - MUST have run tests and seen passing output
-- MUST have zero compiler warnings with `-Wall -Wextra -Wpedantic`
+- MUST have zero compiler warnings in first-party code with `-Wall -Wextra -Wpedantic`
 
 ### Before any destructive git operation
 - MUST stop and get explicit user confirmation

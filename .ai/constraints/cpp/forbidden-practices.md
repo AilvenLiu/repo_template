@@ -28,11 +28,14 @@ Protected branches include:
 ### 1.2 Committing Without Validation
 
 **FORBIDDEN**:
-- Committing code with compiler warnings
+- Committing code with compiler warnings in first-party code
 - Committing code without running clang-format
 - Committing code without static analysis (clang-tidy, cppcheck)
 - Committing code with failing tests
 - Skipping pre-commit validation
+
+**Note**: Warnings from third-party libraries (marked with SYSTEM includes) are
+acceptable, but first-party code must compile cleanly with `-Werror`.
 
 ## 2. Memory Management
 
@@ -310,11 +313,26 @@ cudaDeviceReset();
 
 ### 7.1 Compiler Warnings
 
-**ABSOLUTELY FORBIDDEN**: Committing code with compiler warnings.
+**ABSOLUTELY FORBIDDEN**: Committing first-party code with compiler warnings.
 
-All code MUST compile cleanly with:
+First-party code MUST compile cleanly with:
 ```bash
 -Wall -Wextra -Wpedantic -Werror
+```
+
+Apply `-Werror` per-target using `target_compile_options(PRIVATE -Werror)` to
+avoid breaking builds when third-party libraries emit warnings. Mark third-party
+headers with `SYSTEM` includes:
+
+```cmake
+# First-party target with strict warnings
+target_compile_options(mylib PRIVATE -Wall -Wextra -Wpedantic -Werror)
+
+# Third-party headers marked as SYSTEM (warnings suppressed)
+target_include_directories(mylib SYSTEM PRIVATE
+    ${CMAKE_SOURCE_DIR}/third_party/cutlass/include
+    ${CMAKE_SOURCE_DIR}/third_party/thrust
+)
 ```
 
 ### 7.2 Ignoring Static Analysis
@@ -344,7 +362,7 @@ auto* hwPtr = reinterpret_cast<HardwareRegister*>(address);
 | Ignoring CUDA errors | FORBIDDEN | Check all calls |
 | Kernel launch without check | FORBIDDEN | Check after launch |
 | Deprecated CUDA APIs | FORBIDDEN | Modern equivalents |
-| Compiler warnings | FORBIDDEN | Fix all warnings |
+| Compiler warnings in first-party code | FORBIDDEN | Fix all warnings, use per-target -Werror |
 
 ## 9. Enforcement
 
@@ -354,7 +372,10 @@ All forbidden practices MUST be caught by pre-commit validation:
 - clang-format (formatting)
 - clang-tidy (static analysis)
 - cppcheck (additional checks)
-- Compiler with -Werror (warnings as errors)
+- Compiler with -Werror on first-party targets (warnings as errors)
+
+**Note**: Use per-target `-Werror` via `target_compile_options(PRIVATE -Werror)`
+rather than global flags to avoid breaking builds on third-party library warnings.
 
 ### 9.2 Code Review
 
@@ -375,4 +396,4 @@ Even then, the following are NEVER acceptable:
 - Ignoring CUDA error codes
 - Raw pointer ownership without RAII wrapper
 - Direct commits to protected branches
-- Compiler warnings in committed code
+- Compiler warnings in first-party code

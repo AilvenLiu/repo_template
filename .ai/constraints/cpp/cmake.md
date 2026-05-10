@@ -66,13 +66,29 @@ set(CMAKE_CUDA_ARCHITECTURES 89 90 100)
 
 ### 3.1 Compiler Warnings
 ```cmake
-# Compiler warnings
+# Compiler warnings for first-party targets
+# Use target_compile_options with PRIVATE to avoid propagating to dependencies
 if(MSVC)
     add_compile_options(/W4 /WX)
 else()
     add_compile_options(-Wall -Wextra -Wpedantic -Werror)
 endif()
+
+# For individual targets (recommended approach)
+target_compile_options(mylib PRIVATE
+    $<$<COMPILE_LANGUAGE:CXX>:-Wall -Wextra -Wpedantic -Werror>
+    $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=-Wall,-Wextra,-Wpedantic,-Werror>
+)
+
+# Mark third-party headers as SYSTEM to suppress their warnings
+target_include_directories(mylib SYSTEM PRIVATE
+    ${CMAKE_SOURCE_DIR}/third_party/cutlass/include
+    ${CMAKE_SOURCE_DIR}/third_party/thrust
+)
 ```
+
+**Important**: `-Werror` applies to first-party code only. Third-party libraries
+(CUTLASS, Thrust, Eigen, etc.) should use `SYSTEM` includes to suppress warnings.
 
 ### 3.2 Build Type Configuration
 ```cmake
@@ -308,6 +324,10 @@ if(MSVC)
 else()
     add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
+
+# Apply -Werror per-target for first-party code
+target_compile_options(mylib PRIVATE -Werror)
+target_compile_options(myapp PRIVATE -Werror)
 
 # Build type
 if(NOT CMAKE_BUILD_TYPE)
@@ -563,16 +583,20 @@ Before EVERY commit operation, the agent MUST:
 rm -rf build
 mkdir build && cd build
 
-# Configure
+# Configure with strict warnings for first-party code
 cmake .. -DCMAKE_BUILD_TYPE=Debug \
-         -DCMAKE_CXX_FLAGS="-Wall -Wextra -Wpedantic -Werror"
+         -DCMAKE_CXX_FLAGS="-Wall -Wextra -Wpedantic"
 
-# Build
+# Build (per-target -Werror is set in CMakeLists.txt)
 cmake --build .
 
 # Test
 ctest --output-on-failure
 ```
+
+**Note**: Global `-Werror` is not recommended as it breaks builds when third-party
+libraries emit warnings. Use per-target `target_compile_options(PRIVATE -Werror)`
+for first-party code instead.
 
 ## 14. Common CMake Patterns
 
