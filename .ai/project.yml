@@ -7,3 +7,8 @@
 # project_type written by the create-project script.
 
 project_type: python
+
+# Test profile for Phase 2 validation (includes CUDA)
+project_profile:
+  language: [python, cpp]
+  build_system: poetry

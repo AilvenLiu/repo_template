@@ -2,9 +2,9 @@ phase: 2
 name: AI Infra Content
 
 status:
-  active: false
+  active: true
   blocked: false
-  started_at: null
+  started_at: "2026-05-10"
   completed_at: null
 
 depends_on_phases: [phase-1-profile-architecture]
@@ -20,7 +20,7 @@ tasks:
       modern SM dispatch patterns. The file MUST be marked status: draft
       and loaded as advisory. The constraint activates on
       language=cuda axis.
-    status: pending
+    status: active
     effort: high
     key_files:
       - .ai/constraints/cpp/cuda-modern.md
@@ -242,7 +242,8 @@ tasks:
       - No drafts have been promoted to stable.
 
 focus:
-  current_task: null
+  current_task: task-2-1
   notes: >
-    Phase is pending; depends on phase-1-profile-architecture completion.
-    Activate only after Phase 1 is marked completed and merged to master.
+    Phase 2 activated on 2026-05-10. Branch roadmap/phase-2-ai-infra-content created
+    from master. Phase 1 completed and merged locally. Starting with task-2-1:
+    authoring cuda-modern.md constraint as draft.
