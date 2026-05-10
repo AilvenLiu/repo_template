@@ -4,7 +4,7 @@ name: Cleanup
 status:
   active: true
   blocked: false
-  started_at: null
+  started_at: 2026-05-09
   completed_at: null
 
 depends_on_phases: []
@@ -17,7 +17,7 @@ tasks:
       constraint set. nvprof becomes nsys plus ncu. cuda-memcheck becomes
       compute-sanitizer. Keep deprecated names only as a one-line legacy note
       where appropriate.
-    status: active
+    status: completed
     effort: low
     key_files:
       - .ai/constraints/cpp/cuda.md
@@ -37,7 +37,7 @@ tasks:
       SM_89 (Ada), SM_90 (Hopper), and SM_100 (Blackwell). Make the default
       example use CMAKE_CUDA_ARCHITECTURES auto-detection (or a
       modern multi-arch list) rather than a hardcoded subset.
-    status: pending
+    status: completed
     effort: low
     key_files:
       - .ai/constraints/cpp/cmake.md
@@ -58,7 +58,7 @@ tasks:
       -Werror so the rule applies to first-party targets only. Document the
       target_compile_options PRIVATE pattern and the SYSTEM include pattern
       for third-party headers (CUTLASS, Thrust, Eigen).
-    status: pending
+    status: completed
     effort: medium
     key_files:
       - .ai/constraints/cpp/cmake.md
@@ -78,7 +78,7 @@ tasks:
       correct version. Use std::vector<cudaStream_t> instead of a
       variable-length array. Allocate the per-stream device buffer once outside
       the loop, not inside it. Add CUDA_CHECK around every API call.
-    status: pending
+    status: completed
     effort: low
     key_files:
       - .ai/constraints/cpp/cuda.md
@@ -98,7 +98,8 @@ tasks:
       CPM, FetchContent, git submodules, and system-installed NVIDIA libraries
       (CUDA Toolkit, cuDNN, NCCL, TensorRT) with selection criteria. Keep the
       prohibition on arbitrary apt or brew installs of non-NVIDIA libraries.
-    status: pending
+    status: completed
+    completed_at: 2026-05-10
     effort: medium
     key_files:
       - .ai/constraints/cpp/dependencies.md
@@ -142,8 +143,10 @@ tasks:
       - The handoff lists each demoted or removed rule with rationale.
 
 focus:
-  current_task: task-0-1
+  current_task: task-0-6
   notes: >
-    Phase has not yet been started. First action: cut branch
-    roadmap/phase-0-cleanup from master once the chore branch carrying the
-    roadmap files is merged.
+    Task-0-5 completed (commit d785fa1). Broadened dependency mechanism rules
+    to cover Conan, vcpkg, CPM, FetchContent, git submodules, and NVIDIA/AMD
+    system libraries with selection criteria. System package manager prohibition
+    now explicitly allows GPU libraries. Moving to task-0-6: reconcile drift
+    and prune unenforceable rules (final task).
