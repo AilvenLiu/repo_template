@@ -172,7 +172,8 @@ tasks:
       audit all behave identically to the pre-Phase-1 template. Record
       evidence (command output, exit codes) in the session handoff. If any
       drift is found, fix it before this task can be marked completed.
-    status: active
+    status: completed
+    completed_at: "2026-05-10"
     effort: medium
     key_files:
       - agent_roadmaps/phase-1-profile-architecture/sessions/
@@ -184,11 +185,12 @@ tasks:
       - Any drift discovered has been fixed; the test re-run is also recorded.
 
 focus:
-  current_task: task-1-8
+  current_task: null
   notes: >
-    Task-1-7 completed (2026-05-10). Added migration notes to all four template
-    overlay files (templates/python/CLAUDE.md, templates/python/AGENTS.md,
-    templates/cpp/CLAUDE.md, templates/cpp/AGENTS.md) explaining that project_profile
-    is optional and legacy project_type still works. Each note points to the ADR.
-    Git diff verified no other content changed. Commit 5803700. Now verifying backward
-    compatibility on a real Python project.
+    Task-1-8 completed (2026-05-10). Created test Python project with legacy
+    project_type: python configuration. Verified all five required commands work
+    correctly: bin/agent-init (exit 0, profile mapped to poetry), bin/agent-build
+    full (exit 0, tests passed), bin/agent-dependency add (exit 0, Poetry backend
+    used), bin/agent-precommit (exit 0, validation ran), capability audit (22/22
+    passed). No drift detected. Complete backward compatibility confirmed. All Phase 1
+    tasks complete.
