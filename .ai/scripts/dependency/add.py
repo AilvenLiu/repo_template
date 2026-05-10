@@ -14,7 +14,7 @@ from check_session import check_session_initialized
 # Check session initialization before proceeding
 session_state = check_session_initialized('dependency')
 
-from utils import DependencyManager, ProjectType, PythonProjectType
+from utils import DependencyManager, ProjectType, PythonProjectType, BuildSystem
 
 
 def ensure_python_version(manager: DependencyManager) -> str:
@@ -289,15 +289,15 @@ def add_python_dependency_trivial(
             print(f"  - {package}")
 
 
-def add_cpp_dependency(
+def add_cpp_dependency_cmake(
     manager: DependencyManager, package: str, version: str = None
 ) -> None:
-    """Add a C++/CUDA dependency.
+    """Add a C++/CUDA dependency using CMake with Conan/vcpkg.
 
     CRITICAL: This function enforces package manager usage (Conan/vcpkg).
     NEVER installs C++ libraries system-wide (apt, yum, brew).
     """
-    print(f"Adding C++/CUDA dependency: {package}")
+    print(f"Adding C++/CUDA dependency (CMake): {package}")
     print("-" * 50)
 
     # Check for package manager configuration
@@ -380,6 +380,63 @@ def add_cpp_dependency(
             print(f"  - {package}")
 
 
+def add_dependency_scikit_build_stub(package: str) -> None:
+    """Stub for scikit-build dependency management (not yet implemented)."""
+    print(f"[ERROR] scikit-build dependency management not yet implemented")
+    print("=" * 50)
+    print()
+    print("scikit-build projects use a hybrid Python/C++ dependency model:")
+    print("  - Python dependencies: managed via Poetry/pip")
+    print("  - C++ dependencies: managed via CMake/Conan")
+    print()
+    print("This build system will be implemented in Phase 2.")
+    print()
+    print("For now, please add dependencies manually:")
+    print("  - Python packages: edit pyproject.toml")
+    print("  - C++ libraries: edit conanfile.txt or CMakeLists.txt")
+    print()
+    print("See: docs/architecture/decisions/002-six-axis-project-profile.md")
+    print("Roadmap: agent_roadmaps/phase-2-build-system-expansion/")
+    sys.exit(1)
+
+
+def add_dependency_bazel_stub(package: str) -> None:
+    """Stub for Bazel dependency management (not yet implemented)."""
+    print(f"[ERROR] Bazel dependency management not yet implemented")
+    print("=" * 50)
+    print()
+    print("Bazel projects use WORKSPACE and BUILD files for dependencies.")
+    print()
+    print("This build system will be implemented in Phase 2.")
+    print()
+    print("For now, please add dependencies manually:")
+    print("  - Edit WORKSPACE file")
+    print("  - Add http_archive or git_repository rules")
+    print()
+    print("See: docs/architecture/decisions/002-six-axis-project-profile.md")
+    print("Roadmap: agent_roadmaps/phase-2-build-system-expansion/")
+    sys.exit(1)
+
+
+def add_dependency_mixed_stub(package: str) -> None:
+    """Stub for mixed build system dependency management (not yet implemented)."""
+    print(f"[ERROR] Mixed build system dependency management not yet implemented")
+    print("=" * 50)
+    print()
+    print("Mixed build systems combine multiple dependency backends.")
+    print()
+    print("This build system will be implemented in Phase 2.")
+    print()
+    print("For now, please add dependencies manually to the appropriate file:")
+    print("  - Python: pyproject.toml or requirements.txt")
+    print("  - C++: conanfile.txt or CMakeLists.txt")
+    print("  - System: document in README.md")
+    print()
+    print("See: docs/architecture/decisions/002-six-axis-project-profile.md")
+    print("Roadmap: agent_roadmaps/phase-2-build-system-expansion/")
+    sys.exit(1)
+
+
 def main():
     """Main entry point for add command."""
     if len(sys.argv) < 2:
@@ -408,12 +465,13 @@ def main():
     repo_root = Path.cwd()
     manager = DependencyManager(repo_root)
 
-    # Detect project type
-    project_type = manager.detect_project_type()
+    # Detect project profile and build system
+    profile = manager.detect_project_profile()
+    build_system = profile.build_system
 
     print("Dependency Management")
     print("=" * 50)
-    print(f"Project Type: {project_type.value}")
+    print(f"Build System: {build_system.value}")
     print(f"Package: {package}")
     if version:
         print(f"Version: {version}")
@@ -421,8 +479,8 @@ def main():
         print(f"Group: dev")
     print()
 
-    # Add dependency based on project type
-    if project_type == ProjectType.PYTHON:
+    # Add dependency based on build system
+    if build_system == BuildSystem.POETRY:
         # Detect Python project type (Poetry vs trivial)
         py_type = manager.detect_python_project_type()
 
@@ -445,14 +503,30 @@ def main():
             # Default to Poetry (including UNKNOWN - will init Poetry)
             add_python_dependency_poetry(manager, package, version, dev)
 
-    elif project_type == ProjectType.CPP:
+    elif build_system == BuildSystem.CMAKE:
         if dev:
             print("[WARNING] --dev flag ignored for C++/CUDA projects")
-        add_cpp_dependency(manager, package, version)
+        add_cpp_dependency_cmake(manager, package, version)
+
+    elif build_system == BuildSystem.SCIKIT_BUILD:
+        add_dependency_scikit_build_stub(package)
+
+    elif build_system == BuildSystem.BAZEL:
+        add_dependency_bazel_stub(package)
+
+    elif build_system == BuildSystem.MIXED:
+        add_dependency_mixed_stub(package)
 
     else:
-        print("ERROR: Unknown project type")
-        print("Could not detect Python or C++/CUDA project")
+        print("ERROR: Unknown build system")
+        print("Could not detect project build system")
+        print()
+        print("Supported build systems:")
+        print("  - poetry (Python with Poetry)")
+        print("  - cmake (C++/CUDA with CMake)")
+        print("  - scikit-build (Python/C++ hybrid)")
+        print("  - bazel (Bazel build system)")
+        print("  - mixed (multiple build systems)")
         print()
         print("For Python projects, ensure you have:")
         print("  - pyproject.toml (Poetry - recommended)")
@@ -470,7 +544,7 @@ def main():
     print("1. Update README.md with dependency documentation")
     print("2. Run tests to verify compatibility")
     print("3. Commit changes to version control")
-    if project_type == ProjectType.PYTHON:
+    if build_system == BuildSystem.POETRY:
         py_type = manager.detect_python_project_type()
         if py_type != PythonProjectType.TRIVIAL:
             print("   git add pyproject.toml poetry.lock <your-code>")

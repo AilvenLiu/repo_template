@@ -8,12 +8,13 @@ from enum import Enum
 from pathlib import Path
 from typing import List, Optional, Tuple
 
-# Use shared detection from .ai/scripts/project_type.py
+# Use shared detection from .ai/scripts/project_profile.py
 _SCRIPTS_DIR = Path(__file__).resolve().parents[1]
 if str(_SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_DIR))
 
-from project_type import ProjectType, detect as _detect  # noqa: E402
+from project_profile import ProjectProfile, detect_project_profile, BuildSystem  # noqa: E402
+from project_type import ProjectType  # noqa: E402  # Keep for backward compat
 
 
 class PythonProjectType(Enum):
@@ -29,9 +30,22 @@ class DependencyManager:
     def __init__(self, repo_root: Optional[Path] = None):
         self.repo_root = repo_root or Path.cwd()
 
+    def detect_project_profile(self) -> ProjectProfile:
+        """Detect project profile using shared module."""
+        return detect_project_profile(self.repo_root)
+
     def detect_project_type(self) -> ProjectType:
-        """Detect project type using shared module."""
-        return _detect(self.repo_root)
+        """Detect project type using shared module (legacy compatibility)."""
+        profile = self.detect_project_profile()
+        # Map profile to legacy ProjectType for backward compatibility
+        if profile.build_system == BuildSystem.POETRY:
+            return ProjectType.PYTHON
+        elif profile.build_system in (BuildSystem.CMAKE, BuildSystem.BAZEL):
+            return ProjectType.CPP
+        elif profile.build_system == BuildSystem.SCIKIT_BUILD:
+            return ProjectType.PYTHON  # Hybrid, but Python-primary
+        else:
+            return ProjectType.UNKNOWN
 
     def check_python_version(self, min_version: Tuple[int, int] = (3, 10)) -> Tuple[bool, str, Tuple[int, int]]:
         """Check if Python version meets minimum requirement.
