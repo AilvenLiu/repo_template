@@ -128,7 +128,8 @@ tasks:
       glue), git submodule, and system NVIDIA package documentation that
       print actionable next-step messages. Do not implement the new backends
       in this phase; that is Phase 2.
-    status: active
+    status: completed
+    completed_at: "2026-05-10"
     effort: medium
     key_files:
       - bin/agent-dependency
@@ -148,7 +149,7 @@ tasks:
       that the new project_profile block in .ai/project.yml is optional and
       the legacy project_type value still works. The note must point readers
       to the ADR. Do not change any other content in those files.
-    status: pending
+    status: active
     effort: low
     key_files:
       - templates/python/CLAUDE.md
@@ -182,12 +183,12 @@ tasks:
       - Any drift discovered has been fixed; the test re-run is also recorded.
 
 focus:
-  current_task: task-1-6
+  current_task: task-1-7
   notes: >
-    Task-1-5 completed (2026-05-10). Refactored bin/agent-build to dispatch by
-    build_system axis instead of legacy project_type. Renamed project_type() to
-    get_build_system(), reads from project_profile.build_system with fallback to
-    legacy mapping (python→poetry, cpp→cmake). Added stub branches for
-    scikit-build, bazel, and mixed that print "not yet implemented" messages.
-    Created 8 tests verifying dispatch and backward compatibility. All 69 tests
-    pass. Now refactoring bin/agent-dependency to dispatch by profile.
+    Task-1-6 completed (2026-05-10). Refactored .ai/scripts/dependency/add.py to
+    dispatch by build_system axis from project_profile. Added detect_project_profile()
+    method to DependencyManager. Kept poetry and cmake paths unchanged. Added stub
+    functions for scikit-build, bazel, and mixed that print "not yet implemented"
+    messages. Created 8 tests verifying build_system detection and backward
+    compatibility with legacy project_type. All 77 tests pass. Now adding migration
+    notes to template overlays.
