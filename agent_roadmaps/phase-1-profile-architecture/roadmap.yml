@@ -2,7 +2,7 @@ phase: 1
 name: Profile Architecture
 
 status:
-  active: false
+  active: true
   blocked: false
   started_at: null
   completed_at: null

@@ -23,12 +23,12 @@ At most one phase may be active at any time.
 
 | Phase | Folder | Status | Depends On |
 |-------|--------|--------|------------|
-| 0 | `phase-0-cleanup` | active | none |
-| 1 | `phase-1-profile-architecture` | pending | `phase-0-cleanup` |
+| 0 | `phase-0-cleanup` | completed | none |
+| 1 | `phase-1-profile-architecture` | active | `phase-0-cleanup` |
 | 2 | `phase-2-ai-infra-content` | pending | `phase-1-profile-architecture` |
 | 3 | `phase-3-advanced-optional` | pending | `phase-2-ai-infra-content` |
 
-**Active phase**: `phase-0-cleanup`
+**Active phase**: `phase-1-profile-architecture`
 
 ## 3. Dependency Graph
 
