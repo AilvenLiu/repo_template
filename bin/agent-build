@@ -12,15 +12,39 @@ Usage: bin/agent-build <setup|compile|test|full|doctor|clean>
 EOF
 }
 
-project_type() {
+get_build_system() {
+  # Try reading project_profile.build_system from .ai/project.yml
   if [[ -f "$REPO_ROOT/.ai/project.yml" ]]; then
-    awk -F': *' '/^project_type:/ {print $2; exit}' "$REPO_ROOT/.ai/project.yml"
-  else
-    echo "python"
+    # Try new project_profile format first
+    local build_system
+    build_system=$(awk '
+      /^project_profile:/ { in_profile=1; next }
+      in_profile && /^  build_system:/ { sub(/^  build_system: */, ""); print; exit }
+      in_profile && /^[^ ]/ { exit }
+    ' "$REPO_ROOT/.ai/project.yml")
+
+    if [[ -n "$build_system" ]]; then
+      echo "$build_system"
+      return
+    fi
+
+    # Fall back to legacy project_type and map to build_system
+    local project_type
+    project_type=$(awk -F': *' '/^project_type:/ {print $2; exit}' "$REPO_ROOT/.ai/project.yml")
+
+    case "$project_type" in
+      python) echo "poetry" ;;
+      cpp) echo "cmake" ;;
+      *) echo "poetry" ;;  # Default fallback
+    esac
+    return
   fi
+
+  # No config file, default to poetry
+  echo "poetry"
 }
 
-python_setup() {
+poetry_setup() {
   if has_poetry_project "$REPO_ROOT"; then
     (cd "$REPO_ROOT" && poetry install)
     return
@@ -30,11 +54,11 @@ python_setup() {
   exit 1
 }
 
-python_compile() {
-  echo "Python projects do not have a separate compile step. Use 'test' or 'doctor' instead."
+poetry_compile() {
+  echo "Poetry projects do not have a separate compile step. Use 'test' or 'doctor' instead."
 }
 
-python_test() {
+poetry_test() {
   if has_poetry_project "$REPO_ROOT"; then
     (cd "$REPO_ROOT" && poetry run pytest)
     return
@@ -44,7 +68,7 @@ python_test() {
   exit 1
 }
 
-python_doctor() {
+poetry_doctor() {
   if has_poetry_project "$REPO_ROOT"; then
     (cd "$REPO_ROOT" && poetry env info)
   else
@@ -54,22 +78,22 @@ python_doctor() {
   echo "Run 'bin/agent-python-env-setup diagnose' for deeper environment checks."
 }
 
-cpp_setup() {
+cmake_setup() {
   if [[ -f "$REPO_ROOT/conanfile.txt" || -f "$REPO_ROOT/conanfile.py" ]]; then
     (cd "$REPO_ROOT" && conan install . --build=missing -of build)
   fi
   (cd "$REPO_ROOT" && cmake -S . -B build)
 }
 
-cpp_compile() {
+cmake_compile() {
   (cd "$REPO_ROOT" && cmake --build build)
 }
 
-cpp_test() {
+cmake_test() {
   (cd "$REPO_ROOT" && ctest --test-dir build --output-on-failure)
 }
 
-cpp_doctor() {
+cmake_doctor() {
   (cd "$REPO_ROOT" && cmake --version)
   if command -v conan >/dev/null 2>&1; then
     conan --version
@@ -81,9 +105,51 @@ cpp_doctor() {
   fi
 }
 
-cpp_clean() {
+cmake_clean() {
   rm -rf "$REPO_ROOT/build"
   echo "Removed build directory."
+}
+
+scikit_build_stub() {
+  cat >&2 <<'EOF'
+scikit-build support is not yet implemented in this phase.
+
+This build system will be fully supported in Phase 2 of the AI Infra
+Optimisation roadmap. For now, you can:
+- Use Poetry for pure Python projects
+- Use CMake for pure C++/CUDA projects
+
+See .ai/adr/0001-project-profile.md for the roadmap.
+EOF
+  exit 1
+}
+
+bazel_stub() {
+  cat >&2 <<'EOF'
+Bazel support is not yet implemented in this phase.
+
+This build system will be fully supported in Phase 2 of the AI Infra
+Optimisation roadmap. For now, you can:
+- Use Poetry for pure Python projects
+- Use CMake for pure C++/CUDA projects
+
+See .ai/adr/0001-project-profile.md for the roadmap.
+EOF
+  exit 1
+}
+
+mixed_stub() {
+  cat >&2 <<'EOF'
+Mixed build system support is not yet implemented in this phase.
+
+This build system configuration will be fully supported in Phase 2 of the
+AI Infra Optimisation roadmap. For now, you can:
+- Use Poetry for pure Python projects
+- Use CMake for pure C++/CUDA projects
+
+See .ai/adr/0001-project-profile.md for the roadmap.
+EOF
+  exit 1
 }
 
 main() {
@@ -93,31 +159,40 @@ main() {
     exit 1
   fi
 
-  case "$(project_type)" in
-    python)
+  case "$(get_build_system)" in
+    poetry)
       case "$command" in
-        setup) python_setup ;;
-        compile) python_compile ;;
-        test) python_test ;;
-        full) python_setup; python_test ;;
-        doctor) python_doctor ;;
-        clean) echo "No standard clean step for Python projects." ;;
+        setup) poetry_setup ;;
+        compile) poetry_compile ;;
+        test) poetry_test ;;
+        full) poetry_setup; poetry_test ;;
+        doctor) poetry_doctor ;;
+        clean) echo "No standard clean step for Poetry projects." ;;
         *) usage; exit 1 ;;
       esac
       ;;
-    cpp)
+    cmake)
       case "$command" in
-        setup) cpp_setup ;;
-        compile) cpp_compile ;;
-        test) cpp_test ;;
-        full) cpp_setup; cpp_compile; cpp_test ;;
-        doctor) cpp_doctor ;;
-        clean) cpp_clean ;;
+        setup) cmake_setup ;;
+        compile) cmake_compile ;;
+        test) cmake_test ;;
+        full) cmake_setup; cmake_compile; cmake_test ;;
+        doctor) cmake_doctor ;;
+        clean) cmake_clean ;;
         *) usage; exit 1 ;;
       esac
+      ;;
+    scikit-build)
+      scikit_build_stub
+      ;;
+    bazel)
+      bazel_stub
+      ;;
+    mixed)
+      mixed_stub
       ;;
     *)
-      echo "Unsupported or unknown project type." >&2
+      echo "Unsupported or unknown build system: $(get_build_system)" >&2
       exit 1
       ;;
   esac
