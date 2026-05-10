@@ -19,13 +19,13 @@ try:
     from .capability_audit import AuditResult, print_audit_report, run_audit
     from .constants import PROTECTED_BRANCHES, PROTECTED_PREFIXES
     from .paths import resolve_repo_root
-    from .project_type import ProjectType, detect
+    from .project_profile import Language, ProjectProfile, detect
     from .session_state import write_state
 except ImportError:
     from capability_audit import AuditResult, print_audit_report, run_audit
     from constants import PROTECTED_BRANCHES, PROTECTED_PREFIXES
     from paths import resolve_repo_root
-    from project_type import ProjectType, detect
+    from project_profile import Language, ProjectProfile, detect
     from session_state import write_state
 
 
@@ -183,7 +183,7 @@ def _is_cmake_path(path: str) -> bool:
 
 
 def resolve_constraints(
-    project_type: ProjectType,
+    profile: ProjectProfile,
     modified_files: List[str],
     has_roadmap: bool,
 ) -> List[str]:
@@ -191,9 +191,11 @@ def resolve_constraints(
     if has_roadmap:
         keys.append("common/roadmap-awareness")
 
-    if project_type == ProjectType.PYTHON:
+    # Load constraints for each language in the profile
+    exts_seen = {Path(path).suffix for path in modified_files}
+
+    if profile.has_language(Language.PYTHON):
         keys.extend(_ALWAYS_PYTHON)
-        exts_seen = {Path(path).suffix for path in modified_files}
         for ext, extra in _PYTHON_TRIGGERS.items():
             if ext in exts_seen:
                 keys.extend(extra)
@@ -201,9 +203,9 @@ def resolve_constraints(
             keys.append("python/testing")
         if any(_is_doc_path(path) for path in modified_files):
             keys.append("python/documentation")
-    elif project_type == ProjectType.CPP:
+
+    if profile.has_language(Language.CPP):
         keys.extend(_ALWAYS_CPP)
-        exts_seen = {Path(path).suffix for path in modified_files}
         for ext, extra in _CPP_TRIGGERS.items():
             if ext in exts_seen:
                 keys.extend(extra)
@@ -237,7 +239,7 @@ def load_constraint(repo_root: Path, key: str) -> Optional[str]:
 def write_session_state(
     repo_root: Path,
     platform: str,
-    project_type: ProjectType,
+    profile: ProjectProfile,
     branch: Optional[str],
     loaded_constraints: List[str],
     roadmap_dir: Optional[Path],
@@ -247,7 +249,7 @@ def write_session_state(
         "initialized": True,
         "timestamp": datetime.now().isoformat(),
         "platform": platform,
-        "project_type": project_type.value,
+        "project_profile": profile.to_dict(),
         "branch": branch,
         "loaded_constraints": loaded_constraints,
         "active_roadmap": str(roadmap_dir) if roadmap_dir else None,
@@ -265,14 +267,18 @@ def run_init(platform: str, verbose: bool = False) -> int:
     print("SESSION INITIALIZATION")
     print(separator)
 
-    project_type = detect(repo_root)
-    if project_type == ProjectType.UNKNOWN:
-        print("[WARN] Unable to detect project type. Defaulting to python.")
-        project_type = ProjectType.PYTHON
+    profile = detect(repo_root)
+    if profile is None:
+        print("[WARN] Unable to detect project profile. Defaulting to python.")
+        from .project_profile import legacy_project_type_to_profile
+        profile = legacy_project_type_to_profile("python")
 
     project_yml = repo_root / ".ai" / "project.yml"
     source = ".ai/project.yml" if project_yml.exists() else "heuristic"
-    print(f"[OK] Project type: {project_type.value.upper()} ({source})")
+
+    # Display primary language for backward compatibility with existing output format
+    primary_lang = profile.language[0].value.upper() if profile.language else "UNKNOWN"
+    print(f"[OK] Project type: {primary_lang} ({source})")
 
     roadmap_dir = find_active_roadmap(repo_root)
     if roadmap_dir:
@@ -299,7 +305,7 @@ def run_init(platform: str, verbose: bool = False) -> int:
     audit_result = run_audit(repo_root, platform=platform, verbose=False)
     print_audit_report(audit_result)
 
-    keys = resolve_constraints(project_type, modified, roadmap_dir is not None)
+    keys = resolve_constraints(profile, modified, roadmap_dir is not None)
     loaded: List[str] = []
 
     print(separator)
@@ -322,7 +328,7 @@ def run_init(platform: str, verbose: bool = False) -> int:
     write_session_state(
         repo_root=repo_root,
         platform=platform,
-        project_type=project_type,
+        profile=profile,
         branch=branch,
         loaded_constraints=loaded,
         roadmap_dir=roadmap_dir,

@@ -18,10 +18,10 @@ List = list
 
 try:
     from .paths import resolve_repo_root
-    from .project_type import detect
+    from .project_profile import detect
 except ImportError:
     from paths import resolve_repo_root
-    from project_type import detect
+    from project_profile import detect
 
 
 @dataclass
@@ -166,6 +166,94 @@ def _is_template_repo(repo_root: Path) -> bool:
     return (repo_root / ".claude" / "skills" / "create-project").is_dir()
 
 
+def _evaluate_when_selector(selector: str, profile: Any) -> bool:
+    """Evaluate a when selector against a project profile.
+
+    Supported syntax:
+    - Single equality: "language=python"
+    - List membership: "language in [python, cpp]"
+
+    Args:
+        selector: The when selector string
+        profile: ProjectProfile object
+
+    Returns:
+        True if the selector matches the profile, False otherwise
+    """
+    if not selector or not profile:
+        return True
+
+    selector = selector.strip()
+
+    # Empty selector after stripping whitespace
+    if not selector:
+        return True
+
+    # Handle "axis in [value1, value2]" syntax
+    if " in [" in selector:
+        parts = selector.split(" in [", 1)
+        if len(parts) != 2:
+            return False
+
+        axis = parts[0].strip()
+        values_str = parts[1].rstrip("]").strip()
+        allowed_values = {v.strip() for v in values_str.split(",") if v.strip()}
+
+        # Get the profile axis value
+        if axis == "language":
+            profile_values = {lang.value for lang in profile.language}
+            return bool(profile_values & allowed_values)
+        elif axis == "build_system":
+            return profile.build_system.value in allowed_values
+        elif axis == "bindings":
+            if profile.bindings:
+                return profile.bindings.value in allowed_values
+            return "none" in allowed_values
+        elif axis == "distribution":
+            if profile.distribution:
+                return profile.distribution.value in allowed_values
+            return "none" in allowed_values
+        elif axis == "hardware_targets":
+            profile_values = {hw.value for hw in profile.hardware_targets}
+            return bool(profile_values & allowed_values)
+        elif axis == "external_dependencies":
+            if profile.external_dependencies:
+                return profile.external_dependencies.value in allowed_values
+            return "none" in allowed_values
+
+        return False
+
+    # Handle "axis=value" syntax
+    if "=" in selector:
+        axis, value = selector.split("=", 1)
+        axis = axis.strip()
+        value = value.strip()
+
+        if axis == "language":
+            return any(lang.value == value for lang in profile.language)
+        elif axis == "build_system":
+            return profile.build_system.value == value
+        elif axis == "bindings":
+            if profile.bindings:
+                return profile.bindings.value == value
+            return value == "none"
+        elif axis == "distribution":
+            if profile.distribution:
+                return profile.distribution.value == value
+            return value == "none"
+        elif axis == "hardware_targets":
+            return any(hw.value == value for hw in profile.hardware_targets)
+        elif axis == "external_dependencies":
+            if profile.external_dependencies:
+                return profile.external_dependencies.value == value
+            return value == "none"
+
+        return False
+
+    # Unknown selector format
+    return False
+
+
 def _normalize_manifest(raw: Dict[str, Any]) -> Dict[str, Any]:
     """Convert legacy v1 and v2 manifest formats to a single v2-like structure."""
     if "common_requirements" in raw or "platform_requirements" in raw:
@@ -203,16 +291,35 @@ def _entry_enabled_for_repo(entry: Dict[str, Any], is_template: bool, repo_root:
     if entry.get("template_only", False) and not is_template:
         return False
 
+    # New when selector takes precedence
+    when_selector = entry.get("when")
+    if when_selector:
+        profile = detect(repo_root)
+        if profile is None:
+            # If we can't detect a profile, default to allowing the entry
+            # (conservative approach for unknown projects)
+            return True
+        return _evaluate_when_selector(when_selector, profile)
+
+    # Legacy project_types field for backward compatibility
     project_types = entry.get("project_types")
     if project_types:
-        detected = detect(repo_root).value
+        profile = detect(repo_root)
+        if profile is None:
+            return False
+
+        # Convert profile to legacy project_type for comparison
+        # Use primary language as the project type
+        primary_lang = profile.language[0].value if profile.language else "unknown"
+
         if isinstance(project_types, str):
             allowed = {project_types}
         elif isinstance(project_types, list):
             allowed = {str(item) for item in project_types}
         else:
             allowed = set()
-        if detected not in allowed:
+
+        if primary_lang not in allowed:
             return False
 
     return True

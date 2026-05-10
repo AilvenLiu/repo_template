@@ -4,8 +4,8 @@ name: Profile Architecture
 status:
   active: false
   blocked: false
-  started_at: null
-  completed_at: null
+  started_at: "2026-05-10"
+  completed_at: "2026-05-10"
 
 depends_on_phases: [phase-0-cleanup]
 
@@ -19,7 +19,7 @@ tasks:
       hybrid TVM-shaped project, the back-compat semantics for legacy
       project_type values, and trade-offs considered. STOP after writing and
       request explicit user approval before any implementation begins.
-    status: pending
+    status: completed
     effort: medium
     key_files:
       - .ai/adr/0001-project-profile.md
@@ -40,7 +40,7 @@ tasks:
       helper. Add unit tests covering: legacy project_type values map to
       expected profiles; new project_profile blocks parse correctly; missing
       or malformed inputs raise structured errors.
-    status: pending
+    status: completed
     effort: medium
     key_files:
       - .ai/scripts/project_profile.py
@@ -64,7 +64,7 @@ tasks:
       constraint set. The constraint bodies under .ai/constraints/ are NOT
       modified. Add round-trip tests proving identical loaded sets pre and
       post refactor for each legacy project_type value.
-    status: pending
+    status: completed
     effort: high
     key_files:
       - .ai/scripts/session_init.py
@@ -85,7 +85,7 @@ tasks:
       the active profile. Preserve current required-skill behaviour for legacy
       project_type values via the shim. Add fixture tests asserting audit
       equality between legacy and equivalent profile-based configurations.
-    status: pending
+    status: completed
     effort: high
     key_files:
       - .ai/capabilities.yml
@@ -106,7 +106,8 @@ tasks:
       they are today. Add stub branches for scikit-build, bazel, and mixed
       that print "not yet implemented in this phase; see Phase 2" and exit
       non-zero so they cannot be silently ignored.
-    status: pending
+    status: completed
+    completed_at: "2026-05-10"
     effort: medium
     key_files:
       - bin/agent-build
@@ -127,7 +128,8 @@ tasks:
       glue), git submodule, and system NVIDIA package documentation that
       print actionable next-step messages. Do not implement the new backends
       in this phase; that is Phase 2.
-    status: pending
+    status: completed
+    completed_at: "2026-05-10"
     effort: medium
     key_files:
       - bin/agent-dependency
@@ -147,7 +149,8 @@ tasks:
       that the new project_profile block in .ai/project.yml is optional and
       the legacy project_type value still works. The note must point readers
       to the ADR. Do not change any other content in those files.
-    status: pending
+    status: completed
+    completed_at: "2026-05-10"
     effort: low
     key_files:
       - templates/python/CLAUDE.md
@@ -169,7 +172,8 @@ tasks:
       audit all behave identically to the pre-Phase-1 template. Record
       evidence (command output, exit codes) in the session handoff. If any
       drift is found, fix it before this task can be marked completed.
-    status: pending
+    status: completed
+    completed_at: "2026-05-10"
     effort: medium
     key_files:
       - agent_roadmaps/phase-1-profile-architecture/sessions/
@@ -183,5 +187,10 @@ tasks:
 focus:
   current_task: null
   notes: >
-    Phase is pending; depends on phase-0-cleanup completion. Activate only
-    after Phase 0 is marked completed and merged to master.
+    Task-1-8 completed (2026-05-10). Created test Python project with legacy
+    project_type: python configuration. Verified all five required commands work
+    correctly: bin/agent-init (exit 0, profile mapped to poetry), bin/agent-build
+    full (exit 0, tests passed), bin/agent-dependency add (exit 0, Poetry backend
+    used), bin/agent-precommit (exit 0, validation ran), capability audit (22/22
+    passed). No drift detected. Complete backward compatibility confirmed. All Phase 1
+    tasks complete.
