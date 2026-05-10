@@ -20,7 +20,8 @@ tasks:
       modern SM dispatch patterns. The file MUST be marked status: draft
       and loaded as advisory. The constraint activates on
       language=cuda axis.
-    status: active
+    status: completed
+    completed_at: "2026-05-10"
     effort: high
     key_files:
       - .ai/constraints/cpp/cuda-modern.md
@@ -40,7 +41,7 @@ tasks:
       bands per dtype (FP32, FP16, BF16, FP8), performance-regression gates,
       SM-version coverage matrix (SM_80, SM_86, SM_89, SM_90, SM_100), and
       shape-bucket coverage. Marked status: draft. Activates on language=cuda.
-    status: pending
+    status: active
     effort: high
     key_files:
       - .ai/constraints/cpp/kernel-correctness.md
@@ -242,8 +243,10 @@ tasks:
       - No drafts have been promoted to stable.
 
 focus:
-  current_task: task-2-1
+  current_task: task-2-2
   notes: >
-    Phase 2 activated on 2026-05-10. Branch roadmap/phase-2-ai-infra-content created
-    from master. Phase 1 completed and merged locally. Starting with task-2-1:
-    authoring cuda-modern.md constraint as draft.
+    Task-2-1 completed (2026-05-10). Created cuda-modern.md constraint covering
+    Tensor Cores (WMMA/WGMMA), TMA, cudaGraph, stream-ordered allocation,
+    CUTLASS/CuTe idioms, mixed precision (FP8/BF16/FP16/TF32), and SM dispatch.
+    Marked as draft, loads as advisory. Activates on .cu/.cuh extensions.
+    Now starting task-2-2: kernel-correctness constraint.
