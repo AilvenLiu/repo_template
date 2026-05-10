@@ -85,7 +85,7 @@ tasks:
       the active profile. Preserve current required-skill behaviour for legacy
       project_type values via the shim. Add fixture tests asserting audit
       equality between legacy and equivalent profile-based configurations.
-    status: active
+    status: completed
     effort: high
     key_files:
       - .ai/capabilities.yml
@@ -106,7 +106,7 @@ tasks:
       they are today. Add stub branches for scikit-build, bazel, and mixed
       that print "not yet implemented in this phase; see Phase 2" and exit
       non-zero so they cannot be silently ignored.
-    status: pending
+    status: active
     effort: medium
     key_files:
       - bin/agent-build
@@ -181,12 +181,11 @@ tasks:
       - Any drift discovered has been fixed; the test re-run is also recorded.
 
 focus:
-  current_task: task-1-4
+  current_task: task-1-5
   notes: >
-    Task-1-3 completed (2026-05-10). Refactored session_init.py to load
-    constraints by profile axes instead of binary project_type. The loader now
-    composes constraints additively, supporting hybrid multi-language projects.
-    Changed if/elif to independent if blocks. Session state now stores
-    project_profile instead of project_type. Added 10 round-trip tests proving
-    legacy project_type values produce identical constraint sets. All 36 tests
-    pass. Now refactoring capabilities.yml to use axis selectors.
+    Task-1-4 completed (2026-05-10). Refactored capabilities.yml to use when
+    selectors (e.g., when: language=python) instead of project_types. Added
+    _evaluate_when_selector() supporting equality and list membership syntax.
+    Maintains backward compatibility with legacy project_types field. Added 25
+    tests proving selector evaluation and audit equality. All 61 tests pass.
+    Now refactoring bin/agent-build to dispatch by build_system axis.
