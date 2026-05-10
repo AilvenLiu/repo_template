@@ -8,7 +8,6 @@
 
 project_type: python
 
-# Test profile for Phase 2 validation (includes CUDA)
 project_profile:
-  language: [python, cpp]
+  language: [python]
   build_system: poetry

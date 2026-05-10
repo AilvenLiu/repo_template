@@ -140,8 +140,8 @@ _PYTHON_TRIGGERS = {
 _CPP_TRIGGERS = {
     ".cpp": ["cpp/formatting", "cpp/memory-safety"],
     ".hpp": ["cpp/formatting", "cpp/memory-safety"],
-    ".cu": ["cpp/cuda", "cpp/cuda-modern"],
-    ".cuh": ["cpp/cuda", "cpp/cuda-modern"],
+    ".cu": ["cpp/cuda", "cpp/cuda-modern", "cpp/kernel-correctness"],
+    ".cuh": ["cpp/cuda", "cpp/cuda-modern", "cpp/kernel-correctness"],
 }
 
 _DOC_FILENAMES = {
