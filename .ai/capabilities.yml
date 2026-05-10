@@ -16,7 +16,7 @@ common_requirements:
 
     - id: python-env-setup
       required: true
-      project_types: [python]
+      when: language=python
 
     - id: roadmap
       required: true
@@ -72,7 +72,7 @@ common_requirements:
       path: bin/agent-python-env-setup
       required: true
       executable: true
-      project_types: [python]
+      when: language=python
 
     - id: agent-commit
       path: bin/agent-commit
