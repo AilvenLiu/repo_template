@@ -41,7 +41,8 @@ tasks:
       bands per dtype (FP32, FP16, BF16, FP8), performance-regression gates,
       SM-version coverage matrix (SM_80, SM_86, SM_89, SM_90, SM_100), and
       shape-bucket coverage. Marked status: draft. Activates on language=cuda.
-    status: active
+    status: completed
+    completed_at: "2026-05-10"
     effort: high
     key_files:
       - .ai/constraints/cpp/kernel-correctness.md
@@ -63,7 +64,7 @@ tasks:
       and refcount discipline, error propagation across the boundary, and
       async semantics for stream-ordered results. Marked status: draft.
       Activates on bindings axis being non-empty.
-    status: pending
+    status: active
     effort: high
     key_files:
       - .ai/constraints/hybrid/ffi-boundary.md
@@ -243,10 +244,16 @@ tasks:
       - No drafts have been promoted to stable.
 
 focus:
-  current_task: task-2-2
+  current_task: task-2-3
   notes: >
     Task-2-1 completed (2026-05-10). Created cuda-modern.md constraint covering
     Tensor Cores (WMMA/WGMMA), TMA, cudaGraph, stream-ordered allocation,
     CUTLASS/CuTe idioms, mixed precision (FP8/BF16/FP16/TF32), and SM dispatch.
-    Marked as draft, loads as advisory. Activates on .cu/.cuh extensions.
-    Now starting task-2-2: kernel-correctness constraint.
+
+    Task-2-2 completed (2026-05-11). Created kernel-correctness.md constraint covering
+    reference-correctness testing against PyTorch eager mode, numerical tolerance bands
+    by dtype (FP32: 1e-6, FP16: 1e-3, BF16: 1e-2, FP8: 5e-2), performance regression
+    gates (5% threshold), SM coverage matrix (SM_80-SM_100), and shape-bucket testing.
+
+    Both constraints marked as draft, load as advisory. Now starting task-2-3:
+    ffi-boundary constraint for Python/C++/CUDA interop patterns.
