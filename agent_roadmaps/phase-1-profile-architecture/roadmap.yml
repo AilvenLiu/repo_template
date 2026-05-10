@@ -4,7 +4,7 @@ name: Profile Architecture
 status:
   active: true
   blocked: false
-  started_at: null
+  started_at: "2026-05-10"
   completed_at: null
 
 depends_on_phases: [phase-0-cleanup]
@@ -19,7 +19,7 @@ tasks:
       hybrid TVM-shaped project, the back-compat semantics for legacy
       project_type values, and trade-offs considered. STOP after writing and
       request explicit user approval before any implementation begins.
-    status: pending
+    status: active
     effort: medium
     key_files:
       - .ai/adr/0001-project-profile.md
@@ -181,7 +181,8 @@ tasks:
       - Any drift discovered has been fixed; the test re-run is also recorded.
 
 focus:
-  current_task: null
+  current_task: task-1-1
   notes: >
-    Phase is pending; depends on phase-0-cleanup completion. Activate only
-    after Phase 0 is marked completed and merged to master.
+    Phase 1 started 2026-05-10. Task-1-1 (ADR) activated. Drafting the
+    project_profile schema ADR with worked examples and backward-compat
+    semantics. User-gate: explicit approval required before task-1-2.
