@@ -3,7 +3,7 @@
 > **This document defines mandatory dependency management standards for C++/CUDA projects.**
 > All dependency changes must follow these rules to ensure reproducibility and cross-platform compatibility.
 
-## 1. Mandatory Tool: Conan (Primary) or vcpkg (Alternative)
+## 1. Dependency Management: Documented Mechanisms
 
 ### 1.1 CMake Version Requirement
 
@@ -45,84 +45,112 @@ Option 3: Using pip (Alternative)
 pip install cmake
 ```
 
-### 1.2 Conan as the Default Standard
+### 1.2 Core Requirement: Documented Mechanism
 
-**MANDATORY**: Use **Conan** as the primary dependency manager for all C++/CUDA projects.
+**MANDATORY**: Every dependency MUST be declared in a documented, reproducible mechanism.
 
-Conan provides:
-- Cross-platform package management
-- Binary caching for faster builds
-- Integration with CMake
-- Reproducible builds via conanfile.txt/conanfile.py
-- Support for custom package repositories
+**Acceptable mechanisms** (in recommended priority order):
 
-### 1.3 vcpkg as Alternative
+1. **Conan** (recommended for most projects)
+   - Best for complex dependency graphs
+   - Excellent cross-platform support (Linux, Windows, macOS, embedded)
+   - Superior version pinning and conflict resolution
+   - Active community and extensive package repository
+   - Use when: building general-purpose C++/CUDA applications
 
-**ONLY** use vcpkg if Conan genuinely cannot meet your needs (rare cases):
-- Specific library not available in Conan
-- Project already uses vcpkg extensively
-- Explicit user request
+2. **vcpkg** (alternative package manager)
+   - Microsoft-maintained, good Windows support
+   - Use when: package unavailable in Conan, or Windows-specific requirements
 
-**If in doubt, use Conan.** It has better cross-platform support and binary caching.
+3. **CPM (CMake Package Manager)**
+   - Lightweight, CMake-native dependency management
+   - Downloads and builds dependencies at configure time
+   - Use when: need source-level control or package not in Conan/vcpkg
 
-### 1.4 System Package Manager Prohibition
+4. **FetchContent** (CMake built-in)
+   - Downloads source at configure time
+   - Use when: header-only libraries, small dependencies without complex transitive deps
+   - Example: nlohmann/json, spdlog (header-only mode)
 
-**ABSOLUTELY FORBIDDEN**: Installing C++ libraries via system package managers.
+5. **Git submodules**
+   - Tracks specific commits of vendored dependencies
+   - Use when: need to modify dependency source, or track unreleased versions
+   - Requires manual updates
+
+6. **System-installed NVIDIA libraries**
+   - CUDA Toolkit, cuDNN, NCCL, TensorRT, cuBLAS, cuFFT
+   - Use when: official NVIDIA distribution provides the library
+   - Must document required versions in README.md
+
+**Selection criteria:**
+- **Conan first** for general C++ libraries (Boost, Eigen, OpenCV, fmt, spdlog)
+- **System install** for NVIDIA CUDA ecosystem libraries
+- **FetchContent/CPM** for header-only or simple libraries
+- **Git submodules** when you need source-level control
+- **vcpkg** as fallback when Conan unavailable
+
+### 1.3 System Package Manager Restrictions
+
+**FORBIDDEN**: Installing general C++ libraries via system package managers.
 
 ```bash
-# FORBIDDEN: System package manager usage
+# FORBIDDEN: System package manager for C++ libraries
 apt install libboost-dev          # WRONG - breaks reproducibility
 yum install opencv-devel          # WRONG - version mismatch risk
 brew install eigen                # WRONG - not portable
 pacman -S fmt                     # WRONG - system-wide pollution
 
-# REQUIRED: Use Conan
-conan install . --build=missing   # CORRECT
-```
-
-**CRITICAL EXAMPLES**:
-
-```bash
-# FORBIDDEN: Direct system installation
-sudo apt install libfmt-dev       # WRONG - system-wide
-brew install nlohmann-json        # WRONG - not reproducible
-
-# REQUIRED: Always use Conan or vcpkg
+# REQUIRED: Use documented mechanism
 conan install . --build=missing   # CORRECT - Conan
-vcpkg install fmt                 # CORRECT - vcpkg (if Conan unsuitable)
+vcpkg install fmt                 # CORRECT - vcpkg
+# Or FetchContent/CPM in CMakeLists.txt
 ```
 
-### 1.5 Dependency Addition Protocol
+**ALLOWED system installations:**
+- **NVIDIA libraries**: CUDA Toolkit, cuDNN, NCCL, TensorRT (official NVIDIA channels)
+- **Build tools**: CMake, compilers (gcc, clang, nvcc), build systems
+- **ROCm libraries**: ROCm toolkit and libraries (official AMD channels)
 
-**CRITICAL**: When adding ANY C++/CUDA dependency, the agent MUST follow the full dependency addition workflow:
+**Rationale**: NVIDIA and AMD provide official system packages for their GPU libraries.
+These are designed for system-wide installation and are not typically available via
+Conan/vcpkg. General C++ libraries must use package managers for reproducibility.
+
+### 1.4 Dependency Addition Protocol
+
+**CRITICAL**: When adding ANY C++/CUDA dependency, the agent MUST follow the appropriate workflow for the chosen mechanism:
 
 +-------------------------------------------------------------+
 | DEPENDENCY MANAGEMENT PROTOCOL                              |
 |                                                             |
 | WHEN: Adding a new library to the project                   |
-| STEPS:                                                      |
+|                                                             |
+| FOR CONAN/VCPKG:                                            |
 |   1. Add to conanfile.txt (or vcpkg.json)                   |
-|   2. Run conan install . --build=missing                    |
+|   2. Run conan install . --build=missing (or vcpkg install) |
 |   3. Update CMakeLists.txt with find_package()              |
 |   4. Update CMakeLists.txt with target_link_libraries()     |
 |   5. Document in README.md                                  |
 |                                                             |
-| FORBIDDEN COMMANDS:                                         |
-|   apt install libfmt-dev        # WRONG - system install    |
-|   brew install eigen             # WRONG - system install   |
-|   Manual conanfile.txt edit without full workflow            |
+| FOR FETCHCONTENT/CPM:                                       |
+|   1. Add FetchContent_Declare() or CPMAddPackage() to CMake |
+|   2. Update target_link_libraries()                         |
+|   3. Document in README.md                                  |
 |                                                             |
-| WHY FOLLOW THE PROTOCOL:                                    |
-| - Ensures Conan/vcpkg configuration                         |
-| - Updates conanfile.txt/conanfile.py                        |
-| - Validates CMake integration                               |
-| - Provides documentation reminders                          |
-| - Prevents system package pollution                         |
+| FOR GIT SUBMODULES:                                         |
+|   1. git submodule add <url> third_party/<name>             |
+|   2. Add add_subdirectory() to CMakeLists.txt               |
+|   3. Update target_link_libraries()                         |
+|   4. Document in README.md and .gitmodules                  |
 |                                                             |
-| CONSEQUENCE OF SKIPPING:                                    |
-| - Missing conanfile updates -> broken builds                |
-| - System package pollution -> unreproducible builds         |
-| - Incomplete documentation -> confused developers           |
+| FOR NVIDIA SYSTEM LIBRARIES:                                |
+|   1. Document required version in README.md                 |
+|   2. Add find_package(CUDAToolkit) to CMakeLists.txt        |
+|   3. Link with CUDA::<library> targets                      |
+|                                                             |
+| FORBIDDEN:                                                  |
+|   apt install libfmt-dev        # WRONG - undocumented      |
+|   brew install eigen             # WRONG - not reproducible |
+|   Manual dependency without CMake integration                |
 +-------------------------------------------------------------+
 
 ## 2. Conan Project Structure
@@ -265,23 +293,144 @@ cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE=/path/to/vcpkg/scripts/buildsystems/v
 }
 ```
 
-## 5. Mandatory Dependency Update Protocol
+## 5. FetchContent (CMake Built-in)
 
-### 5.1 Critical Requirement
+### 5.1 When to Use FetchContent
+
+Use FetchContent for:
+- Header-only libraries (nlohmann/json, magic_enum)
+- Small libraries without complex dependencies
+- Libraries not available in Conan/vcpkg
+
+### 5.2 FetchContent Example
+
+```cmake
+include(FetchContent)
+
+# Fetch header-only library
+FetchContent_Declare(
+    json
+    GIT_REPOSITORY https://github.com/nlohmann/json.git
+    GIT_TAG v3.11.2
+)
+FetchContent_MakeAvailable(json)
+
+# Link to target
+target_link_libraries(mylib PRIVATE nlohmann_json::nlohmann_json)
+```
+
+## 6. CPM (CMake Package Manager)
+
+### 6.1 When to Use CPM
+
+Use CPM for:
+- Source-level dependency control
+- Projects that need to build dependencies from source
+- Lightweight alternative to Conan/vcpkg
+
+### 6.2 CPM Setup
+
+```cmake
+# Download CPM.cmake
+include(cmake/CPM.cmake)
+
+# Add dependencies
+CPMAddPackage(
+    NAME fmt
+    GITHUB_REPOSITORY fmtlib/fmt
+    GIT_TAG 10.1.1
+)
+
+target_link_libraries(mylib PRIVATE fmt::fmt)
+```
+
+## 7. Git Submodules
+
+### 7.1 When to Use Git Submodules
+
+Use git submodules for:
+- Vendored dependencies you need to modify
+- Tracking specific commits of unreleased versions
+- Projects with few dependencies
+
+### 7.2 Git Submodule Workflow
+
+```bash
+# Add submodule
+git submodule add https://github.com/fmtlib/fmt.git third_party/fmt
+
+# Update submodules
+git submodule update --init --recursive
+
+# CMakeLists.txt integration
+add_subdirectory(third_party/fmt)
+target_link_libraries(mylib PRIVATE fmt::fmt)
+```
+
+## 8. NVIDIA System Libraries
+
+### 8.1 Allowed NVIDIA System Installations
+
+The following NVIDIA libraries are designed for system-wide installation:
+- **CUDA Toolkit**: nvcc, cudart, device runtime
+- **cuDNN**: Deep learning primitives
+- **NCCL**: Multi-GPU communication
+- **TensorRT**: Inference optimization
+- **cuBLAS, cuFFT, cuSPARSE**: CUDA math libraries
+
+### 8.2 NVIDIA Library Integration
+
+```cmake
+# Find CUDA Toolkit
+find_package(CUDAToolkit 11.0 REQUIRED)
+
+# Link CUDA libraries
+target_link_libraries(myapp PRIVATE
+    CUDA::cudart
+    CUDA::cublas
+    CUDA::cufft
+)
+```
+
+### 8.3 Documentation Requirement
+
+When using NVIDIA system libraries, document in README.md:
+
+```markdown
+## NVIDIA Dependencies
+
+- CUDA Toolkit 12.0+
+- cuDNN 8.9+
+- NCCL 2.18+
+
+### Installation
+
+```bash
+# Ubuntu
+wget https://developer.download.nvidia.com/compute/cuda/repos/...
+sudo apt install cuda-toolkit-12-0 libcudnn8 libnccl2
+```
+```
+
+## 9. Mandatory Dependency Update Protocol
+
+### 9.1 Critical Requirement
 
 **CRITICAL**: When adding ANY new C++ library, the agent MUST:
 
-1. Add the dependency to conanfile.txt (or vcpkg.json)
-2. Run `conan install . --build=missing` to install
-3. Update CMakeLists.txt with `find_package()` and `target_link_libraries()`
-4. Commit conanfile.txt and CMakeLists.txt together
-5. Document the library purpose in README.md
+1. Choose appropriate mechanism (Conan, vcpkg, FetchContent, CPM, submodule, or NVIDIA system)
+2. Follow the mechanism's integration workflow
+3. Update CMakeLists.txt with find_package() or add_subdirectory()
+4. Update target_link_libraries()
+5. Commit dependency manifest and CMakeLists.txt together
+6. Document the library purpose and installation in README.md
 
-### 5.2 Standard Workflow
+### 9.2 Standard Workflow Examples
 
+**Conan:**
 ```bash
 # 1. Add dependency to conanfile.txt
-echo "fmt/10.1.1" >> conanfile.txt  # Or edit manually
+echo "fmt/10.1.1" >> conanfile.txt
 
 # 2. Install dependencies
 conan install . --build=missing
@@ -291,11 +440,23 @@ conan install . --build=missing
 # Add: target_link_libraries(myapp PRIVATE fmt::fmt)
 
 # 4. Commit changes
-git add conanfile.txt CMakeLists.txt src/module.cpp
+git add conanfile.txt CMakeLists.txt
 git commit -m "feat: add fmt library for string formatting"
 ```
 
-### 5.3 Version Pinning Strategy
+**FetchContent:**
+```cmake
+# In CMakeLists.txt
+include(FetchContent)
+FetchContent_Declare(json
+    GIT_REPOSITORY https://github.com/nlohmann/json.git
+    GIT_TAG v3.11.2
+)
+FetchContent_MakeAvailable(json)
+target_link_libraries(myapp PRIVATE nlohmann_json::nlohmann_json)
+```
+
+### 9.3 Version Pinning Strategy
 
 ```ini
 # Exact version (RECOMMENDED for stability)
@@ -313,11 +474,11 @@ fmt/*  # NEVER use in production
 - **Development dependencies**: Exact versions recommended
 - **Testing dependencies**: Exact versions for CI consistency
 
-## 6. CUDA-Specific Dependencies
+## 10. CUDA-Specific Dependencies
 
-### 6.1 CUDA Toolkit
+### 10.1 CUDA Toolkit (System Installation)
 
-CUDA toolkit is typically system-installed but should be version-controlled:
+CUDA toolkit is typically system-installed. Document required version:
 
 ```cmake
 # CMakeLists.txt
@@ -331,7 +492,7 @@ find_package(CUDAToolkit 11.0 REQUIRED)
 target_link_libraries(myapp PRIVATE CUDA::cudart CUDA::cublas)
 ```
 
-### 6.2 CUDA Libraries via Conan
+### 10.2 CUDA Libraries via Package Managers
 
 Some CUDA-related libraries are available via Conan:
 
@@ -341,17 +502,23 @@ thrust/1.17.2
 cub/1.17.2
 ```
 
-## 7. Environment Setup Protocol
+### 10.3 NVIDIA System Libraries
 
-### 7.1 Mandatory Setup Steps
+Document NVIDIA system library requirements in README.md with installation instructions.
+
+## 11. Environment Setup Protocol
+
+### 11.1 Mandatory Setup Steps
 
 When starting work on a C++/CUDA project, the agent MUST:
 
-1. Check for `conanfile.txt` or `conanfile.py` (Conan project indicator)
-2. Check for `vcpkg.json` (vcpkg project indicator)
-3. If Conan project, run `conan install . --build=missing`
-4. If vcpkg project, ensure vcpkg toolchain is configured
-5. If neither exists, initialise with Conan: create conanfile.txt
+1. Check for dependency mechanism indicators:
+   - `conanfile.txt` or `conanfile.py` (Conan)
+   - `vcpkg.json` (vcpkg)
+   - `cmake/CPM.cmake` (CPM)
+   - `.gitmodules` (git submodules)
+2. Run appropriate setup command
+3. If no mechanism exists, recommend Conan for new projects
 
 ```bash
 # Check for dependency manager
@@ -360,19 +527,18 @@ if [ -f "conanfile.txt" ] || [ -f "conanfile.py" ]; then
     conan install . --build=missing
 elif [ -f "vcpkg.json" ]; then
     echo "vcpkg project detected"
-    # Ensure vcpkg toolchain is set
-else
-    echo "No dependency manager found"
-    echo "Initialising Conan project..."
-    # Create conanfile.txt
+    vcpkg install
+elif [ -f ".gitmodules" ]; then
+    echo "Git submodules detected"
+    git submodule update --init --recursive
 fi
 ```
 
-## 8. Dependency Documentation
+## 12. Dependency Documentation
 
-### 8.1 README.md Dependencies Section
+### 12.1 README.md Dependencies Section
 
-Document dependencies in README.md:
+Document dependencies in README.md with installation instructions for the chosen mechanism:
 
 ```markdown
 ## Dependencies
@@ -384,6 +550,7 @@ This project uses Conan for dependency management.
 - CMake 3.20+
 - Conan 2.0+
 - C++17 compatible compiler
+- CUDA Toolkit 12.0+ (for GPU features)
 
 ### Installation
 
@@ -402,16 +569,17 @@ cmake --build .
 
 ### Dependencies
 
-| Library | Version | Purpose |
-|---------|---------|---------|
-| fmt | 10.1.1 | String formatting |
-| spdlog | 1.12.0 | Logging |
-| gtest | 1.14.0 | Unit testing |
+| Library | Version | Mechanism | Purpose |
+|---------|---------|-----------|---------|
+| fmt | 10.1.1 | Conan | String formatting |
+| spdlog | 1.12.0 | Conan | Logging |
+| gtest | 1.14.0 | Conan | Unit testing |
+| CUDA Toolkit | 12.0+ | System | GPU computation |
 ```
 
-## 9. Security and Updates
+## 13. Security and Updates
 
-### 9.1 Security Scanning
+### 13.1 Security Scanning
 
 ```bash
 # Check for known vulnerabilities (manual process)
@@ -419,7 +587,7 @@ cmake --build .
 # Check library changelogs for security fixes
 ```
 
-### 9.2 Regular Updates
+### 13.2 Regular Updates
 
 ```bash
 # Check for outdated packages
@@ -430,35 +598,35 @@ conan search fmt -r conancenter  # Check latest version
 # Run: conan install . --build=missing
 ```
 
-## 10. Enforcement
+## 14. Enforcement
 
-### 10.1 Violations
+### 14.1 Violations
 
 **STRICTLY FORBIDDEN**:
-- Installing libraries via apt, yum, brew, or other system package managers
-- Using libraries without adding them to conanfile.txt/vcpkg.json
-- Committing code without updated dependency files
+- Installing general C++ libraries via apt, yum, brew, or other system package managers (NVIDIA/AMD GPU libraries excepted)
+- Using libraries without declaring them in a documented mechanism (conanfile.txt, vcpkg.json, CMakeLists.txt FetchContent, .gitmodules)
+- Committing code without updated dependency manifests
 - Using unpinned versions in production
 - Skipping CMake integration for new dependencies
 - Not documenting new dependencies
 
-### 10.2 CI/CD Integration
+### 14.2 CI/CD Integration
 
 All pull requests MUST:
-- Include updated conanfile.txt (or vcpkg.json) if dependencies changed
+- Include updated dependency manifest if dependencies changed
 - Pass dependency installation tests
 - Have no missing dependencies
 - Document new dependencies in README.md
 
-## 11. Dependency Management Checklist
+## 15. Dependency Management Checklist
 
 Before committing, verify:
-- [ ] New libraries added via Conan (or vcpkg if justified)
-- [ ] conanfile.txt reflects all dependencies
-- [ ] CMakeLists.txt has find_package() for new dependencies
+- [ ] New libraries added via documented mechanism (Conan, vcpkg, FetchContent, CPM, submodule, or NVIDIA system)
+- [ ] Dependency manifest reflects all dependencies (conanfile.txt, vcpkg.json, CMakeLists.txt, or .gitmodules)
+- [ ] CMakeLists.txt has find_package() or add_subdirectory() for new dependencies
 - [ ] CMakeLists.txt has target_link_libraries() for new dependencies
-- [ ] Dependencies are documented in README.md
-- [ ] No system-wide installations (apt, yum, brew)
+- [ ] Dependencies are documented in README.md with mechanism and version
+- [ ] No undocumented system-wide installations (except NVIDIA/AMD GPU libraries)
 - [ ] All dependencies are necessary
-- [ ] Version constraints are exact (not ranges)
-- [ ] Build succeeds with fresh conan install
+- [ ] Version constraints are exact (not ranges) for production
+- [ ] Build succeeds with fresh dependency installation

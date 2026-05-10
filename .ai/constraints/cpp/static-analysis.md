@@ -8,12 +8,12 @@
 ### 1.1 Mandatory Tools
 - **clang-tidy**: Primary static analysis tool
 - **cppcheck**: Additional static analysis
-- **CUDA**: Use `cuda-memcheck` for memory errors
+- **CUDA**: Use `compute-sanitizer` for memory errors
 
 ### 1.2 Tool Purpose
 - **clang-tidy**: Detects bugs, performance issues, style violations
 - **cppcheck**: Catches additional issues clang-tidy might miss
-- **cuda-memcheck**: Detects CUDA-specific memory errors
+- **compute-sanitizer**: Detects CUDA-specific memory errors
 
 ## 2. clang-tidy Configuration
 
@@ -165,20 +165,22 @@ cppcheck --enable=all --suppressions-list=.cppcheck-suppressions src/
 
 ## 5. CUDA Static Analysis
 
-### 5.1 cuda-memcheck
+### 5.1 compute-sanitizer
 ```bash
 # Check for memory errors
-cuda-memcheck ./build/cuda_app
+compute-sanitizer ./build/cuda_app
 
 # Check for race conditions
-cuda-memcheck --tool racecheck ./build/cuda_app
+compute-sanitizer --tool racecheck ./build/cuda_app
 
 # Check for shared memory errors
-cuda-memcheck --tool synccheck ./build/cuda_app
+compute-sanitizer --tool synccheck ./build/cuda_app
 
 # Check for initialisation errors
-cuda-memcheck --tool initcheck ./build/cuda_app
+compute-sanitizer --tool initcheck ./build/cuda_app
 ```
+
+**Note**: `cuda-memcheck` is deprecated in CUDA 11.6+; use `compute-sanitizer` instead.
 
 ### 5.2 CUDA Compiler Warnings
 ```cmake
@@ -192,8 +194,7 @@ target_compile_options(mylib PRIVATE
 ```
 
 ### 5.3 CUDA Static Analysis Tools
-- **cuda-memcheck**: Runtime memory checker
-- **compute-sanitizer**: Modern replacement for cuda-memcheck
+- **compute-sanitizer**: Runtime memory and race condition checker (replaces deprecated cuda-memcheck)
 - **Nsight Compute**: Profiling and analysis
 
 ## 6. Common Issues Detected
@@ -450,7 +451,7 @@ clang-tidy $(git diff --name-only --cached | grep -E '\.(cpp|hpp)$') -p build/
 - [ ] clang-tidy passes with project configuration
 - [ ] cppcheck shows no issues
 - [ ] No compiler warnings
-- [ ] CUDA code checked with cuda-memcheck
+- [ ] CUDA code checked with compute-sanitizer
 - [ ] All suppressions are justified and documented
 - [ ] Static analysis integrated in CI/CD
 
@@ -472,7 +473,7 @@ clang-tidy $(git diff --name-only --cached | grep -E '\.(cpp|hpp)$') -p build/
 ### 15.1 Recommended Versions
 - **clang-tidy**: 14.0 or later
 - **cppcheck**: 2.7 or later
-- **cuda-memcheck**: Included with CUDA Toolkit 11.0+
+- **compute-sanitizer**: Included with CUDA Toolkit 11.4+
 
 ### 15.2 Version Compatibility
 Document tool versions in README.md:
@@ -481,7 +482,7 @@ Document tool versions in README.md:
 
 - clang-tidy 14.0+
 - cppcheck 2.7+
-- cuda-memcheck (CUDA Toolkit 11.0+)
+- compute-sanitizer (CUDA Toolkit 11.4+)
 ```
 
 ## 16. Forbidden Practices

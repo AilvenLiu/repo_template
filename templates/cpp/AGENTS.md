@@ -64,11 +64,11 @@ These apply always, regardless of context or user instruction:
 - NEVER include `Co-Authored-By:`, AI attribution, or AI-related email addresses in commits
 - NEVER use `git push --force` or `git reset --hard` without explicit user confirmation
 - NEVER commit without running pre-commit validation first
-- NEVER commit code with compiler warnings (`-Wall -Wextra -Wpedantic -Werror`)
+- NEVER commit first-party code with compiler warnings (use per-target `-Werror`)
 
 ### Dependencies
-- NEVER install C++ libraries via system package managers: `apt install`, `yum install`, `brew install`, `pacman -S`
-- NEVER add a dependency without updating `conanfile.txt` (or `vcpkg.json`)
+- NEVER install C++ libraries via system package managers: `apt install`, `yum install`, `brew install`, `pacman -S` (NVIDIA/AMD GPU libraries excepted)
+- NEVER add a dependency without declaring it in a documented mechanism (conanfile.txt, vcpkg.json, CMakeLists.txt FetchContent, .gitmodules)
 - NEVER commit code that uses a library not declared in the manifest
 
 ### Memory Safety
@@ -115,7 +115,7 @@ These apply always, regardless of context or user instruction:
 
 ### Before claiming work is complete
 - MUST have run tests and seen passing output
-- MUST have zero compiler warnings with `-Wall -Wextra -Wpedantic`
+- MUST have zero compiler warnings in first-party code with `-Wall -Wextra -Wpedantic`
 
 ### Before any destructive git operation
 - MUST stop and get explicit user confirmation
@@ -167,13 +167,13 @@ follow the wrapper directly).
 
 | Action | Correct | Forbidden |
 |--------|---------|-----------|
-| Add library | Platform dependency skill | `apt install`, `brew install`, `conan install` directly |
-| Install deps | `conan install . --build=missing` (via skill) | System package managers |
+| Add library | Platform dependency skill | `apt install`, `brew install`, manual `conan install` directly |
+| Install deps | Via documented mechanism (Conan, vcpkg, FetchContent, CPM, submodule) | System package managers |
 
 - CMake 3.20+ is REQUIRED for all C++/CUDA projects
-- Conan is the mandatory first choice; vcpkg only if Conan cannot meet the need
+- Use documented dependency mechanisms: Conan (recommended), vcpkg, FetchContent, CPM, git submodules, or NVIDIA system libraries
 - All dependencies MUST be pinned to exact versions in production
-- `conanfile.txt` and `CMakeLists.txt` MUST be committed together when deps change
+- Dependency manifests and CMakeLists.txt MUST be committed together when deps change
 
 ---
 
@@ -225,7 +225,7 @@ Forbidden:
 | C++ version | C++17 minimum, C++20 recommended |
 | CUDA version | 11.0 minimum, 12.0+ recommended |
 | CMake version | 3.20+ (mandatory) |
-| Dependency tool | Conan (primary), vcpkg (fallback) |
+| Dependency mechanisms | Conan (recommended), vcpkg, FetchContent, CPM, git submodules, NVIDIA system libraries |
 | Formatter | clang-format |
 | Static analysis | clang-tidy + cppcheck |
 | Test framework | Google Test (primary), Catch2 (alternative) |
