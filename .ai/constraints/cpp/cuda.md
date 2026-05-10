@@ -8,7 +8,7 @@
 ### 1.1 Version Requirements
 - **Minimum CUDA Toolkit**: 11.0
 - **Preferred CUDA Toolkit**: 12.0 or later
-- **Compute Capability**: Document minimum required (e.g., sm_70 for Volta+)
+- **Compute Capability**: Document minimum required (e.g., sm_70 for Volta+, sm_89 for Ada Lovelace, sm_90 for Hopper, sm_100 for Blackwell)
 - **CUDA Standard**: Match or be compatible with C++ standard used
 
 ### 1.2 Compiler Compatibility
@@ -422,62 +422,76 @@ __global__ void lessdivergent(float* data, int n) {
 ### 7.4 CUDA Streams
 ```cpp
 void processWithStreams(float* h_data, int n, int num_streams) {
-    cudaStream_t streams[num_streams];
+    std::vector<cudaStream_t> streams(num_streams);
     for (int i = 0; i < num_streams; ++i) {
-        cudaStreamCreate(&streams[i]);
+        CUDA_CHECK(cudaStreamCreate(&streams[i]));
     }
 
     int chunk_size = n / num_streams;
+    std::vector<float*> d_chunks(num_streams);
+    
+    // Allocate device memory for each stream once
     for (int i = 0; i < num_streams; ++i) {
-        int offset = i * chunk_size;
-        float *d_chunk;
-        cudaMalloc(&d_chunk, chunk_size * sizeof(float));
-
-        // Asynchronous operations on different streams
-        cudaMemcpyAsync(d_chunk, h_data + offset, chunk_size * sizeof(float),
-                        cudaMemcpyHostToDevice, streams[i]);
-
-        kernel<<<blocks, threads, 0, streams[i]>>>(d_chunk, chunk_size);
-
-        cudaMemcpyAsync(h_data + offset, d_chunk, chunk_size * sizeof(float),
-                        cudaMemcpyDeviceToHost, streams[i]);
-
-        cudaFree(d_chunk);
+        CUDA_CHECK(cudaMalloc(&d_chunks[i], chunk_size * sizeof(float)));
     }
 
-    // Synchronise all streams
+    // Launch asynchronous operations on different streams
     for (int i = 0; i < num_streams; ++i) {
-        cudaStreamSynchronize(streams[i]);
-        cudaStreamDestroy(streams[i]);
+        int offset = i * chunk_size;
+
+        CUDA_CHECK(cudaMemcpyAsync(d_chunks[i], h_data + offset, 
+                                    chunk_size * sizeof(float),
+                                    cudaMemcpyHostToDevice, streams[i]));
+
+        kernel<<<blocks, threads, 0, streams[i]>>>(d_chunks[i], chunk_size);
+        CUDA_CHECK(cudaGetLastError());
+
+        CUDA_CHECK(cudaMemcpyAsync(h_data + offset, d_chunks[i], 
+                                    chunk_size * sizeof(float),
+                                    cudaMemcpyDeviceToHost, streams[i]));
+    }
+
+    // Synchronise and clean up
+    for (int i = 0; i < num_streams; ++i) {
+        CUDA_CHECK(cudaStreamSynchronize(streams[i]));
+        CUDA_CHECK(cudaStreamDestroy(streams[i]));
+        CUDA_CHECK(cudaFree(d_chunks[i]));
     }
 }
 ```
 
 ## 8. CUDA Debugging and Profiling
 
-### 8.1 cuda-memcheck
+### 8.1 compute-sanitizer
 ```bash
 # Check for memory errors
-cuda-memcheck ./build/cuda_app
+compute-sanitizer ./build/cuda_app
 
 # Check for race conditions
-cuda-memcheck --tool racecheck ./build/cuda_app
+compute-sanitizer --tool racecheck ./build/cuda_app
 
 # Check for shared memory errors
-cuda-memcheck --tool synccheck ./build/cuda_app
+compute-sanitizer --tool synccheck ./build/cuda_app
+
+# Check for initialisation errors
+compute-sanitizer --tool initcheck ./build/cuda_app
 ```
 
-### 8.2 nvprof Profiling
+**Note**: `cuda-memcheck` is deprecated in CUDA 11.6+; use `compute-sanitizer` instead.
+
+### 8.2 Nsight Compute
 ```bash
-# Profile application
-nvprof ./build/cuda_app
+# Profile kernel performance
+ncu ./build/cuda_app
 
 # Detailed metrics
-nvprof --metrics all ./build/cuda_app
+ncu --metrics all ./build/cuda_app
 
-# Timeline analysis
-nvprof --print-gpu-trace ./build/cuda_app
+# Profile specific kernel
+ncu --kernel-name myKernel ./build/cuda_app
 ```
+
+**Note**: `nvprof` is deprecated in CUDA 11.0+; use `ncu` (Nsight Compute) for kernel profiling.
 
 ### 8.3 Nsight Systems
 ```bash
@@ -494,8 +508,8 @@ nsys profile -o report ./build/cuda_app
 - Test with various input sizes (small, medium, large)
 - Test edge cases (empty, boundary conditions)
 - Verify correctness against CPU implementation
-- Check for memory leaks with cuda-memcheck
-- Profile performance with nvprof
+- Check for memory leaks with compute-sanitizer
+- Profile performance with nsys or ncu
 
 ### 9.2 CUDA Test Example
 ```cpp
@@ -543,7 +557,7 @@ When committing CUDA code:
 - **Kernel Launches**: Check with `cudaGetLastError()` and `cudaDeviceSynchronize()`
 - **Documentation**: Document thread/block dimensions and shared memory usage
 - **Testing**: Test with various input sizes and edge cases
-- **Profiling**: Profile with `nvprof` or Nsight for performance-critical changes
+- **Profiling**: Profile with `nsys` or `ncu` for performance-critical changes
 
 ### 10.2 CUDA Commit Verification
 ```bash
@@ -552,10 +566,10 @@ nvcc -Xptxas=-v kernel.cu
 
 # Check for register usage and occupancy
 # Profile kernel
-nvprof ./build/cuda_app
+ncu ./build/cuda_app
 
 # Memory check
-cuda-memcheck ./build/cuda_app
+compute-sanitizer ./build/cuda_app
 ```
 
 ## 11. Forbidden CUDA Practices
@@ -578,4 +592,4 @@ cuda-memcheck ./build/cuda_app
 - [ ] Kernels are documented with launch configuration
 - [ ] Tests cover various input sizes
 - [ ] Performance is profiled for critical kernels
-- [ ] No memory leaks (verified with cuda-memcheck)
+- [ ] No memory leaks (verified with compute-sanitizer)

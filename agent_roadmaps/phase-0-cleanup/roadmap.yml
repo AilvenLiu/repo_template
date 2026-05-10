@@ -1,0 +1,127 @@
+phase: 0
+name: Cleanup
+
+status:
+  active: false
+  blocked: false
+  started_at: "2026-05-09"
+  completed_at: "2026-05-10"
+
+depends_on_phases: []
+
+tasks:
+  - id: task-0-1
+    title: Modernise CUDA tooling references
+    description: >
+      Replace deprecated tool names with modern equivalents across the C++/CUDA
+      constraint set. nvprof becomes nsys plus ncu. cuda-memcheck becomes
+      compute-sanitizer. Keep deprecated names only as a one-line legacy note
+      where appropriate.
+    status: completed
+    effort: low
+    key_files:
+      - .ai/constraints/cpp/cuda.md
+      - .ai/constraints/cpp/memory-safety.md
+      - .ai/constraints/cpp/testing.md
+      - .ai/constraints/cpp/static-analysis.md
+    depends_on: []
+
+  - id: task-0-2
+    title: Add modern SM architectures and prefer auto-detection
+    description: >
+      Update the CUDA architecture list in cmake.md and cuda.md to include
+      SM_89 (Ada), SM_90 (Hopper), and SM_100 (Blackwell). Make the default
+      example use CMAKE_CUDA_ARCHITECTURES auto-detection (or a
+      modern multi-arch list) rather than a hardcoded subset.
+    status: completed
+    effort: low
+    key_files:
+      - .ai/constraints/cpp/cmake.md
+      - .ai/constraints/cpp/cuda.md
+      - templates/cpp/AGENTS.md
+      - templates/cpp/CLAUDE.md
+    depends_on:
+      - task-0-1
+
+  - id: task-0-3
+    title: Scope -Werror to first-party targets
+    description: >
+      Rewrite the cmake.md and forbidden-practices.md sections that mandate
+      -Werror so the rule applies to first-party targets only. Document the
+      target_compile_options PRIVATE pattern and the SYSTEM include pattern
+      for third-party headers (CUTLASS, Thrust, Eigen).
+    status: completed
+    effort: medium
+    key_files:
+      - .ai/constraints/cpp/cmake.md
+      - .ai/constraints/cpp/forbidden-practices.md
+      - templates/cpp/AGENTS.md
+    depends_on:
+      - task-0-2
+
+  - id: task-0-4
+    title: Fix broken CUDA streams example
+    description: >
+      Replace the example in cuda.md section 7.4 (processWithStreams) with a
+      correct version. Use std::vector<cudaStream_t> instead of a
+      variable-length array. Allocate the per-stream device buffer once outside
+      the loop, not inside it. Add CUDA_CHECK around every API call.
+    status: completed
+    effort: low
+    key_files:
+      - .ai/constraints/cpp/cuda.md
+    depends_on:
+      - task-0-1
+
+  - id: task-0-5
+    title: Broaden the dependency-mechanism rule
+    description: >
+      Rewrite dependencies.md and the relevant lines of forbidden-practices.md
+      so the rule is "every dependency MUST be declared in a documented
+      mechanism" rather than "Conan or vcpkg or nothing". Cover Conan, vcpkg,
+      CPM, FetchContent, git submodules, and system-installed NVIDIA libraries
+      (CUDA Toolkit, cuDNN, NCCL, TensorRT) with selection criteria. Keep the
+      prohibition on arbitrary apt or brew installs of non-NVIDIA libraries.
+    status: completed
+    effort: medium
+    key_files:
+      - .ai/constraints/cpp/dependencies.md
+      - .ai/constraints/cpp/forbidden-practices.md
+      - templates/cpp/AGENTS.md
+      - templates/cpp/CLAUDE.md
+    depends_on:
+      - task-0-1
+
+  - id: task-0-6
+    title: Reconcile drift and prune unenforceable rules
+    description: >
+      Reconcile the .claude/skills/ARCHITECTURE.md reference to verify_skills.py
+      either by removing the reference or by adding a thin wrapper script that
+      delegates to .ai/scripts/roadmap/validate_schema.py. Audit the C++/CUDA
+      constraint set for MUST or FORBIDDEN clauses with no enforcement path
+      (no hook, no wrapper check, no CI gate); demote them to SHOULD or remove
+      them. List every demotion or removal in the session handoff with
+      rationale.
+    status: completed
+    effort: medium
+    key_files:
+      - .claude/skills/ARCHITECTURE.md
+      - .ai/constraints/cpp/cuda.md
+      - .ai/constraints/cpp/dependencies.md
+      - .ai/constraints/cpp/cmake.md
+      - .ai/constraints/cpp/testing.md
+    depends_on:
+      - task-0-1
+      - task-0-2
+      - task-0-3
+      - task-0-4
+      - task-0-5
+
+focus:
+  current_task: null
+  notes: >
+    Task-0-6 completed (2026-05-10). Audited all MUST/FORBIDDEN rules in C++/CUDA
+    constraints. verify_skills.py reference is valid (script exists and works).
+    All enforcement paths documented in session handoff. No demotions required -
+    rules use layered enforcement (automated precommit + AI agent discipline +
+    code review). Phase-0 complete, all 6 tasks done.

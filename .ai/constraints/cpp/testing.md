@@ -156,11 +156,13 @@ nvcc -Xptxas=-v kernel.cu
 
 # Check for register usage and occupancy
 # Profile kernel
-nvprof ./build/cuda_app
+ncu ./build/cuda_app
 
 # Memory check
-cuda-memcheck ./build/cuda_app
+compute-sanitizer ./build/cuda_app
 ```
+
+**Note**: `nvprof` is deprecated in CUDA 11.0+; use `ncu` (Nsight Compute) for kernel profiling. `cuda-memcheck` is deprecated in CUDA 11.6+; use `compute-sanitizer` instead.
 
 ## 5. Test Coverage Requirements
 
@@ -172,7 +174,7 @@ cuda-memcheck ./build/cuda_app
 
 ### 5.2 Coverage Tools
 - **C++ Coverage**: Use `gcov`/`lcov` for C++
-- **CUDA Profiling**: Use `nvprof`/`nsight` for CUDA
+- **CUDA Profiling**: Use `nsys`/`ncu` for CUDA
 
 ### 5.3 Generating Coverage Reports
 ```bash
@@ -330,7 +332,7 @@ Performance-critical code SHOULD have benchmarks:
 - Profile memory usage
 
 ### 11.2 CUDA Performance Testing
-- **Profiling**: Profile with `nvprof` or Nsight for performance-critical changes
+- **Profiling**: Profile with `nsys` or `ncu` for performance-critical changes
 - **Occupancy**: Check occupancy with `--ptxas-options=-v`
 - **Memory Bandwidth**: Measure effective bandwidth
 - **Kernel Timing**: Use CUDA events for accurate timing
