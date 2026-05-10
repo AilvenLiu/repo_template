@@ -13,7 +13,7 @@ _SCRIPTS_DIR = Path(__file__).resolve().parents[1]
 if str(_SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_DIR))
 
-from project_profile import ProjectProfile, detect_project_profile, BuildSystem  # noqa: E402
+from project_profile import ProjectProfile, detect as detect_project_profile, BuildSystem  # noqa: E402
 from project_type import ProjectType  # noqa: E402  # Keep for backward compat
 
 
