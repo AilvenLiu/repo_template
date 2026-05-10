@@ -422,33 +422,40 @@ __global__ void lessdivergent(float* data, int n) {
 ### 7.4 CUDA Streams
 ```cpp
 void processWithStreams(float* h_data, int n, int num_streams) {
-    cudaStream_t streams[num_streams];
+    std::vector<cudaStream_t> streams(num_streams);
     for (int i = 0; i < num_streams; ++i) {
-        cudaStreamCreate(&streams[i]);
+        CUDA_CHECK(cudaStreamCreate(&streams[i]));
     }
 
     int chunk_size = n / num_streams;
+    std::vector<float*> d_chunks(num_streams);
+    
+    // Allocate device memory for each stream once
     for (int i = 0; i < num_streams; ++i) {
-        int offset = i * chunk_size;
-        float *d_chunk;
-        cudaMalloc(&d_chunk, chunk_size * sizeof(float));
-
-        // Asynchronous operations on different streams
-        cudaMemcpyAsync(d_chunk, h_data + offset, chunk_size * sizeof(float),
-                        cudaMemcpyHostToDevice, streams[i]);
-
-        kernel<<<blocks, threads, 0, streams[i]>>>(d_chunk, chunk_size);
-
-        cudaMemcpyAsync(h_data + offset, d_chunk, chunk_size * sizeof(float),
-                        cudaMemcpyDeviceToHost, streams[i]);
-
-        cudaFree(d_chunk);
+        CUDA_CHECK(cudaMalloc(&d_chunks[i], chunk_size * sizeof(float)));
     }
 
-    // Synchronise all streams
+    // Launch asynchronous operations on different streams
     for (int i = 0; i < num_streams; ++i) {
-        cudaStreamSynchronize(streams[i]);
-        cudaStreamDestroy(streams[i]);
+        int offset = i * chunk_size;
+
+        CUDA_CHECK(cudaMemcpyAsync(d_chunks[i], h_data + offset, 
+                                    chunk_size * sizeof(float),
+                                    cudaMemcpyHostToDevice, streams[i]));
+
+        kernel<<<blocks, threads, 0, streams[i]>>>(d_chunks[i], chunk_size);
+        CUDA_CHECK(cudaGetLastError());
+
+        CUDA_CHECK(cudaMemcpyAsync(h_data + offset, d_chunks[i], 
+                                    chunk_size * sizeof(float),
+                                    cudaMemcpyDeviceToHost, streams[i]));
+    }
+
+    // Synchronise and clean up
+    for (int i = 0; i < num_streams; ++i) {
+        CUDA_CHECK(cudaStreamSynchronize(streams[i]));
+        CUDA_CHECK(cudaStreamDestroy(streams[i]));
+        CUDA_CHECK(cudaFree(d_chunks[i]));
     }
 }
 ```
