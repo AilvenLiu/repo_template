@@ -149,7 +149,8 @@ tasks:
       that the new project_profile block in .ai/project.yml is optional and
       the legacy project_type value still works. The note must point readers
       to the ADR. Do not change any other content in those files.
-    status: active
+    status: completed
+    completed_at: "2026-05-10"
     effort: low
     key_files:
       - templates/python/CLAUDE.md
@@ -171,7 +172,7 @@ tasks:
       audit all behave identically to the pre-Phase-1 template. Record
       evidence (command output, exit codes) in the session handoff. If any
       drift is found, fix it before this task can be marked completed.
-    status: pending
+    status: active
     effort: medium
     key_files:
       - agent_roadmaps/phase-1-profile-architecture/sessions/
@@ -183,12 +184,11 @@ tasks:
       - Any drift discovered has been fixed; the test re-run is also recorded.
 
 focus:
-  current_task: task-1-7
+  current_task: task-1-8
   notes: >
-    Task-1-6 completed (2026-05-10). Refactored .ai/scripts/dependency/add.py to
-    dispatch by build_system axis from project_profile. Added detect_project_profile()
-    method to DependencyManager. Kept poetry and cmake paths unchanged. Added stub
-    functions for scikit-build, bazel, and mixed that print "not yet implemented"
-    messages. Created 8 tests verifying build_system detection and backward
-    compatibility with legacy project_type. All 77 tests pass. Now adding migration
-    notes to template overlays.
+    Task-1-7 completed (2026-05-10). Added migration notes to all four template
+    overlay files (templates/python/CLAUDE.md, templates/python/AGENTS.md,
+    templates/cpp/CLAUDE.md, templates/cpp/AGENTS.md) explaining that project_profile
+    is optional and legacy project_type still works. Each note points to the ADR.
+    Git diff verified no other content changed. Commit 5803700. Now verifying backward
+    compatibility on a real Python project.
