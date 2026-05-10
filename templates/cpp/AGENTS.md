@@ -43,6 +43,15 @@ For non-trivial coding, debugging, review, or refactor work, apply the bundled
 not directly invokable, follow the same guidance from
 `.ai/constraints/common/karpathy-guidelines.md`.
 
+### Project Configuration
+
+This template supports both the new `project_profile` schema and the legacy
+`project_type` field in `.ai/project.yml`. The legacy field continues to work
+exactly as before; the new schema is optional and provides finer-grained control
+for hybrid projects.
+
+For details, see `.ai/adr/0001-project-profile.md`.
+
 ---
 
 ## Authority Hierarchy
