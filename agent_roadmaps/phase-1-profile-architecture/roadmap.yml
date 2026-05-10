@@ -2,10 +2,10 @@ phase: 1
 name: Profile Architecture
 
 status:
-  active: true
+  active: false
   blocked: false
   started_at: "2026-05-10"
-  completed_at: null
+  completed_at: "2026-05-10"
 
 depends_on_phases: [phase-0-cleanup]
 
