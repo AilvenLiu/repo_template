@@ -39,16 +39,27 @@ set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 
 ### 2.3 CUDA Architecture Configuration
 ```cmake
+# Auto-detection (recommended for local builds)
+set(CMAKE_CUDA_ARCHITECTURES native)
+
 # Single architecture (e.g., Jetson Orin)
 set(CMAKE_CUDA_ARCHITECTURES 87)
 
 # Multiple architectures for broader compatibility
-set(CMAKE_CUDA_ARCHITECTURES 70 75 80 86 87)
+set(CMAKE_CUDA_ARCHITECTURES 70 75 80 86 87 89 90)
 # 70: Volta (V100)
 # 75: Turing (RTX 20xx)
 # 80: Ampere (A100)
 # 86: Ampere (RTX 30xx)
 # 87: Ampere (Jetson Orin)
+# 89: Ada Lovelace (RTX 40xx)
+# 90: Hopper (H100)
+
+# Include latest architectures for future-proofing
+set(CMAKE_CUDA_ARCHITECTURES 89 90 100)
+# 89: Ada Lovelace (RTX 40xx)
+# 90: Hopper (H100)
+# 100: Blackwell (B100, GB200)
 ```
 
 ## 3. Compiler Configuration
@@ -289,7 +300,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # CUDA standard and architectures
 set(CMAKE_CUDA_STANDARD 17)
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
-set(CMAKE_CUDA_ARCHITECTURES 87)  # Jetson Orin (adjust for multi-target: 70 75 80 86 87)
+set(CMAKE_CUDA_ARCHITECTURES native)  # Auto-detect (or specify: 70 75 80 86 87 89 90 100)
 
 # Compiler warnings
 if(MSVC)

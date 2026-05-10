@@ -8,7 +8,7 @@
 ### 1.1 Version Requirements
 - **Minimum CUDA Toolkit**: 11.0
 - **Preferred CUDA Toolkit**: 12.0 or later
-- **Compute Capability**: Document minimum required (e.g., sm_70 for Volta+)
+- **Compute Capability**: Document minimum required (e.g., sm_70 for Volta+, sm_89 for Ada Lovelace, sm_90 for Hopper, sm_100 for Blackwell)
 - **CUDA Standard**: Match or be compatible with C++ standard used
 
 ### 1.2 Compiler Compatibility
