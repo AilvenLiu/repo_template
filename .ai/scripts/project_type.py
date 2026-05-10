@@ -1,120 +1,66 @@
 #!/usr/bin/env python3
-"""Shared project-type detection for Claude and Codex adapters."""
+"""Legacy project_type API - backward compatibility shim.
+
+This module maintains the old ProjectType enum API for existing callers
+while delegating to the new project_profile module internally.
+
+New code should use project_profile.py directly.
+"""
+
+from __future__ import annotations
 
 from enum import Enum
 from pathlib import Path
 from typing import Optional
 
-_IGNORE_DIRS = frozenset(
-    {
-        ".claude",
-        ".codex",
-        ".ai",
-        ".git",
-        ".github",
-        ".vscode",
-        ".idea",
-        "agent_roadmaps",
-        ".venv",
-        "venv",
-        "__pycache__",
-        "build",
-        "dist",
-        "cmake-build-debug",
-        "cmake-build-release",
-        "node_modules",
-        ".mypy_cache",
-        ".pytest_cache",
-        ".ruff_cache",
-    }
-)
+try:
+    from .project_profile import Language, ProjectProfile, detect as detect_profile
+except ImportError:
+    from project_profile import Language, ProjectProfile, detect as detect_profile
 
 
 class ProjectType(Enum):
+    """Legacy project type enum.
+
+    Maintained for backward compatibility. New code should use ProjectProfile.
+    """
+
     PYTHON = "python"
     CPP = "cpp"
     UNKNOWN = "unknown"
 
 
-def _read_project_yml(repo_root: Path) -> Optional[str]:
-    yml = repo_root / ".ai" / "project.yml"
-    if not yml.exists():
-        return None
+def _profile_to_project_type(profile: ProjectProfile) -> ProjectType:
+    """Map a ProjectProfile to legacy ProjectType.
 
-    try:
-        for line in yml.read_text().splitlines():
-            stripped = line.strip()
-            if stripped.startswith("project_type:"):
-                value = stripped.split(":", 1)[1].strip()
-                if value in ("python", "cpp"):
-                    return value
-    except Exception:
-        return None
+    Args:
+        profile: The detected project profile
 
-    return None
-
-
-def _heuristic(repo_root: Path) -> Optional[str]:
-    python_score = 0
-    cpp_score = 0
-
-    for entry in repo_root.iterdir():
-        if entry.name in _IGNORE_DIRS:
-            continue
-
-        if entry.is_file():
-            name = entry.name
-            if name in (
-                "pyproject.toml",
-                "setup.py",
-                "setup.cfg",
-                "requirements.txt",
-                "poetry.lock",
-                "Pipfile",
-            ):
-                python_score += 3
-            elif name.endswith(".py"):
-                python_score += 1
-            elif name in (
-                "CMakeLists.txt",
-                "conanfile.txt",
-                "conanfile.py",
-                "vcpkg.json",
-                "Makefile",
-            ):
-                cpp_score += 3
-            elif name.endswith((".cpp", ".hpp", ".cu", ".cuh", ".h")):
-                cpp_score += 1
-
-        elif entry.is_dir():
-            try:
-                children = list(entry.iterdir())
-            except PermissionError:
-                continue
-
-            for child in children:
-                if not child.is_file():
-                    continue
-                if child.suffix == ".py":
-                    python_score += 1
-                elif child.suffix in (".cpp", ".hpp", ".cu", ".cuh", ".h"):
-                    cpp_score += 1
-
-    if python_score == 0 and cpp_score == 0:
-        return None
-
-    return "python" if python_score >= cpp_score else "cpp"
+    Returns:
+        Equivalent legacy ProjectType
+    """
+    # Hybrid projects default to Python if it's one of the languages
+    if profile.has_language(Language.PYTHON):
+        return ProjectType.PYTHON
+    elif profile.has_language(Language.CPP):
+        return ProjectType.CPP
+    else:
+        return ProjectType.UNKNOWN
 
 
 def detect(repo_root: Optional[Path] = None) -> ProjectType:
-    root = repo_root or Path.cwd()
+    """Detect project type from configuration or heuristics.
 
-    configured = _read_project_yml(root)
-    if configured:
-        return ProjectType(configured)
+    This is a legacy API maintained for backward compatibility.
+    New code should use project_profile.detect() directly.
 
-    guessed = _heuristic(root)
-    if guessed:
-        return ProjectType(guessed)
+    Args:
+        repo_root: Repository root path (defaults to current directory)
 
-    return ProjectType.UNKNOWN
+    Returns:
+        ProjectType enum value (PYTHON, CPP, or UNKNOWN)
+    """
+    profile = detect_profile(repo_root)
+    if profile is None:
+        return ProjectType.UNKNOWN
+    return _profile_to_project_type(profile)
