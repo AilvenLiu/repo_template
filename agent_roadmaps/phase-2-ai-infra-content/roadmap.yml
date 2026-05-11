@@ -106,7 +106,8 @@ tasks:
       (find_package(CUDAToolkit), find_package(Torch), env-var fallbacks),
       version assertion at configure time, and fail-fast guidance. Mark
       status: draft. Activates on external_dependencies.system_cuda=true.
-    status: active
+    status: completed
+    completed_at: "2026-05-11"
     effort: medium
     key_files:
       - .ai/constraints/hybrid/system-deps.md
@@ -125,7 +126,7 @@ tasks:
       may be stubs that print actionable next-step messages. Update
       .ai/capabilities.yml so the skill is required only when
       build_system=bazel via the axis selector from Phase 1.
-    status: pending
+    status: active
     effort: high
     key_files:
       - .ai/skills/bazel/SKILL.md
@@ -246,7 +247,7 @@ tasks:
       - No drafts have been promoted to stable.
 
 focus:
-  current_task: task-2-5
+  current_task: task-2-6
   notes: >
     Task-2-1 completed (2026-05-10). Created cuda-modern.md constraint covering
     Tensor Cores (WMMA/WGMMA), TMA, cudaGraph, stream-ordered allocation,
@@ -268,5 +269,11 @@ focus:
     manylinux2014 vs manylinux_2_28 comparison, auditwheel workflow with CUDA library
     exclusion, and multi-CUDA wheel matrix (cu118/cu121/cu124) with CI example.
 
-    All four constraints marked as draft, load as advisory. Now starting task-2-5:
-    system-deps constraint for CUDA Toolkit and NVIDIA library discovery.
+    Task-2-5 completed (2026-05-11). Created system-deps.md constraint covering
+    CUDA Toolkit discovery via find_package(CUDAToolkit), PyTorch integration via
+    find_package(Torch), manual discovery for cuDNN/NCCL/TensorRT, environment variable
+    fallbacks (CUDA_HOME, CUDNN_ROOT, NCCL_ROOT, TENSORRT_ROOT), version extraction
+    from headers, and configure-time fail-fast patterns with actionable error messages.
+
+    All five constraints marked as draft, load as advisory. Now starting task-2-6:
+    bazel skill with vendor-neutral body and Claude Code stub.
