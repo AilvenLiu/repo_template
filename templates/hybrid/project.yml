@@ -1,0 +1,11 @@
+# Project configuration -- source of truth for AI agent tooling.
+# This file is read by session initialization to determine project profile.
+
+project_profile:
+  language: [python, cpp, cuda]
+  build_system: scikit-build-core
+  bindings: nanobind
+  distribution: pypi-wheel
+  hardware_targets: [cuda]
+  external_dependencies:
+    system_cuda: true
