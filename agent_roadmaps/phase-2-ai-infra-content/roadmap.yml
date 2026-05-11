@@ -126,7 +126,8 @@ tasks:
       may be stubs that print actionable next-step messages. Update
       .ai/capabilities.yml so the skill is required only when
       build_system=bazel via the axis selector from Phase 1.
-    status: active
+    status: completed
+    completed_at: "2026-05-11"
     effort: high
     key_files:
       - .ai/skills/bazel/SKILL.md
@@ -154,7 +155,7 @@ tasks:
       No bin/agent-gpu-ci wrapper is required in this phase; the skill is
       guidance-only. Capability audit requires it when
       distribution=pypi-wheel OR hardware_targets.cuda_arch is non-empty.
-    status: pending
+    status: active
     effort: medium
     key_files:
       - .ai/skills/gpu-ci/SKILL.md
@@ -247,7 +248,7 @@ tasks:
       - No drafts have been promoted to stable.
 
 focus:
-  current_task: task-2-6
+  current_task: task-2-7
   notes: >
     Task-2-1 completed (2026-05-10). Created cuda-modern.md constraint covering
     Tensor Cores (WMMA/WGMMA), TMA, cudaGraph, stream-ordered allocation,
@@ -275,5 +276,11 @@ focus:
     fallbacks (CUDA_HOME, CUDNN_ROOT, NCCL_ROOT, TENSORRT_ROOT), version extraction
     from headers, and configure-time fail-fast patterns with actionable error messages.
 
-    All five constraints marked as draft, load as advisory. Now starting task-2-6:
-    bazel skill with vendor-neutral body and Claude Code stub.
+    Task-2-6 completed (2026-05-11). Created bazel skill with vendor-neutral body
+    (.ai/skills/bazel/SKILL.md) and Claude Code stub (.claude/skills/bazel/SKILL.md).
+    Added bin/agent-bazel wrapper with build subcommand fully implemented. Test, run,
+    clean, and query subcommands are stubs. Updated capabilities.yml to require bazel
+    only when build_system=bazel.
+
+    All five constraints and bazel skill complete. Now starting task-2-7:
+    gpu-ci skill for CUDA compilation caching and manylinux wheel CI patterns.
