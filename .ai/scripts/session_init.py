@@ -216,6 +216,10 @@ def resolve_constraints(
         if any(_is_doc_path(path) for path in modified_files):
             keys.append("cpp/documentation")
 
+    # Load hybrid constraints when both Python and C++ are present
+    if profile.has_language(Language.PYTHON) and profile.has_language(Language.CPP):
+        keys.append("hybrid/ffi-boundary")
+
     deduped: List[str] = []
     seen = set()
     for key in keys:
