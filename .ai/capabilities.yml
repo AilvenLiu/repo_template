@@ -46,6 +46,11 @@ common_requirements:
       required: true
       when: build_system=bazel
 
+    - id: gpu-ci
+      required: true
+      when: distribution=pypi-wheel
+      notes: Also relevant when hardware_targets.cuda_arch is non-empty
+
     - id: create-project
       required: true
       template_only: true
