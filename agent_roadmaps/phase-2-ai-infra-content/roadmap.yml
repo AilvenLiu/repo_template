@@ -86,7 +86,8 @@ tasks:
       manylinux_2_28, auditwheel, and the multi-CUDA-toolkit wheel matrix
       (cu118, cu121, cu124). Marked status: draft. Activates on
       build_system=scikit-build OR distribution=pypi-wheel.
-    status: active
+    status: completed
+    completed_at: "2026-05-11"
     effort: high
     key_files:
       - .ai/constraints/hybrid/python-cpp-build.md
@@ -105,7 +106,7 @@ tasks:
       (find_package(CUDAToolkit), find_package(Torch), env-var fallbacks),
       version assertion at configure time, and fail-fast guidance. Mark
       status: draft. Activates on external_dependencies.system_cuda=true.
-    status: pending
+    status: active
     effort: medium
     key_files:
       - .ai/constraints/hybrid/system-deps.md
@@ -245,7 +246,7 @@ tasks:
       - No drafts have been promoted to stable.
 
 focus:
-  current_task: task-2-4
+  current_task: task-2-5
   notes: >
     Task-2-1 completed (2026-05-10). Created cuda-modern.md constraint covering
     Tensor Cores (WMMA/WGMMA), TMA, cudaGraph, stream-ordered allocation,
@@ -261,5 +262,11 @@ focus:
     GIL management, DLPack zero-copy protocol, PyCapsule patterns, error propagation,
     async semantics with CUDA streams, memory ownership, and type marshalling.
 
-    All three constraints marked as draft, load as advisory. Now starting task-2-4:
-    python-cpp-build constraint for hybrid project build systems.
+    Task-2-4 completed (2026-05-11). Created python-cpp-build.md constraint covering
+    scikit-build-core/CMake integration, PyTorch CXX11 ABI compatibility
+    (_GLIBCXX_USE_CXX11_ABI flag matching), TORCH_CUDA_ARCH_LIST arch selector,
+    manylinux2014 vs manylinux_2_28 comparison, auditwheel workflow with CUDA library
+    exclusion, and multi-CUDA wheel matrix (cu118/cu121/cu124) with CI example.
+
+    All four constraints marked as draft, load as advisory. Now starting task-2-5:
+    system-deps constraint for CUDA Toolkit and NVIDIA library discovery.
