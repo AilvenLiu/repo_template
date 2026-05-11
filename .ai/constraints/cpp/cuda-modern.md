@@ -1,9 +1,20 @@
+---
+id: cpp/cuda-modern
+name: Modern CUDA Programming Standards
+description: Modern CUDA patterns for Tensor Cores, TMA, cudaGraph, and CUTLASS/CuTe
+category: cpp
+status: draft
+applies_to:
+  - "*.cu"
+  - "*.cuh"
+severity: advisory
+---
+
 # Modern CUDA Programming Standards
 
-> **Status**: DRAFT  
-> **This constraint is advisory and under validation. It will not fail pre-commit checks.**
->
-> This document defines modern CUDA programming standards for high-performance AI infrastructure projects targeting Ampere (SM_80+), Ada Lovelace (SM_89), and Hopper (SM_90+) architectures. These guidelines cover Tensor Cores, asynchronous memory operations, CUTLASS/CuTe abstractions, and mixed-precision computation patterns.
+**Status**: DRAFT (advisory only, does not block commits)
+
+This document defines modern CUDA programming standards for high-performance AI infrastructure projects targeting Ampere (SM_80+), Ada Lovelace (SM_89), and Hopper (SM_90+) architectures. These guidelines cover Tensor Cores, asynchronous memory operations, CUTLASS/CuTe abstractions, and mixed-precision computation patterns.
 
 ## 1. Tensor Core Programming
 
