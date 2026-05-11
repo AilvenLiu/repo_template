@@ -155,7 +155,8 @@ tasks:
       No bin/agent-gpu-ci wrapper is required in this phase; the skill is
       guidance-only. Capability audit requires it when
       distribution=pypi-wheel OR hardware_targets.cuda_arch is non-empty.
-    status: active
+    status: completed
+    completed_at: "2026-05-11"
     effort: medium
     key_files:
       - .ai/skills/gpu-ci/SKILL.md
@@ -179,7 +180,7 @@ tasks:
       The CLAUDE.md and AGENTS.md mirror the structure of the existing
       Python and C++ overlays. CONTRIBUTING.md cites the new hybrid
       constraints under .ai/constraints/hybrid/.
-    status: pending
+    status: active
     effort: high
     key_files:
       - templates/hybrid/CLAUDE.md
@@ -248,7 +249,7 @@ tasks:
       - No drafts have been promoted to stable.
 
 focus:
-  current_task: task-2-7
+  current_task: task-2-8
   notes: >
     Task-2-1 completed (2026-05-10). Created cuda-modern.md constraint covering
     Tensor Cores (WMMA/WGMMA), TMA, cudaGraph, stream-ordered allocation,
@@ -282,5 +283,11 @@ focus:
     clean, and query subcommands are stubs. Updated capabilities.yml to require bazel
     only when build_system=bazel.
 
-    All five constraints and bazel skill complete. Now starting task-2-7:
-    gpu-ci skill for CUDA compilation caching and manylinux wheel CI patterns.
+    Task-2-7 completed (2026-05-11). Created gpu-ci skill with vendor-neutral body
+    (.ai/skills/gpu-ci/SKILL.md) and Claude Code stub (.claude/skills/gpu-ci/SKILL.md).
+    Guidance-only skill documenting sccache for CUDA caching, auditwheel for manylinux
+    wheels with CUDA library exclusion, multi-arch wheel matrix (cu118/cu121/cu124),
+    H100/A100/L40 GPU gating patterns, and Docker images for GPU CI.
+
+    All five constraints, bazel skill, and gpu-ci skill complete. Now starting task-2-8:
+    hybrid template overlay with CLAUDE.md, AGENTS.md, CONTRIBUTING.md, .gitignore, and project.yml.
