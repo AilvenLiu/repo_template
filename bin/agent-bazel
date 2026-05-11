@@ -1,0 +1,125 @@
+#!/bin/bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+source "$SCRIPT_DIR/_agent_common.sh"
+
+usage() {
+  cat <<'EOF'
+Usage: bin/agent-bazel <build|test|run|clean|query>
+
+Subcommands:
+  build   Build targets with Bazel (fully implemented)
+  test    Run Bazel test suite (Phase 3 stub)
+  run     Execute Bazel targets (Phase 3 stub)
+  clean   Clean Bazel build artefacts (Phase 3 stub)
+  query   Query Bazel build graph (Phase 3 stub)
+
+Examples:
+  bin/agent-bazel build
+  bin/agent-bazel build //src/kernels:flash_attention
+  bin/agent-bazel build --config=cuda //...
+EOF
+}
+
+check_bazel_workspace() {
+  if [[ ! -f "$REPO_ROOT/WORKSPACE" ]] && [[ ! -f "$REPO_ROOT/MODULE.bazel" ]]; then
+    echo "Error: No WORKSPACE or MODULE.bazel file found in $REPO_ROOT" >&2
+    echo "This does not appear to be a Bazel workspace." >&2
+    exit 1
+  fi
+}
+
+check_bazel_installed() {
+  if ! command -v bazel &> /dev/null; then
+    echo "Error: bazel command not found" >&2
+    echo "" >&2
+    echo "Install Bazel:" >&2
+    echo "  - Bazelisk (recommended): https://github.com/bazelbuild/bazelisk" >&2
+    echo "  - Bazel: https://bazel.build/install" >&2
+    exit 1
+  fi
+}
+
+bazel_build() {
+  check_bazel_workspace
+  check_bazel_installed
+
+  # Set CUDA environment variables if available
+  if [[ -n "${CUDA_HOME:-}" ]]; then
+    export CUDA_HOME
+    echo "Using CUDA_HOME=$CUDA_HOME"
+  fi
+
+  if [[ -n "${CUDNN_ROOT:-}" ]]; then
+    export CUDNN_ROOT
+    echo "Using CUDNN_ROOT=$CUDNN_ROOT"
+  fi
+
+  if [[ -n "${NCCL_ROOT:-}" ]]; then
+    export NCCL_ROOT
+    echo "Using NCCL_ROOT=$NCCL_ROOT"
+  fi
+
+  # Build with all arguments passed through
+  echo "Running: bazel build $*"
+  (cd "$REPO_ROOT" && bazel build "$@")
+}
+
+stub_subcommand() {
+  local subcommand="$1"
+  cat <<EOF
+Error: bin/agent-bazel $subcommand is not yet implemented.
+
+This subcommand is stubbed in Phase 2 and will be fully implemented in Phase 3.
+
+For now, you can invoke Bazel directly:
+  cd $REPO_ROOT
+  bazel $subcommand [args...]
+
+See .ai/skills/bazel/SKILL.md for the planned behaviour.
+EOF
+  exit 1
+}
+
+main() {
+  if [[ $# -eq 0 ]]; then
+    usage
+    exit 1
+  fi
+
+  local subcommand="$1"
+  shift
+
+  case "$subcommand" in
+    build)
+      bazel_build "$@"
+      ;;
+    test)
+      stub_subcommand "test"
+      ;;
+    run)
+      stub_subcommand "run"
+      ;;
+    clean)
+      stub_subcommand "clean"
+      ;;
+    query)
+      stub_subcommand "query"
+      ;;
+    -h|--help|help)
+      usage
+      exit 0
+      ;;
+    *)
+      echo "Error: Unknown subcommand: $subcommand" >&2
+      echo "" >&2
+      usage
+      exit 1
+      ;;
+  esac
+}
+
+main "$@"

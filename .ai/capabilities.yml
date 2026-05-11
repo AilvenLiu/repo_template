@@ -42,6 +42,10 @@ common_requirements:
     - id: build
       required: true
 
+    - id: bazel
+      required: true
+      when: build_system=bazel
+
     - id: create-project
       required: true
       template_only: true
@@ -88,6 +92,12 @@ common_requirements:
       path: bin/agent-roadmap
       required: true
       executable: true
+
+    - id: agent-bazel
+      path: bin/agent-bazel
+      required: true
+      executable: true
+      when: build_system=bazel
 
 platform_requirements:
   claude:
