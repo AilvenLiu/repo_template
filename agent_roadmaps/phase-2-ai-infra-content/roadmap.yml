@@ -180,7 +180,8 @@ tasks:
       The CLAUDE.md and AGENTS.md mirror the structure of the existing
       Python and C++ overlays. CONTRIBUTING.md cites the new hybrid
       constraints under .ai/constraints/hybrid/.
-    status: active
+    status: completed
+    completed_at: "2026-05-11"
     effort: high
     key_files:
       - templates/hybrid/CLAUDE.md
@@ -207,7 +208,8 @@ tasks:
       project_profile reflects the user's chosen axes. Existing
       python-only and cpp-only generation paths MUST keep working
       identically.
-    status: pending
+    status: completed
+    completed_at: "2026-05-12"
     effort: medium
     key_files:
       - .claude/skills/create-project/
@@ -249,45 +251,22 @@ tasks:
       - No drafts have been promoted to stable.
 
 focus:
-  current_task: task-2-8
+  current_task: null
   notes: >
-    Task-2-1 completed (2026-05-10). Created cuda-modern.md constraint covering
-    Tensor Cores (WMMA/WGMMA), TMA, cudaGraph, stream-ordered allocation,
-    CUTLASS/CuTe idioms, mixed precision (FP8/BF16/FP16/TF32), and SM dispatch.
+    Task-2-1 through task-2-8 completed (2026-05-10 to 2026-05-11). All five constraints
+    (cuda-modern, kernel-correctness, ffi-boundary, python-cpp-build, system-deps), two
+    skills (bazel, gpu-ci), and hybrid template overlay delivered as draft.
 
-    Task-2-2 completed (2026-05-11). Created kernel-correctness.md constraint covering
-    reference-correctness testing against PyTorch eager mode, numerical tolerance bands
-    by dtype (FP32: 1e-5, FP16: 1e-3, BF16: 1e-2, FP8: 5e-2), performance regression
-    gates (5% warning, 10% failure), SM coverage matrix (SM_80-SM_100), and shape-bucket testing.
+    Task-2-9 completed (2026-05-12). Updated create-project skill to support hybrid
+    project generation. Added option 3 (Hybrid) to project type prompt. Hybrid projects
+    get pyproject.toml with scikit-build-core, CMakeLists.txt with CUDA support, and
+    templates/hybrid/ overlay with correct project_profile. Backward compatibility
+    verified: python-only and cpp-only generation produce identical trees to pre-Phase-2.
+    All three generation paths tested and working.
 
-    Task-2-3 completed (2026-05-11). Created .ai/constraints/hybrid/ directory and
-    ffi-boundary.md constraint covering binding library selection (pybind11/nanobind/ctypes/cffi),
-    GIL management, DLPack zero-copy protocol, PyCapsule patterns, error propagation,
-    async semantics with CUDA streams, memory ownership, and type marshalling.
+    Critical fix (2026-05-12): Corrected kernel-correctness.md frontmatter to match
+    established constraint schema (added name, description, category, severity fields;
+    fixed applies_to to use file patterns).
 
-    Task-2-4 completed (2026-05-11). Created python-cpp-build.md constraint covering
-    scikit-build-core/CMake integration, PyTorch CXX11 ABI compatibility
-    (_GLIBCXX_USE_CXX11_ABI flag matching), TORCH_CUDA_ARCH_LIST arch selector,
-    manylinux2014 vs manylinux_2_28 comparison, auditwheel workflow with CUDA library
-    exclusion, and multi-CUDA wheel matrix (cu118/cu121/cu124) with CI example.
-
-    Task-2-5 completed (2026-05-11). Created system-deps.md constraint covering
-    CUDA Toolkit discovery via find_package(CUDAToolkit), PyTorch integration via
-    find_package(Torch), manual discovery for cuDNN/NCCL/TensorRT, environment variable
-    fallbacks (CUDA_HOME, CUDNN_ROOT, NCCL_ROOT, TENSORRT_ROOT), version extraction
-    from headers, and configure-time fail-fast patterns with actionable error messages.
-
-    Task-2-6 completed (2026-05-11). Created bazel skill with vendor-neutral body
-    (.ai/skills/bazel/SKILL.md) and Claude Code stub (.claude/skills/bazel/SKILL.md).
-    Added bin/agent-bazel wrapper with build subcommand fully implemented. Test, run,
-    clean, and query subcommands are stubs. Updated capabilities.yml to require bazel
-    only when build_system=bazel.
-
-    Task-2-7 completed (2026-05-11). Created gpu-ci skill with vendor-neutral body
-    (.ai/skills/gpu-ci/SKILL.md) and Claude Code stub (.claude/skills/gpu-ci/SKILL.md).
-    Guidance-only skill documenting sccache for CUDA caching, auditwheel for manylinux
-    wheels with CUDA library exclusion, multi-arch wheel matrix (cu118/cu121/cu124),
-    H100/A100/L40 GPU gating patterns, and Docker images for GPU CI.
-
-    All five constraints, bazel skill, and gpu-ci skill complete. Now starting task-2-8:
-    hybrid template overlay with CLAUDE.md, AGENTS.md, CONTRIBUTING.md, .gitignore, and project.yml.
+    Phase 2 content complete. All tasks 2-1 through 2-9 delivered. Ready for task-2-10
+    (validation on real consuming project) when user nominates the target project.
