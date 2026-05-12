@@ -1,6 +1,6 @@
 ---
 name: create-project
-description: "Create a new project from the repo_template. Template-only skill."
+description: "Create a new project from the repo_template. Supports Python, C++/CUDA, and Hybrid projects. Template-only skill."
 ---
 
 # /create-project
@@ -16,12 +16,17 @@ an initial git commit.
 /create-project /path/to/new/project
 ```
 
+The script will prompt for project type:
+1. Python (Poetry-based)
+2. C++/CUDA (CMake-based)
+3. Hybrid (Python/C++/CUDA with scikit-build-core)
+
 ## What it produces
 
 ```
 project/
   .ai/
-    project.yml          # source of truth for project type
+    project.yml          # source of truth for project profile
     constraints/         # vendor-neutral constraint files
     tools/               # shared runtime enforcement tools
   .claude/               # Claude Code skills and hooks
@@ -33,5 +38,5 @@ project/
   CONTRIBUTING.md
   .gitignore
   README.md
-  src/  tests/           # (+ include/ for C++)
+  src/  tests/           # (+ include/ for C++/Hybrid)
 ```

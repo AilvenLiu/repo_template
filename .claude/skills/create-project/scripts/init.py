@@ -17,15 +17,18 @@ def prompt_project_type() -> str:
     print("Select project type:")
     print("1. Python")
     print("2. C++/CUDA")
+    print("3. Hybrid (Python/C++/CUDA)")
     print()
     while True:
-        choice = input("Enter choice (1 or 2): ").strip()
+        choice = input("Enter choice (1, 2, or 3): ").strip()
         if choice == "1":
             return "python"
         elif choice == "2":
             return "cpp"
+        elif choice == "3":
+            return "hybrid"
         else:
-            print("Invalid choice. Please enter 1 or 2.")
+            print("Invalid choice. Please enter 1, 2, or 3.")
 
 
 # Files to copy from templates/<language>/<src> to <target>/<dst>.
@@ -41,6 +44,13 @@ _FILE_MAP = {
         ("poetry.toml", "poetry.toml"),
     ],
     "cpp": [
+        ("AGENTS.md", "AGENTS.md"),
+        ("CLAUDE.md", "CLAUDE.md"),
+        ("CONTRIBUTING.md", "CONTRIBUTING.md"),
+        (".gitignore", ".gitignore"),
+        ("project.yml", ".ai/project.yml"),
+    ],
+    "hybrid": [
         ("AGENTS.md", "AGENTS.md"),
         ("CLAUDE.md", "CLAUDE.md"),
         ("CONTRIBUTING.md", "CONTRIBUTING.md"),
@@ -101,7 +111,7 @@ def create_project(template_root: Path, target_dir: Path, project_type: str) -> 
     if project_type == "python":
         (target_dir / "src").mkdir(exist_ok=True)
         (target_dir / "tests").mkdir(exist_ok=True)
-    else:
+    elif project_type == "cpp":
         (target_dir / "src").mkdir(exist_ok=True)
         (target_dir / "include").mkdir(exist_ok=True)
         (target_dir / "tests").mkdir(exist_ok=True)
@@ -122,6 +132,43 @@ def create_project(template_root: Path, target_dir: Path, project_type: str) -> 
                 "[generators]\n"
                 "CMakeDeps\n"
                 "CMakeToolchain\n"
+            )
+    elif project_type == "hybrid":
+        (target_dir / "src").mkdir(exist_ok=True)
+        (target_dir / "include").mkdir(exist_ok=True)
+        (target_dir / "tests").mkdir(exist_ok=True)
+
+        # Create pyproject.toml for scikit-build-core
+        pyproject = target_dir / "pyproject.toml"
+        if not pyproject.exists():
+            pyproject.write_text(
+                '[build-system]\n'
+                'requires = ["scikit-build-core>=0.8.0", "nanobind>=1.0.0"]\n'
+                'build-backend = "scikit_build_core.build"\n\n'
+                '[project]\n'
+                'name = "myproject"\n'
+                'version = "0.1.0"\n'
+                'requires-python = ">=3.8"\n'
+                'dependencies = ["torch>=2.0.0", "numpy>=1.20.0"]\n\n'
+                '[tool.scikit-build]\n'
+                'cmake.build-type = "Release"\n'
+                'cmake.verbose = true\n'
+                'wheel.packages = ["myproject"]\n'
+            )
+
+        # Create CMakeLists.txt for hybrid build
+        cmake = target_dir / "CMakeLists.txt"
+        if not cmake.exists():
+            cmake.write_text(
+                'cmake_minimum_required(VERSION 3.18)\n'
+                'project(myproject LANGUAGES CXX CUDA)\n\n'
+                'set(CMAKE_CXX_STANDARD 17)\n'
+                'set(CMAKE_CXX_STANDARD_REQUIRED ON)\n'
+                'set(CMAKE_CXX_EXTENSIONS OFF)\n\n'
+                '# Find dependencies\n'
+                'find_package(Python3 REQUIRED COMPONENTS Interpreter Development.Module)\n'
+                'find_package(CUDAToolkit REQUIRED)\n\n'
+                '# Add your extension module here\n'
             )
     step += 1
 
@@ -153,6 +200,8 @@ def create_project(template_root: Path, target_dir: Path, project_type: str) -> 
         python_env_wrapper = target_dir / "bin" / "agent-python-env-setup"
         if python_env_wrapper.exists():
             python_env_wrapper.unlink()
+
+    # For hybrid projects, keep all skills (both Python and C++ are needed)
 
     # 7. Git init + initial commit
     print(f"[{step}] Initializing git repository...")
