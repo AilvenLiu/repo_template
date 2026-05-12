@@ -125,6 +125,10 @@ tasks:
 focus:
   current_task: null
   notes: >
-    Phase is pending and intentionally may stay dormant indefinitely.
+    Phase remains pending and intentionally may stay dormant indefinitely.
+    On 2026-05-12, Phase 2 completion status was reconciled and the
+    phase branch roadmap/phase-3-advanced-optional was created from master.
+    No Phase 3 task was activated because no consuming project and defined
+    validation time window have yet been named in a session handoff.
     Activation requires user approval naming a real consuming project per
     task. See INVARIANTS.md section 3.

@@ -24,11 +24,14 @@ At most one phase may be active at any time.
 | Phase | Folder | Status | Depends On |
 |-------|--------|--------|------------|
 | 0 | `phase-0-cleanup` | completed | none |
-| 1 | `phase-1-profile-architecture` | active | `phase-0-cleanup` |
-| 2 | `phase-2-ai-infra-content` | pending | `phase-1-profile-architecture` |
+| 1 | `phase-1-profile-architecture` | completed | `phase-0-cleanup` |
+| 2 | `phase-2-ai-infra-content` | completed | `phase-1-profile-architecture` |
 | 3 | `phase-3-advanced-optional` | pending | `phase-2-ai-infra-content` |
 
-**Active phase**: `phase-1-profile-architecture`
+**Active phase**: none
+
+Phase 3 is intentionally dormant until a user names a real consuming project
+and a defined time window for at least one Phase 3 task.
 
 ## 3. Dependency Graph
 
