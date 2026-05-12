@@ -2,10 +2,9 @@
 # This file is read by session initialization to determine project profile.
 
 project_profile:
-  language: [python, cpp, cuda]
+  language: [python, cpp]
   build_system: scikit-build-core
   bindings: nanobind
   distribution: pypi-wheel
   hardware_targets: [cuda]
-  external_dependencies:
-    system_cuda: true
+  external_dependencies: system_cuda

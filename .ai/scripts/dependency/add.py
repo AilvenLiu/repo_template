@@ -380,6 +380,102 @@ def add_cpp_dependency_cmake(
             print(f"  - {package}")
 
 
+def add_dependency_scikit_build(manager: DependencyManager, package: str, version: str | None, dev: bool) -> None:
+    """Add dependency to scikit-build-core project.
+
+    scikit-build-core projects use pyproject.toml for Python dependencies.
+    Dependencies are added directly to the [project.dependencies] or
+    [project.optional-dependencies.dev] sections.
+    """
+    print(f"Adding Python dependency to scikit-build-core project: {package}")
+    print("-" * 50)
+
+    pyproject_path = manager.repo_root / "pyproject.toml"
+    if not pyproject_path.exists():
+        print("[ERROR] No pyproject.toml found")
+        print()
+        print("scikit-build-core projects require pyproject.toml")
+        sys.exit(1)
+
+    # Construct dependency string
+    if version:
+        dep_string = f'"{package}>={version}"'
+    else:
+        dep_string = f'"{package}"'
+
+    # Read the file
+    with open(pyproject_path, "r") as f:
+        lines = f.readlines()
+
+    # Find the appropriate section and add dependency
+    modified = False
+    in_dependencies = False
+    in_optional_dev = False
+    dependencies_line = -1
+    optional_dev_line = -1
+
+    for i, line in enumerate(lines):
+        if line.strip() == "dependencies = [":
+            in_dependencies = True
+            dependencies_line = i
+        elif line.strip() == "[project.optional-dependencies]":
+            in_optional_dev = False
+        elif line.strip() == "dev = [":
+            in_optional_dev = True
+            optional_dev_line = i
+        elif line.strip().startswith("[") and (in_dependencies or in_optional_dev):
+            in_dependencies = False
+            in_optional_dev = False
+
+    if not dev and dependencies_line >= 0:
+        # Add to dependencies
+        # Find the closing bracket
+        for i in range(dependencies_line + 1, len(lines)):
+            if "]" in lines[i]:
+                # Insert before the closing bracket
+                indent = "    "
+                lines.insert(i, f'{indent}{dep_string},\n')
+                modified = True
+                print(f"[OK] Added {package} to [project.dependencies]")
+                break
+    elif dev and optional_dev_line >= 0:
+        # Add to optional-dependencies.dev
+        for i in range(optional_dev_line + 1, len(lines)):
+            if "]" in lines[i]:
+                indent = "    "
+                lines.insert(i, f'{indent}{dep_string},\n')
+                modified = True
+                print(f"[OK] Added {package} to [project.optional-dependencies.dev]")
+                break
+    else:
+        print(f"[ERROR] Could not find appropriate section in pyproject.toml")
+        print()
+        print("Please add manually:")
+        if dev:
+            print(f'  [project.optional-dependencies]')
+            print(f'  dev = ["{package}"]')
+        else:
+            print(f'  dependencies = ["{package}"]')
+        sys.exit(1)
+
+    if modified:
+        # Write back
+        with open(pyproject_path, "w") as f:
+            f.writelines(lines)
+
+        print()
+        print("Updated pyproject.toml")
+        print()
+        print("IMPORTANT: Commit the file:")
+        print("  git add pyproject.toml")
+        print()
+        print("To install the dependency:")
+        print("  pip install -e .")
+    else:
+        print(f"[INFO] {package} may already be present or section not found")
+        sys.exit(1)
+
+
 def add_dependency_scikit_build_stub(package: str) -> None:
     """Stub for scikit-build dependency management (not yet implemented)."""
     print(f"[ERROR] scikit-build dependency management not yet implemented")
@@ -508,8 +604,10 @@ def main():
             print("[WARNING] --dev flag ignored for C++/CUDA projects")
         add_cpp_dependency_cmake(manager, package, version)
 
-    elif build_system == BuildSystem.SCIKIT_BUILD:
-        add_dependency_scikit_build_stub(package)
+    elif build_system in (BuildSystem.SCIKIT_BUILD, BuildSystem.SCIKIT_BUILD_CORE):
+        if dev:
+            print("[INFO] Adding to dev dependencies")
+        add_dependency_scikit_build(manager, package, version, dev)
 
     elif build_system == BuildSystem.BAZEL:
         add_dependency_bazel_stub(package)

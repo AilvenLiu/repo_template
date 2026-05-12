@@ -58,6 +58,7 @@ class BuildSystem(Enum):
     POETRY = "poetry"
     CMAKE = "cmake"
     SCIKIT_BUILD = "scikit-build"
+    SCIKIT_BUILD_CORE = "scikit-build-core"  # Alias for scikit-build
     BAZEL = "bazel"
     MIXED = "mixed"
 

@@ -42,7 +42,7 @@ class DependencyManager:
             return ProjectType.PYTHON
         elif profile.build_system in (BuildSystem.CMAKE, BuildSystem.BAZEL):
             return ProjectType.CPP
-        elif profile.build_system == BuildSystem.SCIKIT_BUILD:
+        elif profile.build_system in (BuildSystem.SCIKIT_BUILD, BuildSystem.SCIKIT_BUILD_CORE):
             return ProjectType.PYTHON  # Hybrid, but Python-primary
         else:
             return ProjectType.UNKNOWN
