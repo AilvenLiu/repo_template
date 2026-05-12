@@ -1,9 +1,13 @@
 ---
 id: cpp/kernel-correctness
+name: Kernel Correctness Testing Standards
+description: Testing standards for CUDA kernel implementations
+category: cpp
 status: draft
 applies_to:
-  - language: cuda
-activation_rule: "Activates when .cu or .cuh files are present"
+  - "*.cu"
+  - "*.cuh"
+severity: advisory
 ---
 
 # Kernel Correctness Testing Constraint
