@@ -233,7 +233,8 @@ tasks:
       the session handoff. Any drift discovered MUST be fixed before this
       task can be marked completed. No draft is promoted to stable here;
       promotion is a separate user-approved follow-up.
-    status: pending
+    status: completed
+    completed_at: "2026-05-12"
     effort: high
     key_files:
       - agent_roadmaps/phase-2-ai-infra-content/sessions/
@@ -253,20 +254,20 @@ tasks:
 focus:
   current_task: null
   notes: >
-    Task-2-1 through task-2-8 completed (2026-05-10 to 2026-05-11). All five constraints
-    (cuda-modern, kernel-correctness, ffi-boundary, python-cpp-build, system-deps), two
-    skills (bazel, gpu-ci), and hybrid template overlay delivered as draft.
+    Phase 2 COMPLETE (2026-05-12). All tasks 2-1 through 2-10 delivered.
 
-    Task-2-9 completed (2026-05-12). Updated create-project skill to support hybrid
-    project generation. Added option 3 (Hybrid) to project type prompt. Hybrid projects
-    get pyproject.toml with scikit-build-core, CMakeLists.txt with CUDA support, and
-    templates/hybrid/ overlay with correct project_profile. Backward compatibility
-    verified: python-only and cpp-only generation produce identical trees to pre-Phase-2.
-    All three generation paths tested and working.
+    Task-2-10 validation completed against Apache TVM fork (git@github.com:AilvenLiu/tvm.git).
+    Discovered and fixed 4 critical drift issues:
+    1. bin/agent-build - Implemented scikit-build-core support (setup/compile/test/doctor/clean)
+    2. .ai/scripts/dependency/add.py - Implemented scikit-build-core dependency management
+    3. .ai/scripts/project_profile.py - Added SCIKIT_BUILD_CORE enum value
+    4. templates/hybrid/project.yml - Fixed language array (removed 'cuda') and external_dependencies format
 
-    Critical fix (2026-05-12): Corrected kernel-correctness.md frontmatter to match
-    established constraint schema (added name, description, category, severity fields;
-    fixed applies_to to use file patterns).
+    Validation results: bin/agent-init (PASS), bin/agent-build doctor (PASS),
+    bin/agent-dependency add (PASS). All drift fixes committed in bfb3a0c and tested.
+
+    All Phase 2 content delivered as draft status. No drafts promoted to stable.
+    See sessions/session-2026-05-12-validation.md for complete validation report.
 
     Phase 2 content complete. All tasks 2-1 through 2-9 delivered. Ready for task-2-10
     (validation on real consuming project) when user nominates the target project.
