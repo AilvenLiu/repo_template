@@ -15,10 +15,10 @@ bin/agent-bazel <build|test|run|clean|query>
 ## Subcommands
 
 - `build` -- build targets with Bazel
-- `test` -- run Bazel test suite (Phase 3)
-- `run` -- execute Bazel targets (Phase 3)
-- `clean` -- clean Bazel build artefacts (Phase 3)
-- `query` -- query Bazel build graph (Phase 3)
+- `test` -- run Bazel test suite
+- `run` -- execute Bazel targets
+- `clean` -- clean Bazel build artefacts
+- `query` -- query Bazel build graph
 
 ## Behaviour (guaranteed)
 
@@ -95,45 +95,37 @@ When building CUDA targets, the wrapper:
 - Provides actionable error messages for missing dependencies
 - Suggests `--config` flags when CUDA targets fail
 
-## Test Subcommand (Phase 3)
-
-The `test` subcommand is stubbed in Phase 2, fully implemented in Phase 3:
+## Test Subcommand
 
 ```bash
 bin/agent-bazel test [--config=<config>] [targets...]
 ```
 
-Stub behaviour: prints "not yet implemented; see Phase 3" and exits non-zero.
+Default behaviour: runs `bazel test //...` when no targets are specified.
 
-## Run Subcommand (Phase 3)
-
-The `run` subcommand is stubbed in Phase 2, fully implemented in Phase 3:
+## Run Subcommand
 
 ```bash
 bin/agent-bazel run [--config=<config>] <target> [-- <args>...]
 ```
 
-Stub behaviour: prints "not yet implemented; see Phase 3" and exits non-zero.
+Default behaviour: requires an explicit runnable target and forwards all args.
 
-## Clean Subcommand (Phase 3)
-
-The `clean` subcommand is stubbed in Phase 2, fully implemented in Phase 3:
+## Clean Subcommand
 
 ```bash
 bin/agent-bazel clean [--expunge]
 ```
 
-Stub behaviour: prints "not yet implemented; see Phase 3" and exits non-zero.
+Default behaviour: forwards directly to `bazel clean`.
 
-## Query Subcommand (Phase 3)
-
-The `query` subcommand is stubbed in Phase 2, fully implemented in Phase 3:
+## Query Subcommand
 
 ```bash
 bin/agent-bazel query <query-expression>
 ```
 
-Stub behaviour: prints "not yet implemented; see Phase 3" and exits non-zero.
+Default behaviour: requires an explicit query expression and forwards it.
 
 ## Integration with Constraints
 

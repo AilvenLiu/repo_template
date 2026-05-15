@@ -32,29 +32,14 @@ def validate_python(manager: PreCommitManager) -> list[ValidationResult]:
     """Run Python validation checks."""
     results: list[ValidationResult] = []
 
-    # CRITICAL: Check for managed Python environment (Poetry or local venv)
-    venv_paths = [".venv", "venv", ".virtualenv"]
-    venv_exists = any((manager.repo_root / venv).exists() for venv in venv_paths)
-    poetry_lock = manager.repo_root / "poetry.lock"
-    pyproject = manager.repo_root / "pyproject.toml"
-    poetry_managed = pyproject.exists() and poetry_lock.exists()
-
-    if poetry_managed:
+    profile = manager.detect_project_profile()
+    env_ok, env_message = manager.python_environment_status(profile)
+    if env_ok:
         results.append(
             ValidationResult(
                 "python environment",
                 True,
-                "Poetry-managed environment detected (pyproject.toml + poetry.lock)",
-                "",
-            )
-        )
-    elif venv_exists:
-        venv_name = next(venv for venv in venv_paths if (manager.repo_root / venv).exists())
-        results.append(
-            ValidationResult(
-                "python environment",
-                True,
-                f"Found virtual environment: {venv_name}",
+                env_message,
                 "",
             )
         )
@@ -64,20 +49,17 @@ def validate_python(manager: PreCommitManager) -> list[ValidationResult]:
                 "python environment",
                 False,
                 "",
-                "No Poetry lockfile or local virtual environment found.\n"
-                "Use Poetry (`poetry install`) or create `.venv` before validating.",
+                env_message,
             )
         )
 
-    # Check for dependency manifest
-    requirements_file = manager.repo_root / "requirements.txt"
-    if poetry_managed or requirements_file.exists():
-        detail = "Poetry lockfile exists" if poetry_managed else "requirements.txt exists"
+    manifest_ok, manifest_message = manager.python_dependency_manifest_status(profile)
+    if manifest_ok:
         results.append(
             ValidationResult(
                 "dependency manifest",
                 True,
-                detail,
+                manifest_message,
                 "",
             )
         )
@@ -87,8 +69,7 @@ def validate_python(manager: PreCommitManager) -> list[ValidationResult]:
                 "dependency manifest",
                 False,
                 "",
-                "No dependency manifest found. Use Poetry (`poetry add` + `poetry lock`) "
-                "or provide requirements.txt.",
+                manifest_message,
             )
         )
 
@@ -395,11 +376,13 @@ def main() -> None:
     manager = PreCommitManager(repo_root)
 
     # Detect project type
+    profile = manager.detect_project_profile()
     project_type = manager.detect_project_type()
+    project_label = manager.describe_project_type()
 
     _emit("Pre-Commit Validation")
     _emit("=" * 50)
-    _emit(f"Project Type: {project_type.value}")
+    _emit(f"Project Type: {project_label}")
     _emit()
 
     # Run constraint validation first
@@ -426,7 +409,10 @@ def main() -> None:
 
     # Run appropriate validations
     results: list[ValidationResult] = []
-    if project_type == ProjectType.PYTHON:
+    if profile.is_hybrid():
+        results = validate_python(manager)
+        results.extend(validate_cpp(manager))
+    elif project_type == ProjectType.PYTHON:
         results = validate_python(manager)
     elif project_type == ProjectType.CPP:
         results = validate_cpp(manager)

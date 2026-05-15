@@ -71,16 +71,21 @@ def main():
     repo_root = Path.cwd()
     manager = PreCommitManager(repo_root)
 
-    # Detect project type
+    profile = manager.detect_project_profile()
     project_type = manager.detect_project_type()
+    project_label = manager.describe_project_type()
 
     print("Pre-Commit Auto-Fix")
     print("=" * 50)
-    print(f"Project Type: {project_type.value}")
+    print(f"Project Type: {project_label}")
     print()
 
     # Run appropriate fixes
-    if project_type == ProjectType.PYTHON:
+    if profile.is_hybrid():
+        fix_python_formatting(manager)
+        print()
+        fix_cpp_formatting(manager)
+    elif project_type == ProjectType.PYTHON:
         fix_python_formatting(manager)
     elif project_type == ProjectType.CPP:
         fix_cpp_formatting(manager)

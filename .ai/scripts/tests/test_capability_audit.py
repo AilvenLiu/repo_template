@@ -125,6 +125,23 @@ class TestWhenSelectorEvaluation:
         assert _evaluate_when_selector("hardware_targets in [cuda, rocm]", profile) is True
         assert _evaluate_when_selector("hardware_targets in [rocm, webgpu]", profile) is False
 
+    def test_or_selector(self):
+        profile = ProjectProfile(
+            language=[Language.PYTHON, Language.CPP],
+            build_system=BuildSystem.SCIKIT_BUILD_CORE,
+            distribution=Distribution.PYPI_WHEEL,
+            hardware_targets=[HardwareTarget.CUDA],
+        )
+        assert _evaluate_when_selector("distribution=pypi-wheel OR hardware_targets=cuda", profile) is True
+
+    def test_and_selector(self):
+        profile = ProjectProfile(
+            language=[Language.PYTHON],
+            build_system=BuildSystem.POETRY,
+        )
+        assert _evaluate_when_selector("language=python AND build_system=poetry", profile) is True
+        assert _evaluate_when_selector("language=python AND build_system=cmake", profile) is False
+
     def test_empty_selector_returns_true(self):
         profile = ProjectProfile(
             language=[Language.PYTHON],

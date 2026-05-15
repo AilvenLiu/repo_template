@@ -68,7 +68,7 @@ New skills:
   `.claude/skills/bazel/SKILL.md`. Required when `build_system=bazel`.
 - `gpu-ci`: `sccache` for CUDA, `auditwheel` flow, multi-arch wheel build,
   H100/A100/L40 gating patterns. Required when
-  `distribution=pypi-wheel` or `hardware_targets.cuda_arch` is non-empty.
+  `distribution=pypi-wheel` or `hardware_targets=cuda`.
 
 New template overlay:
 - `templates/hybrid/` containing `CLAUDE.md`, `AGENTS.md`, `CONTRIBUTING.md`,

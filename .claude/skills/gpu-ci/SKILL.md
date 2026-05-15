@@ -1,6 +1,6 @@
 ---
 name: gpu-ci
-description: "GPU CI patterns for CUDA compilation caching, manylinux wheels, and multi-arch builds. Use when distribution=pypi-wheel or hardware_targets.cuda_arch is non-empty."
+description: "GPU CI patterns for CUDA compilation caching, manylinux wheels, and multi-arch builds. Use when distribution=pypi-wheel or hardware_targets includes cuda."
 version: 1.0.0
 ---
 

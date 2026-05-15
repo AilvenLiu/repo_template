@@ -32,10 +32,11 @@ ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(ROOT / ".claude" / "skills" / "create-project" / "scripts"))
 sys.path.insert(0, str(ROOT / ".ai" / "scripts"))
 
+from capability_audit import _entry_enabled_for_repo  # noqa: E402
 from init import create_project  # noqa: E402
 
 PLATFORMS = ("claude", "codex")
-PROJECT_TYPES = ("python", "cpp")
+PROJECT_TYPES = ("python", "cpp", "hybrid")
 
 
 def _run(cmd: list[str], cwd: Path) -> subprocess.CompletedProcess:
@@ -70,35 +71,24 @@ def _manifest() -> dict:
     return yaml.safe_load((ROOT / ".ai" / "capabilities.yml").read_text())
 
 
-def _expected_skills(manifest: dict, platform: str, project_type: str) -> set[str]:
+def _expected_skills(manifest: dict, platform: str, project_root: Path) -> set[str]:
     skills: set[str] = set()
     for entry in manifest.get("common_requirements", {}).get("project_skills", []):
-        if entry.get("template_only"):
-            continue
-        types = entry.get("project_types")
-        if types and project_type not in types:
-            continue
-        if entry.get("required"):
+        if entry.get("required") and _entry_enabled_for_repo(entry, False, project_root):
             skills.add(entry["id"])
     if platform == "codex":
         for entry in (
             manifest.get("platform_requirements", {}).get("codex", {}).get("codex_skills", [])
         ):
-            types = entry.get("project_types")
-            if types and project_type not in types:
-                continue
-            if entry.get("required"):
+            if entry.get("required") and _entry_enabled_for_repo(entry, False, project_root):
                 skills.add(entry["id"])
     return skills
 
 
-def _expected_wrappers(manifest: dict, project_type: str) -> set[str]:
+def _expected_wrappers(manifest: dict, project_root: Path) -> set[str]:
     wrappers: set[str] = set()
     for entry in manifest.get("common_requirements", {}).get("repo_commands", []):
-        types = entry.get("project_types")
-        if types and project_type not in types:
-            continue
-        if entry.get("required"):
+        if entry.get("required") and _entry_enabled_for_repo(entry, False, project_root):
             wrappers.add(entry["path"].rsplit("/", 1)[-1])
     return wrappers
 
@@ -119,12 +109,26 @@ def _expected_constraints(project_type: str) -> set[str]:
             "python/security",
             "python/error-handling",
         }
-    else:
+    elif project_type == "cpp":
         common |= {
             "cpp/dependencies",
             "cpp/forbidden-practices",
             "cpp/error-handling",
             "cpp/static-analysis",
+        }
+    else:
+        common |= {
+            "python/dependencies",
+            "python/forbidden-practices",
+            "python/security",
+            "python/error-handling",
+            "cpp/dependencies",
+            "cpp/forbidden-practices",
+            "cpp/error-handling",
+            "cpp/static-analysis",
+            "hybrid/ffi-boundary",
+            "hybrid/python-cpp-build",
+            "hybrid/system-deps",
         }
     return common
 
@@ -146,7 +150,7 @@ def compliance(tmp_path_factory) -> list[Scenario]:
             # Skill body presence (canonical, vendor-neutral location).
             ai_skills_dir = target / ".ai" / "skills"
             on_disk = {p.name for p in ai_skills_dir.iterdir() if p.is_dir()}
-            expected_skills = _expected_skills(manifest, platform, project_type)
+            expected_skills = _expected_skills(manifest, platform, target)
             scenario.add("skills_present", on_disk, expected_skills)
 
             # Skill SKILL.md validity
@@ -166,7 +170,7 @@ def compliance(tmp_path_factory) -> list[Scenario]:
                 scenario.add("claude_stubs_present", claude_stubs, expected_skills)
 
             # Wrappers
-            wrappers_expected = _expected_wrappers(manifest, project_type)
+            wrappers_expected = _expected_wrappers(manifest, target)
             wrappers_present = {
                 p.name
                 for p in (target / "bin").iterdir()

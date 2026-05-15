@@ -125,6 +125,8 @@ tasks:
 focus:
   current_task: null
   notes: >
-    Phase is pending and intentionally may stay dormant indefinitely.
+    Phase is intentionally dormant and may stay dormant indefinitely.
+    The roadmap was formally closed after Phase 2 on 2026-05-15 with user
+    approval to skip Phase 3 unless a real consuming project later requires it.
     Activation requires user approval naming a real consuming project per
     task. See INVARIANTS.md section 3.

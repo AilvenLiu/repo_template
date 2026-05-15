@@ -24,11 +24,12 @@ At most one phase may be active at any time.
 | Phase | Folder | Status | Depends On |
 |-------|--------|--------|------------|
 | 0 | `phase-0-cleanup` | completed | none |
-| 1 | `phase-1-profile-architecture` | active | `phase-0-cleanup` |
-| 2 | `phase-2-ai-infra-content` | pending | `phase-1-profile-architecture` |
-| 3 | `phase-3-advanced-optional` | pending | `phase-2-ai-infra-content` |
+| 1 | `phase-1-profile-architecture` | completed | `phase-0-cleanup` |
+| 2 | `phase-2-ai-infra-content` | completed | `phase-1-profile-architecture` |
+| 3 | `phase-3-advanced-optional` | dormant (optional) | `phase-2-ai-infra-content` |
 
-**Active phase**: `phase-1-profile-architecture`
+**Active phase**: none
+**Roadmap state**: closed after Phase 2; Phase 3 remains intentionally dormant
 
 ## 3. Dependency Graph
 
@@ -40,6 +41,9 @@ Rules:
 - A phase may be activated only when every `depends_on_phases` entry is completed.
 - The phase branch MUST be `roadmap/<phase-folder-name>`.
 - Next phase activation is blocked until previous phase PR/MR is merged.
+- It is valid for **no phase** to be active after roadmap closure.
+- Phase 3 may remain dormant indefinitely unless the user explicitly chooses to
+  activate it for a real consuming project.
 
 ## 4. Branching Protocol
 
@@ -78,13 +82,18 @@ At every session start:
    `templates/python/CLAUDE.md` or `templates/cpp/CLAUDE.md` for the install
    commands.
 2. Read this file.
-3. Identify the active phase from the table above.
-4. Read the active phase's `INVARIANTS.md`, `ROADMAP.md`, `roadmap.yml`, and
-   the latest file in its `sessions/`.
-5. Confirm the current branch is `roadmap/<active-phase-folder-name>`. If the
-   chore branch has not yet merged to master, the next session must coordinate
-   with the user before cutting phase branches.
-6. Confirm the active phase's `depends_on_phases` are all completed.
+3. Identify the active phase from the table above, or confirm that the roadmap
+   is currently closed with no active phase.
+4. If a phase is active, read that phase's `INVARIANTS.md`, `ROADMAP.md`,
+   `roadmap.yml`, and the latest file in its `sessions/`.
+5. If no phase is active, read the latest closure / handoff note from the most
+   recently completed phase before proposing reactivation or Phase 3 work.
+6. If a phase is active, confirm the current branch is
+   `roadmap/<active-phase-folder-name>`. If the chore branch has not yet merged
+   to master, the next session must coordinate with the user before cutting
+   phase branches.
+7. If a phase is active, confirm the active phase's `depends_on_phases` are all
+   completed.
 
 ## 7. Session Handoff Rules
 

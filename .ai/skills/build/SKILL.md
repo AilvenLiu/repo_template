@@ -4,7 +4,7 @@
 > body via the stub at `.claude/skills/build/SKILL.md`. Codex / Cursor / Cline
 > consult this file directly via the AGENTS.md procedures table.
 
-Automates the full build lifecycle for Python and C++ projects.
+Automates the full build lifecycle for Python, C++/CUDA, hybrid, and Bazel projects.
 
 ## Execution
 
@@ -26,9 +26,11 @@ bin/agent-build <setup|compile|test|full|doctor|clean>
 1. Detects project type via shared `project_type.py`.
 2. Python: Poetry install, pytest.
 3. C++: Conan install, CMake configure + build, ctest.
+4. Hybrid: scikit-build-core editable install, pytest, environment doctor.
+5. Bazel: workspace/toolchain doctor, `bazel build`, `bazel test`, `bazel clean`.
 
 ## Behaviour (best-effort)
 
-- Mixed Python+C++ projects (builds C++ extensions then installs Python).
+- Mixed Python+C++ projects beyond scikit-build-core.
 - Cross-compilation and parallel build flags.
 - Tool installation guidance when compilers/tools are missing.

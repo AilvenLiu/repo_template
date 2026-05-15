@@ -30,10 +30,11 @@ ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(ROOT / ".claude" / "skills" / "create-project" / "scripts"))
 sys.path.insert(0, str(ROOT / ".ai" / "scripts"))
 
+from capability_audit import _entry_enabled_for_repo  # noqa: E402
 from init import create_project  # noqa: E402
 
 PLATFORMS = ("claude", "codex")
-PROJECT_TYPES = ("python", "cpp")
+PROJECT_TYPES = ("python", "cpp", "hybrid")
 
 
 def _run(cmd: list[str], cwd: Path) -> subprocess.CompletedProcess:
@@ -71,7 +72,7 @@ def _manifest() -> dict:
     return yaml.safe_load((ROOT / ".ai" / "capabilities.yml").read_text())
 
 
-def _expected_skills(manifest: dict, platform: str, project_type: str) -> set[str]:
+def _expected_skills(manifest: dict, platform: str, project_root: Path) -> set[str]:
     """Skills that must exist on disk for a generated project of this type.
 
     After the .codex/ removal, the platform argument is informational only —
@@ -82,23 +83,15 @@ def _expected_skills(manifest: dict, platform: str, project_type: str) -> set[st
 
     skills: set[str] = set()
     for entry in manifest.get("common_requirements", {}).get("project_skills", []):
-        if entry.get("template_only"):
-            continue
-        types = entry.get("project_types")
-        if types and project_type not in types:
-            continue
-        if entry.get("required"):
+        if entry.get("required") and _entry_enabled_for_repo(entry, False, project_root):
             skills.add(entry["id"])
     return skills
 
 
-def _expected_wrappers(manifest: dict, project_type: str) -> set[str]:
+def _expected_wrappers(manifest: dict, project_root: Path) -> set[str]:
     wrappers: set[str] = set()
     for entry in manifest.get("common_requirements", {}).get("repo_commands", []):
-        types = entry.get("project_types")
-        if types and project_type not in types:
-            continue
-        if entry.get("required"):
+        if entry.get("required") and _entry_enabled_for_repo(entry, False, project_root):
             wrappers.add(entry["path"].rsplit("/", 1)[-1])
     return wrappers
 
@@ -113,7 +106,7 @@ def _expected_wrappers(manifest: dict, project_type: str) -> set[str]:
 def test_all_required_skills_present_on_disk(tmp_path: Path, platform: str, project_type: str) -> None:
     project = _make_project(tmp_path, project_type)
     manifest = _manifest()
-    expected = _expected_skills(manifest, platform, project_type)
+    expected = _expected_skills(manifest, platform, project)
 
     # Every required skill must have its canonical body under .ai/skills/.
     ai_skills_dir = project / ".ai" / "skills"
@@ -173,7 +166,7 @@ def test_every_claude_skill_has_frontmatter(tmp_path: Path, project_type: str) -
 def test_all_required_wrappers_present_and_executable(tmp_path: Path, project_type: str) -> None:
     project = _make_project(tmp_path, project_type)
     manifest = _manifest()
-    expected = _expected_wrappers(manifest, project_type)
+    expected = _expected_wrappers(manifest, project)
 
     bin_dir = project / "bin"
     found = {p.name for p in bin_dir.iterdir() if p.is_file() and p.name.startswith("agent-")}
@@ -209,12 +202,26 @@ def _expected_constraints(project_type: str) -> set[str]:
             "python/security",
             "python/error-handling",
         }
-    else:
+    elif project_type == "cpp":
         common |= {
             "cpp/dependencies",
             "cpp/forbidden-practices",
             "cpp/error-handling",
             "cpp/static-analysis",
+        }
+    else:
+        common |= {
+            "python/dependencies",
+            "python/forbidden-practices",
+            "python/security",
+            "python/error-handling",
+            "cpp/dependencies",
+            "cpp/forbidden-practices",
+            "cpp/error-handling",
+            "cpp/static-analysis",
+            "hybrid/ffi-boundary",
+            "hybrid/python-cpp-build",
+            "hybrid/system-deps",
         }
     return common
 
@@ -258,6 +265,7 @@ def test_session_state_records_platform_and_project_type(
     state = json.loads((project / ".ai" / "session_state.json").read_text())
     assert state["platform"] == platform
     assert state["project_type"] == project_type
+    assert state["project_profile"]
     assert state["initialized"] is True
 
 

@@ -17,7 +17,7 @@ wheels to PyPI or private package indices.
 
 This skill applies when:
 - `distribution=pypi-wheel` in project profile
-- `hardware_targets.cuda_arch` is non-empty
+- `hardware_targets` includes `cuda`
 - Building CUDA-accelerated Python extensions
 - Distributing wheels with CUDA dependencies
 

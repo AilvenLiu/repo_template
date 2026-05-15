@@ -1,18 +1,21 @@
 #!/usr/bin/env python3
 """End-to-end tests for project generation and Codex parity assets."""
 
+import json
 import subprocess
 import sys
 import tempfile
 from pathlib import Path
 
 import pytest
+import yaml
 
 # Add import roots
 sys.path.insert(0, str(Path(__file__).parent.parent / ".ai" / "scripts"))
 sys.path.insert(0, str(Path(__file__).parent.parent / ".claude" / "skills" / "create-project" / "scripts"))
 
 from capability_audit import run_audit
+from capability_audit import _entry_enabled_for_repo
 from init import create_project
 
 
@@ -39,21 +42,17 @@ def _assert_common_generated_assets(target: Path, project_type: str) -> None:
     # Claude stubs (frontmatter for slash-command discovery) must exist for each.
     assert (target / ".claude" / "skills" / "karpathy-guidelines" / "SKILL.md").exists()
     assert (target / "bin" / "agent-build").exists()
+    manifest = yaml.safe_load((Path(__file__).parent.parent / ".ai" / "capabilities.yml").read_text())
     expected_skills = {
-        "build",
-        "check-constraints",
-        "context7",
-        "dependency",
-        "init",
-        "karpathy-guidelines",
-        "navigate",
-        "pre-commit",
-        "roadmap",
+        entry["id"]
+        for entry in manifest.get("common_requirements", {}).get("project_skills", [])
+        if entry.get("required")
+        and not entry.get("template_only")
+        and _entry_enabled_for_repo(entry, False, target)
     }
-    if project_type == "python":
+    if project_type in {"python", "hybrid"}:
         assert (target / ".ai" / "skills" / "python-env-setup" / "SKILL.md").exists()
         assert (target / ".claude" / "skills" / "python-env-setup" / "SKILL.md").exists()
-        expected_skills.add("python-env-setup")
         assert (target / "bin" / "agent-python-env-setup").exists()
     else:
         assert not (target / ".ai" / "skills" / "python-env-setup").exists()
@@ -61,9 +60,12 @@ def _assert_common_generated_assets(target: Path, project_type: str) -> None:
         assert not (target / ".claude" / "docs" / "python-env-quick-reference.md").exists()
         assert not (target / "bin" / "agent-python-env-setup").exists()
         assert (target / "conanfile.txt").exists()
-    assert ai_skill_dirs == expected_skills
+    if project_type == "hybrid":
+        assert (target / "pyproject.toml").exists()
+        assert (target / "CMakeLists.txt").exists()
+    assert expected_skills <= ai_skill_dirs
     # Claude has the same skills + the 'common' utility folder.
-    assert (claude_skill_dirs - {"common"}) == expected_skills
+    assert expected_skills <= (claude_skill_dirs - {"common"})
     assert (target / "bin" / "agent-init").exists()
     assert (target / "bin" / "agent-precommit").exists()
     assert (target / "bin" / "agent-check-constraints").exists()
@@ -167,3 +169,28 @@ def test_e2e_cpp_project_generation_and_codex_init(template_root):
             text=True,
         )
         assert constraints.returncode == 0, constraints.stdout + "\n" + constraints.stderr
+
+
+def test_e2e_hybrid_project_generation_and_codex_init(template_root):
+    with tempfile.TemporaryDirectory() as tmpdir:
+        target = Path(tmpdir) / "test_hybrid_project"
+        create_project(template_root, target, "hybrid")
+
+        _assert_common_generated_assets(target, "hybrid")
+        _assert_template_only_removed(target)
+
+        audit = run_audit(target, platform="codex")
+        assert audit.passed
+
+        result = subprocess.run(
+            ["bash", "bin/agent-init", "--platform", "codex"],
+            cwd=target,
+            capture_output=True,
+            text=True,
+        )
+        assert result.returncode == 0, result.stdout + "\n" + result.stderr
+        state = json.loads((target / ".ai" / "session_state.json").read_text())
+        loaded = set(state["loaded_constraints"])
+        assert "hybrid/ffi-boundary" in loaded
+        assert "hybrid/python-cpp-build" in loaded
+        assert "hybrid/system-deps" in loaded

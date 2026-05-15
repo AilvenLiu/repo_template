@@ -211,7 +211,7 @@ Session initialization loads constraints from:
 ### Hybrid-Specific
 - `hybrid/ffi-boundary` (always loaded for hybrid projects)
 - `hybrid/python-cpp-build` (when `build_system=scikit-build-core` OR `distribution=pypi-wheel`)
-- `hybrid/system-deps` (when `external_dependencies.system_cuda=true`)
+- `hybrid/system-deps` (when `external_dependencies=system_cuda`)
 
 ---
 

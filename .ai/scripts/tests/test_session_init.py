@@ -130,7 +130,6 @@ class TestConstraintLoadingRoundTrip:
 
         constraints = resolve_constraints(profile, modified_files, has_roadmap)
 
-        # Note: .cu and .cuh only trigger cpp/cuda, not cpp/formatting or cpp/memory-safety
         expected = [
             "common/git-workflow",
             "common/session-discipline",
@@ -143,6 +142,8 @@ class TestConstraintLoadingRoundTrip:
             "cpp/error-handling",
             "cpp/static-analysis",
             "cpp/cuda",
+            "cpp/cuda-modern",
+            "cpp/kernel-correctness",
         ]
 
         assert constraints == expected
@@ -176,12 +177,13 @@ class TestConstraintLoadingRoundTrip:
 
     def test_hybrid_profile_loads_both_language_constraints(self):
         """Hybrid profile with both Python and C++ loads both constraint sets."""
-        # Create a hybrid profile (Phase 2 feature, but test the loader now)
-        from project_profile import BuildSystem
+        from project_profile import BuildSystem, Distribution, ExternalDependencies
 
         profile = ProjectProfile(
             language=[Language.PYTHON, Language.CPP],
-            build_system=BuildSystem.SCIKIT_BUILD,
+            build_system=BuildSystem.SCIKIT_BUILD_CORE,
+            distribution=Distribution.PYPI_WHEEL,
+            external_dependencies=ExternalDependencies.SYSTEM_CUDA,
         )
 
         modified_files = []
@@ -198,6 +200,9 @@ class TestConstraintLoadingRoundTrip:
         assert "cpp/forbidden-practices" in constraints
         assert "cpp/error-handling" in constraints
         assert "cpp/static-analysis" in constraints
+        assert "hybrid/ffi-boundary" in constraints
+        assert "hybrid/python-cpp-build" in constraints
+        assert "hybrid/system-deps" in constraints
 
     def test_constraint_deduplication(self):
         """Constraints are deduplicated when loaded multiple times."""

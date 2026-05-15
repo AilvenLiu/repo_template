@@ -2,10 +2,10 @@ phase: 2
 name: AI Infra Content
 
 status:
-  active: true
+  active: false
   blocked: false
   started_at: "2026-05-10"
-  completed_at: null
+  completed_at: "2026-05-15"
 
 depends_on_phases: [phase-1-profile-architecture]
 
@@ -85,7 +85,7 @@ tasks:
       TORCH_CUDA_ARCH_LIST as a build-time arch selector, manylinux2014 vs
       manylinux_2_28, auditwheel, and the multi-CUDA-toolkit wheel matrix
       (cu118, cu121, cu124). Marked status: draft. Activates on
-      build_system=scikit-build OR distribution=pypi-wheel.
+      build_system=scikit-build-core OR distribution=pypi-wheel.
     status: completed
     completed_at: "2026-05-11"
     effort: high
@@ -105,7 +105,7 @@ tasks:
       system-installed CUDA Toolkit, cuDNN, NCCL, TensorRT via CMake
       (find_package(CUDAToolkit), find_package(Torch), env-var fallbacks),
       version assertion at configure time, and fail-fast guidance. Mark
-      status: draft. Activates on external_dependencies.system_cuda=true.
+      status: draft. Activates on external_dependencies=system_cuda.
     status: completed
     completed_at: "2026-05-11"
     effort: medium
@@ -154,7 +154,7 @@ tasks:
       multi-arch wheel build matrix, and H100/A100/L40 gating patterns.
       No bin/agent-gpu-ci wrapper is required in this phase; the skill is
       guidance-only. Capability audit requires it when
-      distribution=pypi-wheel OR hardware_targets.cuda_arch is non-empty.
+      distribution=pypi-wheel OR hardware_targets=cuda.
     status: completed
     completed_at: "2026-05-11"
     effort: medium
@@ -175,8 +175,8 @@ tasks:
       Create templates/hybrid/CLAUDE.md, AGENTS.md, CONTRIBUTING.md,
       .gitignore, and project.yml. The project.yml is a worked
       project_profile example for a hybrid project (e.g., language: [python,
-      cpp, cuda]; build_system: scikit-build-core; bindings: nanobind;
-      distribution: pypi-wheel; external_dependencies.system_cuda: true).
+      cpp]; build_system: scikit-build-core; bindings: nanobind;
+      distribution: pypi-wheel; external_dependencies: system_cuda).
       The CLAUDE.md and AGENTS.md mirror the structure of the existing
       Python and C++ overlays. CONTRIBUTING.md cites the new hybrid
       constraints under .ai/constraints/hybrid/.
@@ -254,7 +254,35 @@ tasks:
 focus:
   current_task: null
   notes: >
+    Phase 2 FORMALLY CLOSED (2026-05-15). All tasks 2-1 through 2-10 are complete,
+    the remaining static-review blockers were fixed in the template codebase, and
+    the user approved end-of-roadmap closure instead of Phase 3 activation.
+
+    Phase 3 remains intentionally dormant/optional. No further roadmap phase is
+    active at this time.
+
     Phase 2 COMPLETE (2026-05-12). All tasks 2-1 through 2-10 delivered.
+
+    Post-review closure hardening completed on 2026-05-15.
+    Fixed the remaining template-side Phase-2 gaps:
+    - hybrid distribution / selector mismatch (`pypi-wheel`)
+    - missing hybrid constraint loading in `/init`
+    - Bazel build wrapper still stubbed in `bin/agent-build`
+    - pre-commit / runtime constraint validation still assumed Poetry for hybrid repos
+    - missing hybrid regression coverage in generated-project test suites
+
+    Revalidated against the local TVM sandbox:
+    - `bin/agent-init --platform codex`: PASS
+    - `bin/agent-build doctor`: PASS
+    - `bin/agent-dependency add requests`: PASS
+    - `bin/agent-precommit`: template-side hybrid bug fixed; remaining failures are
+      consuming-project environment/toolchain issues
+    - `bin/agent-build full`: blocked by missing local `scikit_build_core.build`
+      installation, i.e. environment provisioning rather than template dispatch
+
+    Static/template conclusion: functional goal is now met in the template codebase;
+    remaining validation blockers are external environment setup for the consuming
+    project, not Phase-2 template logic gaps.
 
     Task-2-10 validation completed against Apache TVM fork (git@github.com:AilvenLiu/tvm.git).
     Discovered and fixed 4 critical drift issues:

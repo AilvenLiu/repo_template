@@ -54,7 +54,7 @@ project_profile:
   language: [python, cpp]           # Can be multiple
   build_system: cmake                # Primary build orchestrator
   bindings: nanobind                 # FFI/binding layer (optional)
-  distribution: pypi                 # Distribution target (optional)
+  distribution: pypi-wheel           # Distribution target (optional)
   hardware_targets: [cuda, cpu]      # Hardware backends (optional)
   external_dependencies: system_cuda # Dependency strategy (optional)
 ```
@@ -66,9 +66,9 @@ Each axis is independent and loads its own constraint subset additively:
 | Axis | Values | Constraint Path | Loaded When |
 |------|--------|----------------|-------------|
 | `language` | `python`, `cpp` | `.ai/constraints/{language}/` | Always (at least one required) |
-| `build_system` | `poetry`, `cmake`, `scikit-build`, `bazel`, `mixed` | Dispatch in `bin/agent-build` | Always (exactly one required) |
+| `build_system` | `poetry`, `cmake`, `scikit-build`, `scikit-build-core`, `bazel`, `mixed` | Dispatch in `bin/agent-build` | Always (exactly one required) |
 | `bindings` | `none`, `nanobind`, `pybind11`, `tvm-ffi`, `ctypes` | `.ai/constraints/bindings/{value}/` | Optional (Phase 2) |
-| `distribution` | `none`, `pypi`, `conda`, `system`, `header-only` | `.ai/constraints/distribution/{value}/` | Optional (Phase 2) |
+| `distribution` | `none`, `pypi`, `pypi-wheel`, `conda`, `system`, `header-only` | `.ai/constraints/distribution/{value}/` | Optional (Phase 2) |
 | `hardware_targets` | `cpu`, `cuda`, `rocm`, `metal`, `vulkan` | `.ai/constraints/hardware/{value}/` | Optional (Phase 2) |
 | `external_dependencies` | `none`, `system_cuda`, `system_nvidia`, `vendored` | Guidance in dependency wrapper | Optional (Phase 2) |
 
@@ -191,9 +191,9 @@ project_profile:
 ```yaml
 project_profile:
   language: [python, cpp]
-  build_system: scikit-build
+  build_system: scikit-build-core
   bindings: tvm-ffi
-  distribution: pypi
+  distribution: pypi-wheel
   hardware_targets: [cuda, cpu]
   external_dependencies: system_cuda
 ```

@@ -11,11 +11,11 @@ usage() {
 Usage: bin/agent-bazel <build|test|run|clean|query>
 
 Subcommands:
-  build   Build targets with Bazel (fully implemented)
-  test    Run Bazel test suite (Phase 3 stub)
-  run     Execute Bazel targets (Phase 3 stub)
-  clean   Clean Bazel build artefacts (Phase 3 stub)
-  query   Query Bazel build graph (Phase 3 stub)
+  build   Build targets with Bazel
+  test    Run Bazel test suite
+  run     Execute Bazel target
+  clean   Clean Bazel build artefacts
+  query   Query Bazel build graph
 
 Examples:
   bin/agent-bazel build
@@ -25,15 +25,29 @@ EOF
 }
 
 check_bazel_workspace() {
-  if [[ ! -f "$REPO_ROOT/WORKSPACE" ]] && [[ ! -f "$REPO_ROOT/MODULE.bazel" ]]; then
-    echo "Error: No WORKSPACE or MODULE.bazel file found in $REPO_ROOT" >&2
+  if [[ ! -f "$REPO_ROOT/WORKSPACE" ]] && [[ ! -f "$REPO_ROOT/WORKSPACE.bazel" ]] && [[ ! -f "$REPO_ROOT/MODULE.bazel" ]]; then
+    echo "Error: No WORKSPACE, WORKSPACE.bazel, or MODULE.bazel file found in $REPO_ROOT" >&2
     echo "This does not appear to be a Bazel workspace." >&2
     exit 1
   fi
 }
 
+detect_bazel_bin() {
+  if command -v bazel >/dev/null 2>&1; then
+    echo "bazel"
+    return 0
+  fi
+
+  if command -v bazelisk >/dev/null 2>&1; then
+    echo "bazelisk"
+    return 0
+  fi
+
+  return 1
+}
+
 check_bazel_installed() {
-  if ! command -v bazel &> /dev/null; then
+  if ! BAZEL_BIN="$(detect_bazel_bin)"; then
     echo "Error: bazel command not found" >&2
     echo "" >&2
     echo "Install Bazel:" >&2
@@ -43,11 +57,11 @@ check_bazel_installed() {
   fi
 }
 
-bazel_build() {
+prepare_bazel_env() {
   check_bazel_workspace
   check_bazel_installed
 
-  # Set CUDA environment variables if available
+  # Set CUDA environment variables if available.
   if [[ -n "${CUDA_HOME:-}" ]]; then
     export CUDA_HOME
     echo "Using CUDA_HOME=$CUDA_HOME"
@@ -62,26 +76,59 @@ bazel_build() {
     export NCCL_ROOT
     echo "Using NCCL_ROOT=$NCCL_ROOT"
   fi
-
-  # Build with all arguments passed through
-  echo "Running: bazel build $*"
-  (cd "$REPO_ROOT" && bazel build "$@")
 }
 
-stub_subcommand() {
-  local subcommand="$1"
-  cat <<EOF
-Error: bin/agent-bazel $subcommand is not yet implemented.
+bazel_build() {
+  prepare_bazel_env
 
-This subcommand is stubbed in Phase 2 and will be fully implemented in Phase 3.
+  if [[ $# -eq 0 ]]; then
+    set -- "//..."
+  fi
 
-For now, you can invoke Bazel directly:
-  cd $REPO_ROOT
-  bazel $subcommand [args...]
+  echo "Running: $BAZEL_BIN build $*"
+  (cd "$REPO_ROOT" && "$BAZEL_BIN" build "$@")
+}
 
-See .ai/skills/bazel/SKILL.md for the planned behaviour.
-EOF
-  exit 1
+bazel_test() {
+  prepare_bazel_env
+
+  if [[ $# -eq 0 ]]; then
+    set -- "//..."
+  fi
+
+  echo "Running: $BAZEL_BIN test $*"
+  (cd "$REPO_ROOT" && "$BAZEL_BIN" test "$@")
+}
+
+bazel_run() {
+  prepare_bazel_env
+
+  if [[ $# -eq 0 ]]; then
+    echo "Error: bin/agent-bazel run requires a target" >&2
+    exit 1
+  fi
+
+  echo "Running: $BAZEL_BIN run $*"
+  (cd "$REPO_ROOT" && "$BAZEL_BIN" run "$@")
+}
+
+bazel_clean() {
+  prepare_bazel_env
+
+  echo "Running: $BAZEL_BIN clean $*"
+  (cd "$REPO_ROOT" && "$BAZEL_BIN" clean "$@")
+}
+
+bazel_query() {
+  prepare_bazel_env
+
+  if [[ $# -eq 0 ]]; then
+    echo "Error: bin/agent-bazel query requires a query expression" >&2
+    exit 1
+  fi
+
+  echo "Running: $BAZEL_BIN query $*"
+  (cd "$REPO_ROOT" && "$BAZEL_BIN" query "$@")
 }
 
 main() {
@@ -98,16 +145,16 @@ main() {
       bazel_build "$@"
       ;;
     test)
-      stub_subcommand "test"
+      bazel_test "$@"
       ;;
     run)
-      stub_subcommand "run"
+      bazel_run "$@"
       ;;
     clean)
-      stub_subcommand "clean"
+      bazel_clean "$@"
       ;;
     query)
-      stub_subcommand "query"
+      bazel_query "$@"
       ;;
     -h|--help|help)
       usage

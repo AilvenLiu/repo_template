@@ -19,13 +19,27 @@ try:
     from .capability_audit import AuditResult, print_audit_report, run_audit
     from .constants import PROTECTED_BRANCHES, PROTECTED_PREFIXES
     from .paths import resolve_repo_root
-    from .project_profile import Language, ProjectProfile, detect
+    from .project_profile import (
+        BuildSystem,
+        Distribution,
+        ExternalDependencies,
+        Language,
+        ProjectProfile,
+        detect,
+    )
     from .session_state import write_state
 except ImportError:
     from capability_audit import AuditResult, print_audit_report, run_audit
     from constants import PROTECTED_BRANCHES, PROTECTED_PREFIXES
     from paths import resolve_repo_root
-    from project_profile import Language, ProjectProfile, detect
+    from project_profile import (
+        BuildSystem,
+        Distribution,
+        ExternalDependencies,
+        Language,
+        ProjectProfile,
+        detect,
+    )
     from session_state import write_state
 
 
@@ -219,6 +233,16 @@ def resolve_constraints(
     # Load hybrid constraints when both Python and C++ are present
     if profile.has_language(Language.PYTHON) and profile.has_language(Language.CPP):
         keys.append("hybrid/ffi-boundary")
+        if profile.build_system in (BuildSystem.SCIKIT_BUILD, BuildSystem.SCIKIT_BUILD_CORE):
+            keys.append("hybrid/python-cpp-build")
+        elif profile.distribution == Distribution.PYPI_WHEEL:
+            keys.append("hybrid/python-cpp-build")
+
+        if profile.external_dependencies in (
+            ExternalDependencies.SYSTEM_CUDA,
+            ExternalDependencies.SYSTEM_NVIDIA,
+        ):
+            keys.append("hybrid/system-deps")
 
     deduped: List[str] = []
     seen = set()
@@ -249,10 +273,18 @@ def write_session_state(
     roadmap_dir: Optional[Path],
     audit_result: AuditResult,
 ) -> None:
+    if profile.is_hybrid():
+        project_type = "hybrid"
+    elif profile.has_language(Language.CPP):
+        project_type = "cpp"
+    else:
+        project_type = "python"
+
     payload: Dict[str, Any] = {
         "initialized": True,
         "timestamp": datetime.now().isoformat(),
         "platform": platform,
+        "project_type": project_type,
         "project_profile": profile.to_dict(),
         "branch": branch,
         "loaded_constraints": loaded_constraints,

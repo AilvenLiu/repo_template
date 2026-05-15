@@ -2,7 +2,7 @@
 status: draft
 load_as: advisory
 applies_to: [cpp, cuda]
-activation_rule: external_dependencies.system_cuda=true
+activation_rule: external_dependencies=system_cuda
 ---
 
 # System Dependencies Discovery (DRAFT)
@@ -443,7 +443,7 @@ endif()
 
 ---
 
-**Activation**: This constraint loads when `external_dependencies.system_cuda=true`
+**Activation**: This constraint loads when `external_dependencies=system_cuda`
 in the project profile.
 
 **Draft Status**: Advisory only. Does not block commits. Promotion to stable
