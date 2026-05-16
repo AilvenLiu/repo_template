@@ -1,207 +1,248 @@
 #!/usr/bin/env python3
-"""
-Skill Verification Tool
+"""Cross-platform repository skill and wrapper verification.
 
-Verifies that all skills in .claude/skills/ are properly configured and discoverable
-by Claude Code. Run this after copying the template to a new project.
+Verifies the repo-bundled assets that make skills and constraints discoverable
+for both Claude Code and AGENTS.md-based platforms (Codex, Cursor, Cline, etc.).
 
 Usage:
     python3 .ai/scripts/common/verify_skills.py
+    python3 .ai/scripts/common/verify_skills.py --platform claude
+    python3 .ai/scripts/common/verify_skills.py --platform codex
+    python3 .ai/scripts/common/verify_skills.py --platform both
 """
 
+from __future__ import annotations
+
+import argparse
+import re
 import sys
 from pathlib import Path
-from typing import List, Dict, Optional
+from typing import Any
 
 try:
-    import yaml
-    HAS_YAML = True
+    import yaml  # type: ignore[import-untyped]
 except ImportError:
-    HAS_YAML = False
+    yaml = None
+
+_SCRIPTS_DIR = Path(__file__).resolve().parents[1]
+if str(_SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS_DIR))
+
+from capability_audit import (  # type: ignore[import-not-found]  # noqa: E402
+    _entry_enabled_for_repo,
+    _is_template_repo,
+    _load_manifest,
+    _normalize_manifest,
+)
 
 
-class SkillVerifier:
-    """Verifies skill installation and configuration."""
+def _has_valid_claude_frontmatter(content: str, expected_name: str) -> tuple[bool, str]:
+    """Check that a Claude skill stub has valid frontmatter."""
+    if not content.startswith("---"):
+        return False, "missing YAML frontmatter"
 
-    def __init__(self, repo_root: Path):
+    parts = content.split("---", 2)
+    if len(parts) < 3:
+        return False, "invalid YAML frontmatter format"
+
+    frontmatter_text = parts[1]
+
+    if yaml is not None:
+        try:
+            parsed = yaml.safe_load(frontmatter_text)
+        except yaml.YAMLError as exc:
+            return False, f"invalid YAML frontmatter: {exc}"
+
+        if not isinstance(parsed, dict):
+            return False, "frontmatter did not parse to a mapping"
+        if not parsed.get("name"):
+            return False, "frontmatter missing name"
+        if not parsed.get("description"):
+            return False, "frontmatter missing description"
+        if str(parsed["name"]).strip() != expected_name:
+            return False, f"frontmatter name mismatch: expected '{expected_name}'"
+        return True, ""
+
+    if not re.search(r"(?m)^name:\s*\S+", frontmatter_text):
+        return False, "frontmatter missing name"
+    if not re.search(r"(?m)^description:\s*.+", frontmatter_text):
+        return False, "frontmatter missing description"
+    return True, ""
+
+
+class RepoVerifier:
+    """Verify repo-bundled platform assets."""
+
+    def __init__(self, repo_root: Path, platform: str):
         self.repo_root = repo_root
-        self.skills_dir = repo_root / ".claude" / "skills"
-        self.errors: List[str] = []
-        self.warnings: List[str] = []
-        self.skills_found: List[Dict] = []
+        self.platform = platform
+        self.errors: list[str] = []
+        self.warnings: list[str] = []
+        self.checked: list[str] = []
 
     def verify_all(self) -> bool:
-        """Run all verification checks. Returns True if all checks pass."""
         print("=" * 70)
-        print("CLAUDE CODE SKILL VERIFICATION")
+        print("REPOSITORY SKILL + WRAPPER VERIFICATION")
         print("=" * 70)
+        print(f"Repo: {self.repo_root}")
+        print(f"Platform: {self.platform}")
         print()
 
-        if not self.skills_dir.exists():
-            self.errors.append(f"Skills directory not found: {self.skills_dir}")
-            self._print_results()
-            return False
+        manifest = _normalize_manifest(
+            _load_manifest(self.repo_root / ".ai" / "capabilities.yml")
+        )
+        is_template = _is_template_repo(self.repo_root)
 
-        # Find all potential skill directories
-        skill_dirs = [d for d in self.skills_dir.iterdir() if d.is_dir() and not d.name.startswith(".")]
-
-        print(f"Scanning {len(skill_dirs)} directories in {self.skills_dir.relative_to(self.repo_root)}")
-        print()
-
-        for skill_dir in sorted(skill_dirs):
-            if skill_dir.name == "common":
-                continue  # Skip common utilities directory
-            self._verify_skill(skill_dir)
+        self._verify_entrypoints()
+        self._verify_skills(manifest, is_template)
+        self._verify_wrappers(manifest, is_template)
+        self._verify_no_legacy_codex_tree()
 
         self._print_results()
-        return len(self.errors) == 0
+        return not self.errors
 
-    def _verify_skill(self, skill_dir: Path) -> None:
-        """Verify a single skill directory."""
-        skill_name = skill_dir.name
-        print(f"Checking skill: {skill_name}")
+    def _record_success(self, label: str) -> None:
+        self.checked.append(label)
 
-        # Check for SKILL.md
-        skill_md = skill_dir / "SKILL.md"
-        if not skill_md.exists():
-            # Check for lowercase variant (common mistake)
-            if (skill_dir / "skill.md").exists():
-                self.errors.append(
-                    f"  [{skill_name}] Found 'skill.md' but Claude Code requires 'SKILL.md' (uppercase)"
-                )
-                print(f"  [ERROR] SKILL.md not found (found skill.md instead)")
-                return
-            else:
-                self.errors.append(f"  [{skill_name}] SKILL.md not found")
-                print(f"  [ERROR] SKILL.md not found")
-                return
+    def _verify_entrypoints(self) -> None:
+        agents = self.repo_root / "AGENTS.md"
+        if agents.is_file():
+            self._record_success("AGENTS.md")
+        else:
+            self.errors.append("Missing AGENTS.md entrypoint")
 
-        # Parse YAML frontmatter
-        try:
-            content = skill_md.read_text()
-            if not content.startswith("---"):
-                self.errors.append(f"  [{skill_name}] SKILL.md missing YAML frontmatter")
-                print(f"  [ERROR] Missing YAML frontmatter")
-                return
+        claude = self.repo_root / "CLAUDE.md"
+        if claude.is_file():
+            self._record_success("CLAUDE.md")
+        else:
+            self.errors.append("Missing CLAUDE.md entrypoint")
 
-            # Extract frontmatter
-            parts = content.split("---", 2)
-            if len(parts) < 3:
-                self.errors.append(f"  [{skill_name}] Invalid YAML frontmatter format")
-                print(f"  [ERROR] Invalid frontmatter format")
-                return
+    def _verify_skills(self, manifest: dict[str, Any], is_template: bool) -> None:
+        entries = manifest.get("common_requirements", {}).get("project_skills", [])
+        if not isinstance(entries, list):
+            self.errors.append("Capability manifest project_skills section is invalid")
+            return
 
-            if not HAS_YAML:
-                self.warnings.append(f"  [{skill_name}] Cannot parse YAML (PyYAML not installed)")
-                print(f"  [WARN] Cannot validate YAML (install PyYAML to enable)")
-                # Basic validation without YAML parsing
-                if "name:" in content and "description:" in content:
-                    print(f"  [OK] Basic frontmatter structure detected")
-                    self.skills_found.append({
-                        "name": skill_name,
-                        "description": "Unknown (PyYAML not installed)",
-                        "version": "unknown",
-                        "path": skill_dir.relative_to(self.repo_root),
-                    })
-                return
+        for raw_entry in entries:
+            entry = raw_entry if isinstance(raw_entry, dict) else {}
+            if not _entry_enabled_for_repo(entry, is_template, self.repo_root):
+                continue
 
-            frontmatter = yaml.safe_load(parts[1])
+            skill_id = str(entry.get("id", "")).strip()
+            if not skill_id or not entry.get("required", False):
+                continue
 
-            # Validate required fields
-            if "name" not in frontmatter:
-                self.errors.append(f"  [{skill_name}] Missing 'name' in frontmatter")
-                print(f"  [ERROR] Missing 'name' field")
-                return
+            template_only = bool(entry.get("template_only", False))
+            if template_only and self.platform == "codex":
+                # Template-only skills are Claude-side helpers for the template repo.
+                continue
 
-            if "description" not in frontmatter:
-                self.errors.append(f"  [{skill_name}] Missing 'description' in frontmatter")
-                print(f"  [ERROR] Missing 'description' field")
-                return
+            ai_skill = self.repo_root / ".ai" / "skills" / skill_id / "SKILL.md"
+            claude_skill = self.repo_root / ".claude" / "skills" / skill_id / "SKILL.md"
 
-            # Check name matches directory
-            if frontmatter["name"] != skill_name:
-                self.warnings.append(
-                    f"  [{skill_name}] Name mismatch: directory='{skill_name}', "
-                    f"frontmatter='{frontmatter['name']}'"
-                )
-                print(f"  [WARN] Name mismatch: '{frontmatter['name']}'")
-
-            # Check for scripts directory
-            scripts_dir = skill_dir / "scripts"
-            if not scripts_dir.exists():
-                self.warnings.append(f"  [{skill_name}] No scripts/ directory found")
-                print(f"  [WARN] No scripts/ directory")
-            else:
-                # Count Python scripts
-                scripts = list(scripts_dir.glob("*.py"))
-                if len(scripts) == 0:
-                    self.warnings.append(f"  [{skill_name}] No Python scripts in scripts/")
-                    print(f"  [WARN] No Python scripts found")
+            if not template_only:
+                if not ai_skill.is_file():
+                    self.errors.append(f"Missing vendor-neutral skill body: {ai_skill}")
+                elif not ai_skill.read_text(encoding="utf-8").strip():
+                    self.errors.append(f"Empty vendor-neutral skill body: {ai_skill}")
                 else:
-                    print(f"  [OK] Found {len(scripts)} script(s)")
+                    self._record_success(f".ai/skills/{skill_id}/SKILL.md")
 
-            # Record successful skill
-            self.skills_found.append({
-                "name": frontmatter["name"],
-                "description": frontmatter.get("description", ""),
-                "version": frontmatter.get("version", "unknown"),
-                "path": skill_dir.relative_to(self.repo_root),
-            })
+            if self.platform in {"claude", "both"}:
+                if not claude_skill.is_file():
+                    self.errors.append(f"Missing Claude skill stub: {claude_skill}")
+                    continue
 
-            print(f"  [OK] Skill '{frontmatter['name']}' is properly configured")
+                content = claude_skill.read_text(encoding="utf-8")
+                if not content.strip():
+                    self.errors.append(f"Empty Claude skill stub: {claude_skill}")
+                    continue
 
-        except yaml.YAMLError as e:
-            self.errors.append(f"  [{skill_name}] Invalid YAML in frontmatter: {e}")
-            print(f"  [ERROR] Invalid YAML: {e}")
-        except Exception as e:
-            self.errors.append(f"  [{skill_name}] Verification failed: {e}")
-            print(f"  [ERROR] {e}")
+                valid, reason = _has_valid_claude_frontmatter(content, skill_id)
+                if not valid:
+                    self.errors.append(
+                        f"Invalid Claude skill stub {claude_skill}: {reason}"
+                    )
+                    continue
 
-        print()
+                self._record_success(f".claude/skills/{skill_id}/SKILL.md")
+
+    def _verify_wrappers(self, manifest: dict[str, Any], is_template: bool) -> None:
+        entries = manifest.get("common_requirements", {}).get("repo_commands", [])
+        if not isinstance(entries, list):
+            self.errors.append("Capability manifest repo_commands section is invalid")
+            return
+
+        for raw_entry in entries:
+            entry = raw_entry if isinstance(raw_entry, dict) else {}
+            if not _entry_enabled_for_repo(entry, is_template, self.repo_root):
+                continue
+
+            command_id = str(entry.get("id", "")).strip()
+            rel_path = str(entry.get("path", "")).strip()
+            required = bool(entry.get("required", False))
+
+            if not command_id or not rel_path or not required:
+                continue
+
+            command_path = self.repo_root / rel_path
+            if not command_path.is_file():
+                self.errors.append(f"Missing wrapper: {command_path}")
+                continue
+
+            if bool(entry.get("executable", False)) and not (
+                command_path.stat().st_mode & 0o111
+            ):
+                self.errors.append(f"Wrapper is not executable: {command_path}")
+                continue
+
+            self._record_success(rel_path)
+
+    def _verify_no_legacy_codex_tree(self) -> None:
+        legacy = self.repo_root / ".codex"
+        if legacy.exists():
+            self.errors.append(
+                "Legacy .codex directory present; Codex should use AGENTS.md + .ai/skills/"
+            )
 
     def _print_results(self) -> None:
-        """Print verification results summary."""
         print("=" * 70)
-        print("VERIFICATION RESULTS")
+        print("RESULTS")
         print("=" * 70)
-        print()
-
-        if self.skills_found:
-            print(f"✓ Found {len(self.skills_found)} valid skill(s):")
-            for skill in self.skills_found:
-                print(f"  - /{skill['name']}: {skill['description'][:60]}...")
-            print()
+        print(f"Checked assets: {len(self.checked)}")
 
         if self.warnings:
-            print(f"⚠ {len(self.warnings)} warning(s):")
+            print(f"Warnings: {len(self.warnings)}")
             for warning in self.warnings:
-                print(f"  {warning}")
-            print()
+                print(f"  [WARN] {warning}")
 
         if self.errors:
-            print(f"✗ {len(self.errors)} error(s):")
+            print(f"Errors: {len(self.errors)}")
             for error in self.errors:
-                print(f"  {error}")
+                print(f"  [ERROR] {error}")
             print()
-            print("Skills with errors will NOT be discoverable by Claude Code.")
-            print()
+            print("Verification failed.")
         else:
-            print("✓ All skills are properly configured and should be discoverable.")
+            print("Errors: 0")
             print()
+            print("Verification passed.")
 
-        print("=" * 70)
 
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Verify repo skill and wrapper assets")
+    parser.add_argument(
+        "--platform",
+        choices=["claude", "codex", "both"],
+        default="both",
+        help="Platform asset surface to verify",
+    )
+    args = parser.parse_args()
 
-def main():
-    """Main entry point."""
-    # Find repository root by walking up from script location:
-    # .ai/scripts/common/<this>.py -> common/ -> scripts/ -> .ai/ -> repo/
     script_path = Path(__file__).resolve()
-    repo_root = script_path.parent.parent.parent.parent
+    repo_root = script_path.parents[3]
 
-    verifier = SkillVerifier(repo_root)
+    verifier = RepoVerifier(repo_root, args.platform)
     success = verifier.verify_all()
-
     sys.exit(0 if success else 1)
 
 

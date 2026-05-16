@@ -15,7 +15,7 @@ At the start of every Claude Code session, run:
 ```
 
 That's it! The skill will:
-- Detect your project type (Python or C++/CUDA)
+- Detect your project profile (Python, C++/CUDA, or hybrid)
 - Check for active roadmaps
 - Run the capability audit from `.ai/capabilities.yml`
 - Filter capability requirements that are specific to the detected project type
@@ -26,7 +26,7 @@ That's it! The skill will:
 
 ### Automatic Project Detection
 
-Detects whether you're working on Python or C++/CUDA projects by analyzing:
+Detects whether you're working on Python, C++/CUDA, or hybrid projects by analyzing:
 - Configuration files (requirements.txt, CMakeLists.txt, etc.)
 - Source file extensions (*.py, *.cpp, *.cu)
 - Project structure
@@ -34,7 +34,7 @@ Detects whether you're working on Python or C++/CUDA projects by analyzing:
 ### Smart Constraint Loading
 
 Loads constraints based on:
-- **Project type**: Python vs C++/CUDA specific constraints
+- **Project profile**: Python, C++/CUDA, and hybrid-specific constraints
 - **Modified files**: Only loads constraints for file types you're actually working on
 - **File intent**: Documentation, test, and CMake-related constraints load only when matching files changed
 - **Git context**: Warns about protected branches, analyzes changes
@@ -46,7 +46,7 @@ The skill analyzes:
 - Current git branch (warns if on protected branch)
 - Modified files (determines which constraints are needed)
 - Active roadmaps (loads roadmap awareness if needed)
-- Project structure (detects project type)
+- Project structure (detects project profile)
 
 ## Installation
 
@@ -61,7 +61,6 @@ Claude Code still needs the required global capabilities installed on the machin
 The audit will block the session until they are available. The main setup commands are:
 
 ```bash
-claude plugin install frontend-design@claude-plugins-official
 # Primary method (plugin-backed MCP):
 claude plugin install context7@claude-plugins-official
 # Fallback method (manual MCP server):
@@ -83,7 +82,7 @@ Normal `/init` already prints the selected constraint bodies. If you need to
 run the adapter directly while debugging the skill path, you can still invoke:
 
 ```bash
-python3 bin/agent-init --verbose
+bin/agent-init --platform claude --verbose
 ```
 
 ## Constraint Files
@@ -124,6 +123,12 @@ Constraints are organized by topic in `.ai/constraints/`:
 4. **Context Analysis**: Determines which constraints are needed based on modified files
 5. **Constraint Loading**: Selects and prints the relevant constraint files
 6. **Guidance**: Provides next steps for the session
+
+Hybrid projects load:
+- the common constraint set
+- the Python constraint set
+- the C++/CUDA constraint set
+- the hybrid-only constraint set (`hybrid/ffi-boundary`, `hybrid/python-cpp-build`, and optionally `hybrid/system-deps`)
 
 ## Example Session
 

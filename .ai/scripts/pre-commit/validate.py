@@ -253,7 +253,9 @@ def validate_cpp(manager: PreCommitManager) -> list[ValidationResult]:
                 ValidationResult(
                     "clang-format (formatter)",
                     all_formatted,
-                    "\n".join(output_lines) if output_lines else "All files formatted correctly",
+                    "\n".join(output_lines)
+                    if output_lines
+                    else "All files formatted correctly",
                     "",
                 )
             )
@@ -280,7 +282,8 @@ def validate_cpp(manager: PreCommitManager) -> list[ValidationResult]:
     if manager.check_tool_available("clang-tidy"):
         if cpp_files:
             returncode, stdout, stderr = manager.run_command(
-                ["clang-tidy"] + [str(f) for f in cpp_files[:10]]  # Limit to first 10 files
+                ["clang-tidy"]
+                + [str(f) for f in cpp_files[:10]]  # Limit to first 10 files
             )
             results.append(
                 ValidationResult(
@@ -396,7 +399,9 @@ def main() -> None:
 
     # If critical constraint violations, fail immediately
     critical = [
-        violation for violation in constraint_violations if violation.severity == "CRITICAL"
+        violation
+        for violation in constraint_violations
+        if violation.severity == "CRITICAL"
     ]
     if critical:
         _emit()
@@ -418,7 +423,9 @@ def main() -> None:
         results = validate_cpp(manager)
     else:
         _emit("ERROR: Unknown project type")
-        _emit("Could not detect Python or C++/CUDA project")
+        _emit(
+            "Could not detect a supported project profile (Python, C++/CUDA, or hybrid)"
+        )
         sys.exit(1)
 
     # Display results

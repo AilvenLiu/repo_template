@@ -28,9 +28,8 @@ project/
   .ai/
     project.yml          # source of truth for project profile
     constraints/         # vendor-neutral constraint files
-    tools/               # shared runtime enforcement tools
+    scripts/             # shared runtime enforcement tools
   .claude/               # Claude Code skills and hooks
-  .codex/                # Codex skill manifests (read on demand)
   bin/                   # guarded workflow command wrappers
   agent_roadmaps/
   AGENTS.md              # vendor-neutral agent constraints (Codex / agents.md spec)

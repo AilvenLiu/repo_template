@@ -1,8 +1,9 @@
 # Repository Template
 
-A dual-language (Python / C++/CUDA) repository template with vendor-neutral
-AI agent constraints and development standards. Copy it, pick a language,
-and get a working repo with `CLAUDE.md`, `AGENTS.md`, and full skill support.
+A repository template for Python, C++/CUDA, and hybrid AI-infra projects with
+vendor-neutral AI agent constraints and development standards. Copy it, pick a
+project profile, and get a working repo with `CLAUDE.md`, `AGENTS.md`, and full
+skill support across Claude Code and Codex-style `agents.md` consumers.
 
 ## Overview
 
@@ -26,9 +27,10 @@ The recommended way to create a project is `/create-project` (see below).
 python3 .claude/skills/create-project/scripts/init.py /path/to/new/project
 ```
 
-The script prompts for project type (Python or C++), copies the template,
-overlays the correct `templates/<language>/` files, removes template-only
-artifacts, and creates an initial git commit.
+The script prompts for project type (Python, C++/CUDA, or hybrid
+Python/C++/CUDA), copies the template, overlays the correct
+`templates/<language>/` files, removes template-only artifacts, and creates an
+initial git commit.
 
 ## Contents
 
@@ -56,13 +58,19 @@ templates/
     CONTRIBUTING.md   -> CONTRIBUTING.md
     .gitignore        -> .gitignore
     project.yml       -> .ai/project.yml
+  hybrid/
+    AGENTS.md         -> AGENTS.md in generated hybrid projects
+    CLAUDE.md         -> CLAUDE.md
+    CONTRIBUTING.md   -> CONTRIBUTING.md
+    .gitignore        -> .gitignore
+    project.yml       -> .ai/project.yml
 ```
 
 ### Shared Infrastructure (copied verbatim into generated projects)
 
 - `.ai/project.yml` -- machine-readable project type (source of truth, set
   by `/create-project` from `templates/<language>/project.yml`)
-- `.ai/constraints/` -- vendor-neutral constraint files (common, python, cpp)
+- `.ai/constraints/` -- vendor-neutral constraint files (common, python, cpp, hybrid)
 - `.ai/skills/` -- vendor-neutral skill procedure manifests (`<name>/SKILL.md`)
 - `.ai/scripts/` -- shared runtime tools used by `bin/agent-*` wrappers
 - `.claude/` -- Claude Code skill stubs, hooks, and settings (native loader)
@@ -120,7 +128,8 @@ Both platforms inherit the bundled `karpathy-guidelines` behaviour:
 
 Capability audit requirements are filtered by the generated project's
 language, so copied C++ repos do not require Python-only support skills
-such as `python-env-setup`.
+such as `python-env-setup`, while hybrid repos correctly require both the
+Python and C++/CUDA skill surface plus the hybrid constraint layer.
 
 ## License
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""
-Session state checker utility.
+"""Session state checker utility.
+
 All skills should import and call this before execution.
 """
 
@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
 
 def check_session_initialized(skill_name: str) -> dict:
     """
-    Verify session was initialized with /init.
+    Verify session was initialized with the platform init workflow.
 
     Args:
         skill_name: Name of the skill being executed
@@ -37,11 +37,12 @@ def check_session_initialized(skill_name: str) -> dict:
         print(f"The '{skill_name}' skill requires session initialization.")
         print()
         print("REQUIRED ACTION:")
-        print("  Run /init before using any skills")
+        print("  Run /init (Claude Code) or bin/agent-init --platform codex")
+        print("  (Codex / Cursor / Cline / generic agents.md consumers)")
         print()
         print("WHY THIS MATTERS:")
         print("  - Loads project-specific constraints")
-        print("  - Detects project type (Python vs C++/CUDA)")
+        print("  - Detects project profile (Python, C++/CUDA, or hybrid)")
         print("  - Checks for active roadmaps")
         print("  - Validates git branch status")
         print("  - Audits required capabilities")
@@ -54,35 +55,35 @@ def check_session_initialized(skill_name: str) -> dict:
             state = json.load(f)
     except json.JSONDecodeError:
         print(f"ERROR: Corrupted session state file: {state_file}")
-        print("REQUIRED: Run /init to reinitialize")
+        print("REQUIRED: Re-run the platform init workflow to reinitialize")
         sys.exit(1)
 
-    if not state.get('initialized'):
+    if not state.get("initialized"):
         print("ERROR: Session initialization incomplete")
-        print("REQUIRED: Run /init to complete initialization")
+        print("REQUIRED: Re-run the platform init workflow to complete initialization")
         sys.exit(1)
 
     # Check capability audit result
-    audit = state.get('capability_audit')
-    if audit is not None and not audit.get('passed', True):
+    audit = state.get("capability_audit")
+    if audit is not None and not audit.get("passed", True):
         print("=" * 70)
         print("ERROR: Capability audit failed")
         print("=" * 70)
         print()
         print(f"The '{skill_name}' skill cannot run because the session capability")
-        print("audit failed during /init.")
+        print("audit failed during session initialization.")
         print()
         print("REQUIRED ACTION:")
-        print("  1. Review the audit failures from /init output")
+        print("  1. Review the audit failures from the init output")
         print("  2. Install missing plugins, skills, or integrations")
-        print("  3. Re-run /init to pass the audit")
+        print("  3. Re-run /init or bin/agent-init --platform codex to pass the audit")
         print()
         print("AUDIT SUMMARY:")
-        entries = audit.get('entries', [])
-        failed = [e for e in entries if e.get('required') and not e.get('available')]
+        entries = audit.get("entries", [])
+        failed = [e for e in entries if e.get("required") and not e.get("available")]
         for e in failed:
             print(f"  [FAIL] {e.get('id', 'unknown')}")
-            msg = e.get('message', '')
+            msg = e.get("message", "")
             if msg:
                 for line in msg.strip().splitlines()[:2]:  # first 2 lines only
                     print(f"         {line}")
@@ -92,11 +93,13 @@ def check_session_initialized(skill_name: str) -> dict:
 
     # Check if session is stale (>24 hours old)
     try:
-        timestamp = datetime.fromisoformat(state['timestamp'])
+        timestamp = datetime.fromisoformat(state["timestamp"])
         age = datetime.now() - timestamp
         if age > timedelta(hours=24):
             print("WARNING: Session state is stale (>24 hours old)")
-            print("RECOMMENDED: Run /init to refresh constraints")
+            print(
+                "RECOMMENDED: Re-run the platform init workflow to refresh constraints"
+            )
             print()
     except (KeyError, ValueError):
         pass
@@ -113,20 +116,20 @@ def get_project_type() -> str:
     state_file = next((p for p in candidate_files if p.exists()), candidate_files[0])
 
     if not any(p.exists() for p in candidate_files):
-        return 'unknown'
+        return "unknown"
 
     try:
         with open(state_file) as f:
             state = json.load(f)
-            return state.get('project_type', 'unknown')
+            return state.get("project_type", "unknown")
     except (json.JSONDecodeError, IOError):
-        return 'unknown'
+        return "unknown"
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Allow running as standalone check
     try:
-        state = check_session_initialized('manual-check')
+        state = check_session_initialized("manual-check")
         print("✓ Session initialized")
         print(f"  Project type: {state.get('project_type')}")
         print(f"  Initialized: {state.get('timestamp')}")

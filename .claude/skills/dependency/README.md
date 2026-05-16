@@ -1,10 +1,15 @@
 # Dependency Management Skill
 
-A Claude Code skill for comprehensive dependency management in Python and C++/CUDA projects.
+A Claude Code skill for comprehensive dependency management in Python,
+C++/CUDA, and hybrid projects.
 
 ## Overview
 
-This skill provides an automated workflow for adding dependencies to projects. It enforces **Poetry** for Python projects (with Python 3.10+ requirement) and Conan/vcpkg for C++ projects. It updates manifest files, installs packages, and reminds you to update documentation.
+This skill provides an automated workflow for adding dependencies to projects.
+It enforces Poetry for Python projects, supports scikit-build-core style
+hybrid projects, and uses Conan/vcpkg style manifests for C++ projects. It
+updates manifest files, installs packages, and reminds you to update
+documentation.
 
 ## Installation
 
@@ -76,7 +81,7 @@ python3 .ai/scripts/dependency/add.py Eigen 3.4
 
 - **Poetry-First**: Enforces Poetry for all Python projects
 - **In-Project Virtual Environments**: Automatically configures Poetry to create `.venv` inside the project directory
-- **Automatic Project Detection**: Detects Python vs C++/CUDA projects
+- **Automatic Project Detection**: Detects Python, C++/CUDA, and hybrid projects
 - **Manifest File Updates**: Updates pyproject.toml, poetry.lock, conanfile.txt, CMakeLists.txt
 - **Package Installation**: Installs via Poetry or Conan
 - **Documentation Reminders**: Prompts to update README.md
