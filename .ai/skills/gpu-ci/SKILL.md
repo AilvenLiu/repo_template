@@ -9,7 +9,7 @@ manylinux wheel validation, multi-arch builds, and GPU gating patterns.
 
 ## Purpose
 
-This skill is guidance-only in Phase 2. No executable wrapper is provided.
+This skill is guidance-only. No executable wrapper is provided.
 It documents CI patterns for hybrid Python/C++/CUDA projects that distribute
 wheels to PyPI or private package indices.
 

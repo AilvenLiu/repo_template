@@ -360,7 +360,7 @@ If this repository uses `agent_roadmaps/`:
 - Large or multi-session changes MUST follow the roadmap process
 - PRs related to a roadmap SHOULD reference:
     - Roadmap name
-    - Phase / task identifier
+    - Step / task identifier
     - Link to roadmap documentation
 
 AI agents MUST follow the agent instruction files (`AGENTS.md`) and roadmap constraints at all times.

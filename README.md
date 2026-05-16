@@ -10,7 +10,9 @@ Language-specific source files live under `templates/<language>/` with their
 generic names (`CLAUDE.md`, `AGENTS.md`, `CONTRIBUTING.md`, `.gitignore`,
 `project.yml`). The `/create-project` skill copies the shared template tree
 (`.ai/`, `.claude/`, `bin/`, `agent_roadmaps/`) and overlays the chosen
-language's directory onto the target.
+language's directory onto the target. The copied `agent_roadmaps/` directory is
+an empty placeholder for temporary roadmap state only; generated projects must
+not inherit historical roadmap files.
 
 The recommended way to create a project is `/create-project` (see below).
 
@@ -65,7 +67,7 @@ templates/
 - `.ai/scripts/` -- shared runtime tools used by `bin/agent-*` wrappers
 - `.claude/` -- Claude Code skill stubs, hooks, and settings (native loader)
 - `bin/` -- platform-neutral guarded workflow commands (`agent-*`)
-- `agent_roadmaps/` -- multi-session workflow system
+- `agent_roadmaps/` -- temporary multi-session workflow workspace
 
 ### Claude Code Skills
 

@@ -8,7 +8,7 @@ from pathlib import Path
 import sys
 
 import pytest
-import yaml
+import yaml  # type: ignore[import-untyped]
 
 SCRIPTS_DIR = Path(__file__).parent.parent / ".ai" / "scripts" / "roadmap"
 sys.path.insert(0, str(SCRIPTS_DIR))
@@ -35,7 +35,7 @@ RoadmapManager = roadmap_utils.RoadmapManager
 
 def _write_roadmap(path: Path, *, active: bool = True) -> None:
     data = {
-        "phase": 0,
+        "step": 0,
         "name": "Alpha",
         "status": {
             "active": active,
@@ -43,7 +43,7 @@ def _write_roadmap(path: Path, *, active: bool = True) -> None:
             "started_at": "2026-04-17" if active else None,
             "completed_at": None,
         },
-        "depends_on_phases": [],
+        "depends_on_steps": [],
         "tasks": [
             {
                 "id": "task-0-1",
@@ -96,13 +96,13 @@ def _load(path: Path) -> dict:
 
 def test_complete_task_advances_to_dependency_ready_task(tmp_path: Path) -> None:
     repo = tmp_path
-    phase_dir = repo / "agent_roadmaps" / "phase-0-alpha"
-    phase_dir.mkdir(parents=True)
-    roadmap_file = phase_dir / "roadmap.yml"
+    step_dir = repo / "agent_roadmaps" / "step-0-alpha"
+    step_dir.mkdir(parents=True)
+    roadmap_file = step_dir / "roadmap.yml"
     _write_roadmap(roadmap_file, active=True)
 
     manager = RoadmapManager(repo)
-    complete_task(manager, phase_dir)
+    complete_task(manager, step_dir)
 
     updated = _load(roadmap_file)
     tasks = {task["id"]: task for task in updated["tasks"]}
@@ -114,32 +114,32 @@ def test_complete_task_advances_to_dependency_ready_task(tmp_path: Path) -> None
 
 def test_set_focus_rejects_unmet_dependencies(tmp_path: Path) -> None:
     repo = tmp_path
-    phase_dir = repo / "agent_roadmaps" / "phase-0-alpha"
-    phase_dir.mkdir(parents=True)
-    roadmap_file = phase_dir / "roadmap.yml"
+    step_dir = repo / "agent_roadmaps" / "step-0-alpha"
+    step_dir.mkdir(parents=True)
+    roadmap_file = step_dir / "roadmap.yml"
     _write_roadmap(roadmap_file, active=True)
 
     manager = RoadmapManager(repo)
 
     with pytest.raises(SystemExit):
-        set_focus(manager, phase_dir, "task-0-2")
+        set_focus(manager, step_dir, "task-0-2")
 
     updated = _load(roadmap_file)
     assert updated["focus"]["current_task"] == "task-0-1"
 
 
-def test_phase_dependency_readiness_is_reported(tmp_path: Path) -> None:
+def test_step_dependency_readiness_is_reported(tmp_path: Path) -> None:
     repo = tmp_path
 
-    phase0_dir = repo / "agent_roadmaps" / "phase-0-base"
-    phase0_dir.mkdir(parents=True)
-    _write_roadmap(phase0_dir / "roadmap.yml", active=False)
+    step0_dir = repo / "agent_roadmaps" / "step-0-base"
+    step0_dir.mkdir(parents=True)
+    _write_roadmap(step0_dir / "roadmap.yml", active=False)
 
-    phase1_dir = repo / "agent_roadmaps" / "phase-1-followup"
-    phase1_dir.mkdir(parents=True)
+    step1_dir = repo / "agent_roadmaps" / "step-1-followup"
+    step1_dir.mkdir(parents=True)
 
-    followup = _load(phase0_dir / "roadmap.yml")
-    followup["phase"] = 1
+    followup = _load(step0_dir / "roadmap.yml")
+    followup["step"] = 1
     followup["name"] = "Followup"
     followup["status"] = {
         "active": True,
@@ -147,14 +147,16 @@ def test_phase_dependency_readiness_is_reported(tmp_path: Path) -> None:
         "started_at": "2026-04-17",
         "completed_at": None,
     }
-    followup["depends_on_phases"] = ["phase-0-base"]
+    followup["depends_on_steps"] = ["step-0-base"]
     followup["tasks"][0]["status"] = "active"
     followup["focus"]["current_task"] = "task-0-1"
-    (phase1_dir / "roadmap.yml").write_text(yaml.safe_dump(followup, sort_keys=False), encoding="utf-8")
+    (step1_dir / "roadmap.yml").write_text(
+        yaml.safe_dump(followup, sort_keys=False), encoding="utf-8"
+    )
 
     manager = RoadmapManager(repo)
-    phases = manager.find_all_phases()
-    phase1 = next(item for item in phases if item["name"] == "phase-1-followup")
+    steps = manager.find_all_steps()
+    step1 = next(item for item in steps if item["name"] == "step-1-followup")
 
-    assert phase1["ready"] is False
-    assert phase1["unresolved_phase_dependencies"] == ["phase-0-base"]
+    assert step1["ready"] is False
+    assert step1["unresolved_step_dependencies"] == ["step-0-base"]

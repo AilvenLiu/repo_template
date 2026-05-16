@@ -196,14 +196,13 @@ bazel_clean() {
 
 mixed_stub() {
   cat >&2 <<'EOF'
-Mixed build system support is not yet implemented in this phase.
+Mixed build system support is not implemented in this template yet.
 
-This build system configuration will be fully supported in Phase 2 of the
-AI Infra Optimisation roadmap. For now, you can:
+For now, you can:
 - Use Poetry for pure Python projects
 - Use CMake for pure C++/CUDA projects
 
-See .ai/adr/0001-project-profile.md for the roadmap.
+See .ai/adr/0001-project-profile.md for the current profile model.
 EOF
   exit 1
 }

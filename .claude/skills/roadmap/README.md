@@ -4,10 +4,11 @@ Dependency-aware roadmap tooling for multi-session development workflows.
 
 ## Overview
 
-This skill manages roadmap phases under `agent_roadmaps/phase-*/` with:
-- explicit phase dependencies (`depends_on_phases`)
+This skill manages roadmap steps under `agent_roadmaps/step-*/` with:
+- explicit step dependencies (`depends_on_steps`)
 - explicit task dependencies (`depends_on`)
 - deterministic progression and schema validation
+- temporary lifecycle cleanup when the roadmap is fully complete
 
 ## Quick Start
 
@@ -17,18 +18,18 @@ This skill manages roadmap phases under `agent_roadmaps/phase-*/` with:
 python3 .ai/scripts/roadmap/check.py
 ```
 
-### Create a roadmap phase series
+### Create a roadmap step series
 
 ```bash
 python3 .ai/scripts/roadmap/create.py strategy-upgrade \
-  --phases 3 \
-  --phase-names foundation execution hardening
+  --steps 3 \
+  --step-names foundation execution hardening
 ```
 
 ### Validate schema
 
 ```bash
-python3 .ai/scripts/roadmap/validate_schema.py phase-0-foundation
+python3 .ai/scripts/roadmap/validate_schema.py <roadmap-folder>
 ```
 
 ### View status
@@ -48,11 +49,13 @@ python3 .ai/scripts/roadmap/complete.py
 
 ## Core Guarantees
 
-- Single active phase enforcement
+- Single active step enforcement
 - Dependency-safe task transitions
-- Dependency graph visibility at phase and task levels
+- Dependency graph visibility at step and task levels
 - Structured session handoff generation
-- Branch protocol support (`roadmap/<phase-folder-name>`)
+- Branch protocol support (`roadmap/<step-folder-name>`)
+- Roadmap identifiers remain confined to `agent_roadmaps/`
+- Completed roadmap series must be deleted wholesale instead of lingering in the repo
 
 ## Requirements
 

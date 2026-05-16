@@ -34,9 +34,9 @@ bin/agent-bazel <build|test|run|clean|query>
 - Integration with CUDA toolkit discovery.
 - Cross-compilation for multiple GPU architectures.
 
-## Build Subcommand (Phase 2)
+## Build Subcommand
 
-The `build` subcommand is fully implemented in Phase 2:
+The `build` subcommand is fully implemented:
 
 ```bash
 bin/agent-bazel build [--config=<config>] [targets...]

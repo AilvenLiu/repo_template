@@ -447,4 +447,4 @@ endif()
 in the project profile.
 
 **Draft Status**: Advisory only. Does not block commits. Promotion to stable
-requires validation against a real consuming project (Phase 2, task-2-10).
+requires validation against a real consuming project.

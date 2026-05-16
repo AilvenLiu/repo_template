@@ -23,7 +23,7 @@ bin/agent-bazel <build|test|run|clean|query>
 - `clean` -- clean Bazel build artefacts
 - `query` -- query Bazel build graph
 
-## Phase 2 Status
+## Status
 
 The wrapper now supports the common Bazel workflow surface directly. See the
 vendor-neutral skill body for command semantics and examples.

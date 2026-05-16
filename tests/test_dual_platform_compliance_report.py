@@ -26,21 +26,23 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 import pytest
-import yaml
+import yaml  # type: ignore[import-untyped]
 
 ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(ROOT / ".claude" / "skills" / "create-project" / "scripts"))
 sys.path.insert(0, str(ROOT / ".ai" / "scripts"))
 
-from capability_audit import _entry_enabled_for_repo  # noqa: E402
-from init import create_project  # noqa: E402
+from capability_audit import _entry_enabled_for_repo  # type: ignore[import-not-found]  # noqa: E402
+from init import create_project  # type: ignore[import-not-found]  # noqa: E402
 
 PLATFORMS = ("claude", "codex")
 PROJECT_TYPES = ("python", "cpp", "hybrid")
 
 
 def _run(cmd: list[str], cwd: Path) -> subprocess.CompletedProcess:
-    return subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, env=os.environ.copy())
+    env = os.environ.copy()
+    env.setdefault("AGENT_MCP_HEALTH_TIMEOUT_SEC", "1")
+    return subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, env=env)
 
 
 @dataclass
@@ -74,13 +76,19 @@ def _manifest() -> dict:
 def _expected_skills(manifest: dict, platform: str, project_root: Path) -> set[str]:
     skills: set[str] = set()
     for entry in manifest.get("common_requirements", {}).get("project_skills", []):
-        if entry.get("required") and _entry_enabled_for_repo(entry, False, project_root):
+        if entry.get("required") and _entry_enabled_for_repo(
+            entry, False, project_root
+        ):
             skills.add(entry["id"])
     if platform == "codex":
         for entry in (
-            manifest.get("platform_requirements", {}).get("codex", {}).get("codex_skills", [])
+            manifest.get("platform_requirements", {})
+            .get("codex", {})
+            .get("codex_skills", [])
         ):
-            if entry.get("required") and _entry_enabled_for_repo(entry, False, project_root):
+            if entry.get("required") and _entry_enabled_for_repo(
+                entry, False, project_root
+            ):
                 skills.add(entry["id"])
     return skills
 
@@ -88,7 +96,9 @@ def _expected_skills(manifest: dict, platform: str, project_root: Path) -> set[s
 def _expected_wrappers(manifest: dict, project_root: Path) -> set[str]:
     wrappers: set[str] = set()
     for entry in manifest.get("common_requirements", {}).get("repo_commands", []):
-        if entry.get("required") and _entry_enabled_for_repo(entry, False, project_root):
+        if entry.get("required") and _entry_enabled_for_repo(
+            entry, False, project_root
+        ):
             wrappers.add(entry["path"].rsplit("/", 1)[-1])
     return wrappers
 
@@ -157,7 +167,9 @@ def compliance(tmp_path_factory) -> list[Scenario]:
             valid_skill_md = {
                 p.name
                 for p in ai_skills_dir.iterdir()
-                if p.is_dir() and (p / "SKILL.md").exists() and (p / "SKILL.md").read_text().strip()
+                if p.is_dir()
+                and (p / "SKILL.md").exists()
+                and (p / "SKILL.md").read_text().strip()
             }
             scenario.add("skill_md_valid", valid_skill_md, expected_skills)
 
@@ -165,7 +177,9 @@ def compliance(tmp_path_factory) -> list[Scenario]:
             if platform == "claude":
                 claude_skills_dir = target / ".claude" / "skills"
                 claude_stubs = {
-                    p.name for p in claude_skills_dir.iterdir() if p.is_dir() and (p / "SKILL.md").exists()
+                    p.name
+                    for p in claude_skills_dir.iterdir()
+                    if p.is_dir() and (p / "SKILL.md").exists()
                 }
                 scenario.add("claude_stubs_present", claude_stubs, expected_skills)
 
@@ -181,7 +195,9 @@ def compliance(tmp_path_factory) -> list[Scenario]:
             # Constraint hit rate via /init
             init = _run(["bash", "bin/agent-init", "--platform", platform], target)
             state_path = target / ".ai" / "session_state.json"
-            loaded = set(json.loads(state_path.read_text()).get("loaded_constraints", []))
+            loaded = set(
+                json.loads(state_path.read_text()).get("loaded_constraints", [])
+            )
             expected_constraints = _expected_constraints(project_type)
             scenario.add("constraints_loaded", loaded, expected_constraints)
 
@@ -208,7 +224,9 @@ def compliance(tmp_path_factory) -> list[Scenario]:
     return scenarios
 
 
-def test_report_prints_and_every_required_rate_is_100pct(compliance: list[Scenario]) -> None:
+def test_report_prints_and_every_required_rate_is_100pct(
+    compliance: list[Scenario],
+) -> None:
     print("\n" + "=" * 70)
     print("DUAL-PLATFORM COMPLIANCE REPORT")
     print("=" * 70)
@@ -235,7 +253,9 @@ def test_skill_parity_between_ai_skills_and_claude_stubs() -> None:
     'common' utility folder).
     """
     ai_skills = {p.name for p in (ROOT / ".ai" / "skills").iterdir() if p.is_dir()}
-    claude_skills = {p.name for p in (ROOT / ".claude" / "skills").iterdir() if p.is_dir()}
+    claude_skills = {
+        p.name for p in (ROOT / ".claude" / "skills").iterdir() if p.is_dir()
+    }
 
     # Known, documented asymmetries:
     # - 'create-project' is a template-only Claude skill; no .ai/skills body.

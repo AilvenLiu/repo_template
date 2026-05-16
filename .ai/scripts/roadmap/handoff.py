@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate session handoff file for active roadmap phase."""
+"""Generate session handoff file for active roadmap step."""
 
 from __future__ import annotations
 
@@ -18,25 +18,27 @@ from check_session import check_session_initialized
 from utils import RoadmapManager
 
 
-def _get_single_active_phase(manager: RoadmapManager):
+def _get_single_active_step(manager: RoadmapManager):
     active = manager.find_active_roadmaps()
     if not active:
         print("ERROR: No active roadmap found")
         sys.exit(1)
     if len(active) > 1:
-        print("ERROR: Multiple active phases found")
-        for phase in active:
-            print(f"  - {phase['name']}")
-        print("Fix roadmap.yml so only one phase has status.active: true")
+        print("ERROR: Multiple active steps found")
+        for step in active:
+            print(f"  - {step['name']}")
+        print("Fix roadmap.yml so only one step has status.active: true")
         sys.exit(2)
     return active[0]
 
 
-def generate_handoff(work_completed: str, decisions: str, blockers: str, next_steps: str) -> None:
+def generate_handoff(
+    work_completed: str, decisions: str, blockers: str, next_steps: str
+) -> None:
     check_session_initialized("roadmap")
 
     manager = RoadmapManager(Path.cwd())
-    active = _get_single_active_phase(manager)
+    active = _get_single_active_step(manager)
 
     roadmap_dir = active["roadmap_dir"]
     sessions_dir = roadmap_dir / "sessions"
@@ -49,12 +51,12 @@ def generate_handoff(work_completed: str, decisions: str, blockers: str, next_st
 
     data = manager.parse_roadmap_yml(roadmap_dir / "roadmap.yml")
 
-    phase_folder = roadmap_dir.name
-    expected_branch = active.get("expected_branch", f"roadmap/{phase_folder}")
+    step_folder = roadmap_dir.name
+    expected_branch = active.get("expected_branch", f"roadmap/{step_folder}")
     current_task = data.get("focus", {}).get("current_task")
-    phase_dependencies = data.get("depends_on_phases", [])
+    step_dependencies = data.get("depends_on_steps", [])
 
-    content = f"""# Session Handoff: {now.strftime('%Y-%m-%d %H:%M')}\n\n## Focus\n- Phase folder: {phase_folder}\n- Branch: {expected_branch}\n- Current task: {current_task}\n- Phase dependencies: {phase_dependencies}\n\n## Work Completed\n{work_completed}\n\n## Decisions Made\n{decisions}\n\n## Open Issues / Blockers\n{blockers}\n\n## Next Session Handoff\n{next_steps}\n"""
+    content = f"""# Session Handoff: {now.strftime("%Y-%m-%d %H:%M")}\n\n## Focus\n- Step folder: {step_folder}\n- Branch: {expected_branch}\n- Current task: {current_task}\n- Step dependencies: {step_dependencies}\n\n## Work Completed\n{work_completed}\n\n## Decisions Made\n{decisions}\n\n## Open Issues / Blockers\n{blockers}\n\n## Next Session Handoff\n{next_steps}\n"""
 
     try:
         handoff_path.write_text(content, encoding="utf-8")
@@ -63,7 +65,7 @@ def generate_handoff(work_completed: str, decisions: str, blockers: str, next_st
         sys.exit(1)
 
     print(f"Session handoff created: {handoff_path.relative_to(Path.cwd())}")
-    print(f"  Phase: {phase_folder}")
+    print(f"  Step: {step_folder}")
     print(f"  Branch: {expected_branch}")
 
 
@@ -87,9 +89,18 @@ def main() -> None:
         )
     )
     parser.add_argument("--work", default=None, help="Work completed this session")
-    parser.add_argument("--decisions", default=None, help="Decisions or architectural choices")
-    parser.add_argument("--blockers", default=None, help="Blockers or unresolved issues")
-    parser.add_argument("--next-steps", dest="next_steps", default=None, help="Guidance for next session")
+    parser.add_argument(
+        "--decisions", default=None, help="Decisions or architectural choices"
+    )
+    parser.add_argument(
+        "--blockers", default=None, help="Blockers or unresolved issues"
+    )
+    parser.add_argument(
+        "--next-steps",
+        dest="next_steps",
+        default=None,
+        help="Guidance for next session",
+    )
     parser.add_argument(
         "--non-interactive",
         action="store_true",
@@ -98,7 +109,8 @@ def main() -> None:
     args = parser.parse_args()
 
     explicit_any = any(
-        v is not None for v in (args.work, args.decisions, args.blockers, args.next_steps)
+        v is not None
+        for v in (args.work, args.decisions, args.blockers, args.next_steps)
     )
 
     if args.non_interactive or explicit_any or not sys.stdin.isatty():

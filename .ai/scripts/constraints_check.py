@@ -14,11 +14,11 @@ from typing import List
 try:
     from .constants import PROTECTED_BRANCHES, PROTECTED_PREFIXES
     from .paths import resolve_repo_root
-    from .project_type import ProjectType, detect
+    from .project_profile import BuildSystem, Language, ProjectProfile, detect
 except ImportError:
     from constants import PROTECTED_BRANCHES, PROTECTED_PREFIXES
     from paths import resolve_repo_root
-    from project_type import ProjectType, detect
+    from project_profile import BuildSystem, Language, ProjectProfile, detect
 
 
 @dataclass
@@ -67,12 +67,16 @@ def _check_git(repo_root: Path) -> List[Violation]:
     return violations
 
 
-def _check_python(repo_root: Path) -> List[Violation]:
+def _check_python(repo_root: Path, profile: ProjectProfile) -> List[Violation]:
     violations: List[Violation] = []
 
     pyproject = repo_root / "pyproject.toml"
     poetry_lock = repo_root / "poetry.lock"
-    if pyproject.exists() and not poetry_lock.exists():
+    if (
+        profile.build_system == BuildSystem.POETRY
+        and pyproject.exists()
+        and not poetry_lock.exists()
+    ):
         violations.append(
             Violation(
                 category="Dependency Management",
@@ -84,7 +88,7 @@ def _check_python(repo_root: Path) -> List[Violation]:
 
     if pyproject.exists():
         text = pyproject.read_text()
-        if "python = \"^3.9\"" in text or "python = \">=3.9\"" in text:
+        if 'python = "^3.9"' in text or 'python = ">=3.9"' in text:
             violations.append(
                 Violation(
                     category="Dependency Management",
@@ -97,12 +101,18 @@ def _check_python(repo_root: Path) -> List[Violation]:
     return violations
 
 
-def _check_cpp(repo_root: Path) -> List[Violation]:
+def _check_cpp(repo_root: Path, profile: ProjectProfile) -> List[Violation]:
     violations: List[Violation] = []
 
     cmake = repo_root / "CMakeLists.txt"
-    has_dep_manifest = (repo_root / "conanfile.txt").exists() or (repo_root / "vcpkg.json").exists()
-    if cmake.exists() and not has_dep_manifest:
+    has_dep_manifest = (repo_root / "conanfile.txt").exists() or (
+        repo_root / "vcpkg.json"
+    ).exists()
+    if (
+        cmake.exists()
+        and profile.build_system == BuildSystem.CMAKE
+        and not has_dep_manifest
+    ):
         violations.append(
             Violation(
                 category="Dependency Management",
@@ -115,13 +125,13 @@ def _check_cpp(repo_root: Path) -> List[Violation]:
     return violations
 
 
-def check_constraints(repo_root: Path, project_type: ProjectType) -> List[Violation]:
+def check_constraints(repo_root: Path, profile: ProjectProfile) -> List[Violation]:
     violations = _check_git(repo_root)
 
-    if project_type == ProjectType.PYTHON:
-        violations.extend(_check_python(repo_root))
-    elif project_type == ProjectType.CPP:
-        violations.extend(_check_cpp(repo_root))
+    if profile.has_language(Language.PYTHON):
+        violations.extend(_check_python(repo_root, profile))
+    if profile.has_language(Language.CPP):
+        violations.extend(_check_cpp(repo_root, profile))
 
     return violations
 
@@ -144,7 +154,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Constraint checker")
     parser.add_argument(
         "--project-type",
-        choices=["auto", "python", "cpp"],
+        choices=["auto", "python", "cpp", "hybrid"],
         default="auto",
     )
     parser.add_argument("--json", action="store_true")
@@ -153,17 +163,35 @@ def main() -> None:
 
     repo_root = resolve_repo_root(Path(__file__).resolve())
     if args.project_type == "auto":
-        project_type = detect(repo_root)
+        profile = detect(repo_root)
     else:
-        project_type = ProjectType(args.project_type)
+        if args.project_type == "python":
+            profile = ProjectProfile(
+                language=[Language.PYTHON], build_system=BuildSystem.POETRY
+            )
+        elif args.project_type == "cpp":
+            profile = ProjectProfile(
+                language=[Language.CPP], build_system=BuildSystem.CMAKE
+            )
+        else:
+            profile = ProjectProfile(
+                language=[Language.PYTHON, Language.CPP],
+                build_system=BuildSystem.SCIKIT_BUILD_CORE,
+            )
 
-    violations = check_constraints(repo_root, project_type)
+    if profile is None:
+        print("ERROR: Could not detect project profile")
+        sys.exit(1)
+
+    violations = check_constraints(repo_root, profile)
 
     if args.json:
         print(
             json.dumps(
                 {
-                    "project_type": project_type.value,
+                    "project_type": "hybrid"
+                    if profile.is_hybrid()
+                    else profile.language[0].value,
                     "violations": [v.to_dict() for v in violations],
                 },
                 indent=2,

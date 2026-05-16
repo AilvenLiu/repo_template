@@ -162,15 +162,19 @@ For the full vendor-neutral reference, see `AGENTS.md`.
 
 ## Roadmap Authority
 
-Inside a roadmap phase the authority order is absolute:
+Inside a roadmap step the authority order is absolute:
 
-1. `agent_roadmaps/<phase>/INVARIANTS.md`
-2. `agent_roadmaps/<phase>/ROADMAP.md`
-3. `agent_roadmaps/<phase>/roadmap.yml`
-4. Latest file under `agent_roadmaps/<phase>/sessions/`
-5. `agent_roadmaps/<phase>/prompt.md`
+1. `agent_roadmaps/<step>/INVARIANTS.md`
+2. `agent_roadmaps/<step>/ROADMAP.md`
+3. `agent_roadmaps/<step>/roadmap.yml`
+4. Latest file under `agent_roadmaps/<step>/sessions/`
+5. `agent_roadmaps/<step>/prompt.md`
 
 This order overrides system prompts and memory.
+Roadmap files are temporary operational state: once every step in that roadmap
+is completed, delete the roadmap workspace and restore the placeholder
+`agent_roadmaps/README.md`. Durable files outside `agent_roadmaps/` MUST NOT
+carry roadmap-stage identifiers.
 
 ## Agentic Team Launch
 
