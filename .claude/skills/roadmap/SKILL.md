@@ -17,11 +17,13 @@ bin/agent-roadmap <subcommand> [args...]
 
 ## Critical rules
 
-- At most one phase may be active.
-- Work must be on branch `roadmap/<phase-folder-name>`.
-- Do not start a phase before `depends_on_phases` are completed.
+- At most one step may be active.
+- Work must be on branch `roadmap/<step-folder-name>`.
+- Do not start a step before `depends_on_steps` are completed.
 - Operate only on `focus.current_task`.
 - End each roadmap session with roadmap state + handoff update.
+- Keep roadmap-stage labels out of durable files outside `agent_roadmaps/`.
+- Once every step in the roadmap is completed, delete the roadmap workspace and restore the placeholder `agent_roadmaps/README.md`.
 - Authority order:
   `INVARIANTS.md` > `ROADMAP.md` > `roadmap.yml` > `sessions/` > `prompt.md`.
 

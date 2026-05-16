@@ -6,8 +6,19 @@ Checks for common constraint violations.
 
 import os
 import subprocess
+import sys
 from pathlib import Path
 from typing import List, Dict
+
+_SCRIPTS_DIR = Path(__file__).resolve().parents[1]
+if str(_SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS_DIR))
+
+from project_profile import (  # type: ignore[import-not-found]  # noqa: E402
+    BuildSystem,
+    ProjectProfile,
+    detect as detect_project_profile,
+)
 
 
 class ConstraintViolation:
@@ -27,26 +38,33 @@ class ConstraintViolation:
         )
 
 
-def check_python_dependency_constraints() -> List[ConstraintViolation]:
+def check_python_dependency_constraints(profile: ProjectProfile | None = None) -> List[ConstraintViolation]:
     """Check Python dependency management constraints."""
     violations = []
+    pyproject_exists = os.path.exists('pyproject.toml')
+    poetry_lock_exists = os.path.exists('poetry.lock')
+    scikit_build_project = (
+        profile is not None
+        and profile.build_system in (BuildSystem.SCIKIT_BUILD, BuildSystem.SCIKIT_BUILD_CORE)
+        and pyproject_exists
+    )
 
     # Check 1: Virtual environment exists
-    if not os.path.exists('.venv') and not os.path.exists('poetry.lock'):
+    if not os.path.exists('.venv') and not poetry_lock_exists and not scikit_build_project:
         violations.append(ConstraintViolation(
             category='Dependency Management',
             severity='CRITICAL',
-            message='No virtual environment or Poetry detected',
+            message='No managed Python environment detected',
             detail='System Python usage is FORBIDDEN',
-            remediation='Run: poetry init --python=^3.10'
+            remediation='Run: poetry install, pip install -e ., or create .venv'
         ))
 
     # Check 2: Poetry lock file exists if pyproject.toml exists
-    if os.path.exists('pyproject.toml'):
+    if pyproject_exists:
         with open('pyproject.toml') as f:
             content = f.read()
             if '[tool.poetry]' in content or 'poetry-core' in content:
-                if not os.path.exists('poetry.lock'):
+                if not poetry_lock_exists:
                     violations.append(ConstraintViolation(
                         category='Dependency Management',
                         severity='CRITICAL',
@@ -56,7 +74,7 @@ def check_python_dependency_constraints() -> List[ConstraintViolation]:
                     ))
 
     # Check 3: Python version requirement
-    if os.path.exists('pyproject.toml'):
+    if pyproject_exists:
         with open('pyproject.toml') as f:
             content = f.read()
             if 'python = "^3.9"' in content or 'python = ">=3.9"' in content:
@@ -105,10 +123,11 @@ def check_git_workflow_constraints() -> List[ConstraintViolation]:
 def validate_all_constraints() -> List[ConstraintViolation]:
     """Run all constraint validations."""
     all_violations = []
+    profile = detect_project_profile(Path.cwd())
 
     # Determine project type
     if os.path.exists('pyproject.toml') or os.path.exists('requirements.txt'):
-        all_violations.extend(check_python_dependency_constraints())
+        all_violations.extend(check_python_dependency_constraints(profile))
 
     all_violations.extend(check_git_workflow_constraints())
 

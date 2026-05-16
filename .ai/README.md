@@ -9,11 +9,12 @@ which AI agent platform is used.
 
 ```
 .ai/
-  tools/             # Shared runtime core (init/audit/policy/constraints)
+  scripts/           # Shared runtime core (init/audit/policy/constraints)
   constraints/
     common/          # Cross-language constraints (git, sessions, roadmaps)
     python/          # Python-specific constraints
     cpp/             # C++/CUDA-specific constraints
+    hybrid/          # Hybrid Python/C++/CUDA constraints
   capabilities.yml   # Capability manifest for session audits
   README.md          # This file
 ```
@@ -50,8 +51,8 @@ Both Claude and Codex use the shared audit runtime:
    - `AGENTS.md` is loaded automatically by Codex / Cursor / Cline /
      other agents.md-aware tools (per the [agents.md spec](https://agents.md)).
 4. **Vendor-specific wrappers** (`.claude/skills/`, `bin/agent-*`) call into
-   the shared runtime. `.codex/skills/` holds Codex-side procedure manifests
-   that are read on demand from `AGENTS.md`.
+   the shared runtime. Non-Claude platforms consult `AGENTS.md`,
+   `.ai/skills/<name>/SKILL.md`, and the `bin/agent-*` wrappers directly.
 
 ## Adding a New AI Agent Platform
 

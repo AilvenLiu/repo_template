@@ -172,6 +172,8 @@ def _evaluate_when_selector(selector: str, profile: Any) -> bool:
     Supported syntax:
     - Single equality: "language=python"
     - List membership: "language in [python, cpp]"
+    - Disjunction: "distribution=pypi-wheel OR hardware_targets=cuda"
+    - Conjunction: "language=python AND build_system=poetry"
 
     Args:
         selector: The when selector string
@@ -188,6 +190,13 @@ def _evaluate_when_selector(selector: str, profile: Any) -> bool:
     # Empty selector after stripping whitespace
     if not selector:
         return True
+
+    # Evaluate simple OR / AND expressions left-to-right.
+    if " OR " in selector:
+        return any(_evaluate_when_selector(part, profile) for part in selector.split(" OR "))
+
+    if " AND " in selector:
+        return all(_evaluate_when_selector(part, profile) for part in selector.split(" AND "))
 
     # Handle "axis in [value1, value2]" syntax
     if " in [" in selector:

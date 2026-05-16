@@ -1,9 +1,9 @@
-# roadmap.yml -- Per-Phase Execution State (Dependency-Aware Template)
+# roadmap.yml -- Per-Step Execution State (Dependency-Aware Template)
 #
-# This file is the ONLY authoritative execution state for this phase.
+# This file is the ONLY authoritative execution state for this step.
 # Keep it machine-readable and deterministic.
 
-phase: <PHASE_NUMBER>
+step: <PHASE_NUMBER>
 name: <PHASE_TITLE>
 
 status:
@@ -12,15 +12,15 @@ status:
   started_at: null
   completed_at: null
 
-# Explicit upstream phase dependencies by folder name.
-# Example: [phase-6-foundation, phase-7-data-pipeline]
-depends_on_phases: <PHASE_DEPENDENCIES>
+# Explicit upstream step dependencies by folder name.
+# Example: [upstream-roadmap-step]
+depends_on_steps: <PHASE_DEPENDENCIES>
 
 tasks:
   - id: <TASK_PREFIX>-1
     title: Define implementation baseline for <PHASE_TITLE>
     description: >
-      Clarify exact scope, constraints, and acceptance criteria for this phase.
+      Clarify exact scope, constraints, and acceptance criteria for this step.
       Confirm objective boundaries and identify files touched first.
     status: active
     effort: medium
@@ -32,7 +32,7 @@ tasks:
   - id: <TASK_PREFIX>-2
     title: Implement dependency-safe core changes for <PHASE_TITLE>
     description: >
-      Implement the primary code changes for this phase while preserving
+      Implement the primary code changes for this step while preserving
       upstream invariants and compatibility guarantees.
     status: pending
     effort: medium
@@ -45,7 +45,7 @@ tasks:
     title: Validate outcomes and prepare merge handoff
     description: >
       Run required validation, document final state, and prepare branch merge
-      guidance for this phase.
+      guidance for this step.
     status: pending
     effort: low
     key_files:

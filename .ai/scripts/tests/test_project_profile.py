@@ -114,9 +114,9 @@ project_profile:
             project_yml.write_text("""
 project_profile:
   language: [python, cpp]
-  build_system: scikit-build
+  build_system: scikit-build-core
   bindings: nanobind
-  distribution: pypi
+  distribution: pypi-wheel
   hardware_targets: [cuda, cpu]
   external_dependencies: system_cuda
 """)
@@ -125,9 +125,9 @@ project_profile:
             assert profile is not None
             assert Language.PYTHON in profile.language
             assert Language.CPP in profile.language
-            assert profile.build_system == BuildSystem.SCIKIT_BUILD
+            assert profile.build_system == BuildSystem.SCIKIT_BUILD_CORE
             assert profile.bindings == Bindings.NANOBIND
-            assert profile.distribution == Distribution.PYPI
+            assert profile.distribution == Distribution.PYPI_WHEEL
             assert profile.is_hybrid()
 
     def test_parse_single_language_string(self):

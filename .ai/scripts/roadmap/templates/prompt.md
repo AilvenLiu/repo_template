@@ -1,4 +1,4 @@
-You are operating under roadmap phase `<PHASE_FOLDER_NAME>`.
+You are operating under roadmap step `<PHASE_FOLDER_NAME>`.
 
 ## Absolute Authority Order (non-negotiable)
 
@@ -27,7 +27,7 @@ Before any implementation work:
 2. Verify branch is `roadmap/<PHASE_FOLDER_NAME>`.
 
 3. Confirm:
-   - `depends_on_phases` are all completed
+   - `depends_on_steps` are all completed
    - The active task's `depends_on` tasks are all completed
    - `focus.current_task` matches exactly one active task
 
@@ -47,7 +47,7 @@ executing sequentially. See `.ai/constraints/common/agentic-team.md` for the
 full policy.
 
 Parallelisation MUST NOT violate:
-- single-active-task rule (one task active per phase)
+- single-active-task rule (one task active per step)
 - dependency order (`depends_on`)
 - the authority order above
 

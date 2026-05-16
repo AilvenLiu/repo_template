@@ -598,9 +598,9 @@ This constraint is under validation and will not fail pre-commit checks. Adoptio
 
 ### 10.1 Recommended Adoption Path
 
-1. **Phase 1**: Use for new kernel development
-2. **Phase 2**: Refactor performance-critical kernels
-3. **Phase 3**: Promote to required after validation on real projects
+1. **Initial adoption**: Use for new kernel development
+2. **Expansion**: Refactor performance-critical kernels
+3. **Promotion**: Make required after validation on real projects
 
 ### 10.2 Validation Criteria
 

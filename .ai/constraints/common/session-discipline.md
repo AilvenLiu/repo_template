@@ -52,7 +52,7 @@ The agent MUST:
 
 **For roadmap work:**
 - `agent_roadmaps/<active>/INVARIANTS.md` - Immutable constraints
-- `agent_roadmaps/<active>/ROADMAP.md` - Phase intent, scope, and dependency rationale
+- `agent_roadmaps/<active>/ROADMAP.md` - Step intent, scope, and dependency rationale
 - `agent_roadmaps/<active>/prompt.md` - Session initialization instructions
 - `agent_roadmaps/<active>/roadmap.yml` - Current state and progress
 - `agent_roadmaps/<active>/sessions/` - Session handoff files
@@ -111,7 +111,7 @@ The agent MUST:
 
 2. Update `roadmap.yml` with current state
    - Mark completed tasks
-   - Update phase/task dependency state
+   - Update step/task dependency state
    - Note any timeline changes
 
 3. Commit both files together
@@ -325,7 +325,7 @@ The agent MUST stop and ask when:
 - CUDA kernel launch configurations (C++/CUDA)
 
 **Scope changes:**
-- Work outside current roadmap phase
+- Work outside current roadmap step
 - Additional features not in requirements
 - Architectural changes
 - New dependencies

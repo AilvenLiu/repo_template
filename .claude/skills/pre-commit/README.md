@@ -4,7 +4,9 @@ A Claude Code skill for automated pre-commit validation orchestrating formatters
 
 ## Overview
 
-This skill provides comprehensive code quality validation for Python and C++/CUDA projects. It automatically detects project type and runs appropriate validation tools, providing consolidated error reporting.
+This skill provides comprehensive code quality validation for Python,
+C++/CUDA, and hybrid projects. It automatically detects the project profile
+and runs appropriate validation tools, providing consolidated error reporting.
 
 ## Installation
 
@@ -43,7 +45,7 @@ python3 .ai/scripts/pre-commit/fix.py
 
 ## Features
 
-- **Automatic Project Detection**: Detects Python vs C++/CUDA projects
+- **Automatic Project Detection**: Detects Python, C++/CUDA, and hybrid projects
 - **Comprehensive Validation**: Runs formatters, linters, type checkers, and tests
 - **Auto-Fix Support**: Automatically fixes formatting issues
 - **Consolidated Reporting**: Single view of all validation results

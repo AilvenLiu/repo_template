@@ -20,7 +20,7 @@ import re
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, Iterable, List
+from typing import Iterable, List
 
 try:
     from .paths import resolve_repo_root
@@ -73,7 +73,9 @@ SKIP_DIR_PARTS = {
 ALLOW_PRAGMA = re.compile(r"#\s*ai-allow\s*:\s*(?P<category>[a-zA-Z0-9_-]+)")
 
 
-def _scannable_files(root: Path, suffixes: set[str], include_tests: bool) -> Iterable[Path]:
+def _scannable_files(
+    root: Path, suffixes: set[str], include_tests: bool
+) -> Iterable[Path]:
     for path in root.rglob("*"):
         if not path.is_file():
             continue
@@ -153,8 +155,6 @@ def _scan_python_file(path: Path) -> List[Finding]:
     except OSError:
         return findings
 
-    full_text = "\n".join(lines)
-
     for idx, line in enumerate(lines, start=1):
         for cat, pat, msg, rem in _PY_RULES + _PY_SECRET_RULES:
             if pat.search(line) and not _line_allowed(line, cat):
@@ -219,6 +219,20 @@ _CPP_RULES: List[tuple[str, re.Pattern[str], str, str]] = [
 ]
 
 
+_ROADMAP_RESIDUE_RULES: List[tuple[str, re.Pattern[str], str, str]] = [
+    (
+        "roadmap-stage-label",
+        re.compile(
+            r"(?:^|[^A-Za-z0-9_])"
+            r"(phase-\d+-[a-z0-9-]+|roadmap/phase-\d+-[a-z0-9-]+|"
+            r"step-\d+-[a-z0-9-]+|roadmap/step-\d+-[a-z0-9-]+)"
+        ),
+        "Roadmap-stage identifier leaked into a durable project file",
+        "Keep roadmap labels inside agent_roadmaps/ only, or remove the temporary roadmap reference.",
+    ),
+]
+
+
 def _scan_cpp_file(path: Path) -> List[Finding]:
     findings: List[Finding] = []
     try:
@@ -228,9 +242,28 @@ def _scan_cpp_file(path: Path) -> List[Finding]:
 
     for idx, line in enumerate(lines, start=1):
         stripped = line.strip()
-        if stripped.startswith("//") or stripped.startswith("/*") or stripped.startswith("*"):
+        if (
+            stripped.startswith("//")
+            or stripped.startswith("/*")
+            or stripped.startswith("*")
+        ):
             continue
         for cat, pat, msg, rem in _CPP_RULES:
+            if pat.search(line) and not _line_allowed(line, cat):
+                findings.append(Finding(path, idx, cat, msg, line, rem))
+
+    return findings
+
+
+def _scan_roadmap_residue_file(path: Path) -> List[Finding]:
+    findings: List[Finding] = []
+    try:
+        lines = path.read_text(encoding="utf-8", errors="ignore").splitlines()
+    except OSError:
+        return findings
+
+    for idx, line in enumerate(lines, start=1):
+        for cat, pat, msg, rem in _ROADMAP_RESIDUE_RULES:
             if pat.search(line) and not _line_allowed(line, cat):
                 findings.append(Finding(path, idx, cat, msg, line, rem))
 
@@ -242,23 +275,54 @@ def _scan_cpp_file(path: Path) -> List[Finding]:
 # ---------------------------------------------------------------------------
 
 
-def scan(repo_root: Path, project_type: ProjectType, include_tests: bool = False) -> List[Finding]:
+def scan(
+    repo_root: Path, project_type: ProjectType, include_tests: bool = False
+) -> List[Finding]:
     findings: List[Finding] = []
 
     if project_type == ProjectType.PYTHON:
         for file in _scannable_files(repo_root, {".py"}, include_tests):
             findings.extend(_scan_python_file(file))
     elif project_type == ProjectType.CPP:
-        for file in _scannable_files(repo_root, {".cpp", ".hpp", ".cc", ".hh", ".h", ".cu", ".cuh"}, include_tests):
+        for file in _scannable_files(
+            repo_root,
+            {".cpp", ".hpp", ".cc", ".hh", ".h", ".cu", ".cuh"},
+            include_tests,
+        ):
             findings.extend(_scan_cpp_file(file))
     else:
         # best effort: scan all recognised files
         for file in _scannable_files(repo_root, {".py"}, include_tests):
             findings.extend(_scan_python_file(file))
         for file in _scannable_files(
-            repo_root, {".cpp", ".hpp", ".cc", ".hh", ".h", ".cu", ".cuh"}, include_tests
+            repo_root,
+            {".cpp", ".hpp", ".cc", ".hh", ".h", ".cu", ".cuh"},
+            include_tests,
         ):
             findings.extend(_scan_cpp_file(file))
+
+    roadmap_suffixes = {
+        ".py",
+        ".cpp",
+        ".hpp",
+        ".cc",
+        ".hh",
+        ".h",
+        ".cu",
+        ".cuh",
+        ".md",
+        ".rst",
+        ".toml",
+        ".yml",
+        ".yaml",
+        ".json",
+        ".ini",
+        ".cfg",
+        ".txt",
+        ".sh",
+    }
+    for file in _scannable_files(repo_root, roadmap_suffixes, include_tests):
+        findings.extend(_scan_roadmap_residue_file(file))
 
     return findings
 
@@ -296,7 +360,11 @@ def main() -> None:
     args = parser.parse_args()
 
     repo_root = resolve_repo_root(Path(__file__).resolve())
-    project_type = detect(repo_root) if args.project_type == "auto" else ProjectType(args.project_type)
+    project_type = (
+        detect(repo_root)
+        if args.project_type == "auto"
+        else ProjectType(args.project_type)
+    )
 
     findings = scan(repo_root, project_type, include_tests=args.include_tests)
 

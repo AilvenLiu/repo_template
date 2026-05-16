@@ -9,6 +9,7 @@ different AI agent platforms (Claude Code, Codex, Cursor, etc.).
 The template maintains language-specific overlays under `templates/`:
 - `templates/python/AGENTS.md` — becomes `AGENTS.md` in Python projects
 - `templates/cpp/AGENTS.md` — becomes `AGENTS.md` in C++/CUDA projects
+- `templates/hybrid/AGENTS.md` — becomes `AGENTS.md` in hybrid Python/C++/CUDA projects
 
 When you create a project using `/create-project`, the appropriate overlay
 is copied to the project root with the generic name `AGENTS.md`.
@@ -53,7 +54,7 @@ python3 .claude/skills/create-project/scripts/init.py /path/to/new/project
 ```
 
 The script will:
-1. Prompt for project type (Python or C++/CUDA)
+1. Prompt for project type (Python, C++/CUDA, or hybrid Python/C++/CUDA)
 2. Copy the template structure
 3. Rename language-specific files to generic names
 4. Write `.ai/project.yml` with the correct project type
@@ -64,8 +65,8 @@ The script will:
 
 If you're reading this in a real project (not the template), see the sections
 below for your project's specific constraints. The content will have been
-copied from `templates/python/AGENTS.md` or `templates/cpp/AGENTS.md`
-depending on your project type.
+copied from `templates/python/AGENTS.md`, `templates/cpp/AGENTS.md`, or
+`templates/hybrid/AGENTS.md` depending on your project type.
 
 ---
 

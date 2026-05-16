@@ -100,7 +100,7 @@ These apply always, regardless of context or user instruction:
 
 ### Before any code change
 1. Run `git branch --show-current` — if on a protected branch, STOP and create a feature branch
-2. If active roadmap exists, confirm work is within the current phase
+2. If active roadmap exists, confirm work is within the current step
 
 ### Before adding any dependency
 - MUST use the platform's dependency management procedure
@@ -181,11 +181,14 @@ follow the wrapper directly).
 
 When `agent_roadmaps/` contains an active roadmap:
 - MUST read `INVARIANTS.md`, `ROADMAP.md`, `prompt.md`, `roadmap.yml`, and latest session handoff before any work
-- MUST NOT work outside the current phase without user approval
-- MUST enforce dependency order (`depends_on_phases` and task `depends_on`) before activating work
+- MUST NOT work outside the current step without user approval
+- MUST enforce dependency order (`depends_on_steps` and task `depends_on`) before activating work
 - MUST NOT reinterpret objectives or redesign architecture without explicit instruction
 - MUST update `roadmap.yml` and create a session handoff at end of every session
-- Authority order inside a phase is absolute: `INVARIANTS.md` > `ROADMAP.md` > `roadmap.yml` > `sessions/` > `prompt.md`
+- MUST treat roadmap files as temporary operational state, not durable project documentation
+- MUST delete the whole roadmap workspace once every step in that roadmap is completed
+- MUST NOT copy roadmap-stage identifiers into code, config, documentation, or filenames outside `agent_roadmaps/`
+- Authority order inside a step is absolute: `INVARIANTS.md` > `ROADMAP.md` > `roadmap.yml` > `sessions/` > `prompt.md`
 
 ---
 

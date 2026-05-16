@@ -45,7 +45,7 @@ The script will:
 - `conanfile.txt` (Conan configuration)
 - C++-specific template overlay from `templates/cpp/`
 
-### For Hybrid Projects (Phase 2)
+### For Hybrid Projects
 - `.ai/` directory (constraints and tools)
 - `.claude/` directory (all skills, both Python and C++ needed)
 - `agent_roadmaps/` directory

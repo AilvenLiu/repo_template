@@ -5,13 +5,35 @@ from pathlib import Path
 
 
 def test_python_testing_does_not_recommend_direct_pip_install() -> None:
-    content = (Path(__file__).parent.parent / ".ai" / "constraints" / "python" / "testing.md").read_text()
+    content = (
+        Path(__file__).parent.parent / ".ai" / "constraints" / "python" / "testing.md"
+    ).read_text()
     assert "pip install pytest" not in content
 
 
 def test_readme_no_missing_codex_integration_doc_reference() -> None:
     readme = (Path(__file__).parent.parent / "README.md").read_text()
     assert "CODEX_INTEGRATION.md" not in readme
+
+
+def test_template_docs_cover_hybrid_projects() -> None:
+    root = Path(__file__).parent.parent
+    for rel_path in ["README.md", "AGENTS.md", "CLAUDE.md"]:
+        content = (root / rel_path).read_text()
+        assert "hybrid" in content.lower(), rel_path
+
+
+def test_template_docs_do_not_reference_removed_codex_tree() -> None:
+    root = Path(__file__).parent.parent
+    checked = [
+        root / "README.md",
+        root / "AGENTS.md",
+        root / ".ai" / "README.md",
+        root / ".claude" / "skills" / "create-project" / "SKILL.md",
+    ]
+    for path in checked:
+        content = path.read_text()
+        assert ".codex/" not in content, str(path)
 
 
 def test_codex_entrypoint_files_removed() -> None:
@@ -43,10 +65,10 @@ def test_canonical_python_env_skill_uses_wrapper() -> None:
 def test_repo_contains_no_removed_legacy_behavior_references() -> None:
     root = Path(__file__).parent.parent
     blocked = (
-        "p" "ua",
-        "p" "ua-en",
-        "tanweai/" "p" "ua",
-        "p" "ua-skills",
+        "pua",
+        "pua-en",
+        "tanweai/pua",
+        "pua-skills",
     )
 
     for path in root.rglob("*"):

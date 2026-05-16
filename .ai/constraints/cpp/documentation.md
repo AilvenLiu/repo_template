@@ -275,12 +275,12 @@ void resize(size_t new_size);
 ### 7.1 Complex Algorithms
 ```cpp
 void complexAlgorithm(const std::vector<float>& data) {
-    // Phase 1: Sort data using quicksort
+    // Step 1: Sort data using quicksort
     // We use quicksort here because the data is typically
     // already partially sorted, giving O(n log n) performance
     std::sort(data.begin(), data.end());
 
-    // Phase 2: Remove duplicates using two-pointer technique
+    // Step 2: Remove duplicates using two-pointer technique
     // This is more efficient than using std::unique because
     // we can avoid the erase operation
     size_t write_idx = 0;

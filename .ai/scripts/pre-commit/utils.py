@@ -12,6 +12,11 @@ _SCRIPTS_DIR = Path(__file__).resolve().parents[1]
 if str(_SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_DIR))
 
+from project_profile import (  # type: ignore[import-not-found]  # noqa: E402
+    BuildSystem,
+    ProjectProfile,
+    detect as detect_project_profile,
+)
 from project_type import (  # type: ignore[import-not-found]  # noqa: E402
     ProjectType,
     detect as detect_project_type,
@@ -41,6 +46,71 @@ class PreCommitManager:
     def detect_project_type(self) -> ProjectType:
         """Detect project type using shared module."""
         return detect_project_type(self.repo_root)
+
+    def detect_project_profile(self) -> ProjectProfile:
+        """Detect project profile using shared module."""
+        profile = detect_project_profile(self.repo_root)
+        if profile is None:
+            raise ValueError("Unable to detect project profile")
+        return profile
+
+    def describe_project_type(self) -> str:
+        """Return a user-facing project type label."""
+        profile = self.detect_project_profile()
+        if profile.is_hybrid():
+            return "hybrid"
+        return self.detect_project_type().value
+
+    def python_environment_status(self, profile: ProjectProfile) -> tuple[bool, str]:
+        """Check whether Python environment management is acceptable."""
+        venv_paths = [".venv", "venv", ".virtualenv"]
+        venv_exists = any((self.repo_root / venv).exists() for venv in venv_paths)
+        poetry_lock = self.repo_root / "poetry.lock"
+        pyproject = self.repo_root / "pyproject.toml"
+        poetry_managed = pyproject.exists() and poetry_lock.exists()
+        scikit_build_project = (
+            profile.build_system in (BuildSystem.SCIKIT_BUILD, BuildSystem.SCIKIT_BUILD_CORE)
+            and pyproject.exists()
+        )
+
+        if scikit_build_project:
+            return True, "scikit-build-core project detected (pyproject.toml)"
+        if poetry_managed:
+            return True, "Poetry-managed environment detected (pyproject.toml + poetry.lock)"
+        if venv_exists:
+            venv_name = next(venv for venv in venv_paths if (self.repo_root / venv).exists())
+            return True, f"Found virtual environment: {venv_name}"
+
+        return (
+            False,
+            "No supported Python environment found.\n"
+            "Use Poetry (`poetry install`), scikit-build-core (`pip install -e .`), "
+            "or create `.venv` before validating.",
+        )
+
+    def python_dependency_manifest_status(self, profile: ProjectProfile) -> tuple[bool, str]:
+        """Check whether Python dependency declarations are present."""
+        poetry_lock = self.repo_root / "poetry.lock"
+        pyproject = self.repo_root / "pyproject.toml"
+        requirements_file = self.repo_root / "requirements.txt"
+        poetry_managed = pyproject.exists() and poetry_lock.exists()
+        scikit_build_project = (
+            profile.build_system in (BuildSystem.SCIKIT_BUILD, BuildSystem.SCIKIT_BUILD_CORE)
+            and pyproject.exists()
+        )
+
+        if poetry_managed:
+            return True, "Poetry lockfile exists"
+        if scikit_build_project:
+            return True, "pyproject.toml exists for scikit-build-core project"
+        if requirements_file.exists():
+            return True, "requirements.txt exists"
+
+        return (
+            False,
+            "No dependency manifest found. Use Poetry (`poetry add` + `poetry lock`), "
+            "a scikit-build-core `pyproject.toml`, or provide requirements.txt.",
+        )
 
     def run_command(
         self,

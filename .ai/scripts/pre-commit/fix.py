@@ -24,7 +24,9 @@ def fix_python_formatting(manager: PreCommitManager) -> None:
     # Run ruff (format + lint auto-fix; covers import order via the I rule)
     if manager.check_tool_available("ruff"):
         print("Running ruff format...")
-        returncode, _stdout, stderr = manager.run_command(["ruff", "format"] + file_args)
+        returncode, _stdout, stderr = manager.run_command(
+            ["ruff", "format"] + file_args
+        )
         if returncode == 0:
             print("[OK] ruff format applied")
         else:
@@ -71,22 +73,29 @@ def main():
     repo_root = Path.cwd()
     manager = PreCommitManager(repo_root)
 
-    # Detect project type
+    profile = manager.detect_project_profile()
     project_type = manager.detect_project_type()
+    project_label = manager.describe_project_type()
 
     print("Pre-Commit Auto-Fix")
     print("=" * 50)
-    print(f"Project Type: {project_type.value}")
+    print(f"Project Type: {project_label}")
     print()
 
     # Run appropriate fixes
-    if project_type == ProjectType.PYTHON:
+    if profile.is_hybrid():
+        fix_python_formatting(manager)
+        print()
+        fix_cpp_formatting(manager)
+    elif project_type == ProjectType.PYTHON:
         fix_python_formatting(manager)
     elif project_type == ProjectType.CPP:
         fix_cpp_formatting(manager)
     else:
         print("ERROR: Unknown project type")
-        print("Could not detect Python or C++/CUDA project")
+        print(
+            "Could not detect a supported project profile (Python, C++/CUDA, or hybrid)"
+        )
         sys.exit(1)
 
     print()

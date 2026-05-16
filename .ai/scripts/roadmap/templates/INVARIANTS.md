@@ -1,6 +1,6 @@
-# INVARIANTS -- Phase Constitutional Constraints (Template)
+# INVARIANTS -- Step Constitutional Constraints (Template)
 
-> These invariants apply to phase `<PHASE_FOLDER_NAME>` and override lower-priority guidance.
+> These invariants apply to step `<PHASE_FOLDER_NAME>` and override lower-priority guidance.
 
 ## 1. Authority
 
@@ -15,13 +15,13 @@
 
 ## 2. Dependency Invariants
 
-- Do not execute this phase until all `depends_on_phases` are completed.
+- Do not execute this step until all `depends_on_steps` are completed.
 - Do not mark a task active if its `depends_on` tasks are incomplete.
 - Do not bypass dependency checks by manual status edits without user approval.
 
 ## 3. Architecture and Behavior
 
-Define system boundaries and behavior that must not regress in this phase.
+Define system boundaries and behavior that must not regress in this step.
 
 ## 4. Quality and Safety
 

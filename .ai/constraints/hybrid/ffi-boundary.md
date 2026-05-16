@@ -1,8 +1,8 @@
 ---
-id: cpp/ffi-boundary
+id: hybrid/ffi-boundary
 name: FFI Boundary Patterns
 description: Python/C++/CUDA interop patterns for AI infrastructure projects
-category: cpp
+category: hybrid
 status: draft
 applies_to:
   - "*.py (when calling native extensions)"

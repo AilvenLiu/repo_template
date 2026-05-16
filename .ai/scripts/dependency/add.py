@@ -8,13 +8,17 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 # Add common utilities to path
-sys.path.insert(0, str(Path(__file__).parent.parent / 'common'))
+sys.path.insert(0, str(Path(__file__).parent.parent / "common"))
 from check_session import check_session_initialized
 
 # Check session initialization before proceeding
-session_state = check_session_initialized('dependency')
+session_state = check_session_initialized("dependency")
 
-from utils import DependencyManager, ProjectType, PythonProjectType, BuildSystem
+from utils import (  # noqa: E402
+    BuildSystem,
+    DependencyManager,
+    PythonProjectType,
+)
 
 
 def ensure_python_version(manager: DependencyManager) -> str:
@@ -103,7 +107,7 @@ def ensure_poetry_available(manager: DependencyManager) -> None:
         else:
             print(f"[WARNING] {message}")
             print("          You may need to manually remove it:")
-            print(f"          poetry env remove --all")
+            print("          poetry env remove --all")
         print()
 
     # Configure Poetry to use in-project virtualenvs
@@ -130,7 +134,7 @@ def ensure_poetry_project(manager: DependencyManager, python_exec: str) -> None:
 
         success, message = manager.poetry_init(python_exec)
         if not success:
-            print(f"[ERROR] Failed to initialise Poetry project")
+            print("[ERROR] Failed to initialise Poetry project")
             print(f"Error: {message}")
             print()
             print("Please initialise manually:")
@@ -245,7 +249,7 @@ def add_python_dependency_trivial(
         )
 
         if returncode != 0:
-            print(f"[ERROR] Failed to create virtual environment")
+            print("[ERROR] Failed to create virtual environment")
             print(f"Error: {stderr}")
             print()
             print("Please create manually:")
@@ -253,7 +257,7 @@ def add_python_dependency_trivial(
             print("  source .venv/bin/activate")
             sys.exit(1)
 
-        print(f"[OK] Virtual environment created at .venv")
+        print("[OK] Virtual environment created at .venv")
 
     pip_path = venv_path / "bin" / "pip"
 
@@ -347,9 +351,9 @@ def add_cpp_dependency_cmake(
             ["conan", "install", ".", "--build=missing"]
         )
         if returncode == 0:
-            print(f"[OK] Conan install successful")
+            print("[OK] Conan install successful")
         else:
-            print(f"[ERROR] Conan install failed")
+            print("[ERROR] Conan install failed")
             print(f"Error: {stderr}")
             print("\nIf Conan is not installed:")
             print("  pip install conan")
@@ -357,9 +361,9 @@ def add_cpp_dependency_cmake(
 
     # Use vcpkg if available (and Conan is not)
     elif vcpkg_file.exists():
-        print(f"[INFO] Using vcpkg for dependency management")
+        print("[INFO] Using vcpkg for dependency management")
         print(f"[ACTION] Please add {package} to vcpkg.json manually")
-        print(f"         Then run: vcpkg install")
+        print("         Then run: vcpkg install")
 
     # Add to CMakeLists.txt
     if cmake_file.exists():
@@ -380,7 +384,9 @@ def add_cpp_dependency_cmake(
             print(f"  - {package}")
 
 
-def add_dependency_scikit_build(manager: DependencyManager, package: str, version: str | None, dev: bool) -> None:
+def add_dependency_scikit_build(
+    manager: DependencyManager, package: str, version: str | None, dev: bool
+) -> None:
     """Add dependency to scikit-build-core project.
 
     scikit-build-core projects use pyproject.toml for Python dependencies.
@@ -434,7 +440,7 @@ def add_dependency_scikit_build(manager: DependencyManager, package: str, versio
             if "]" in lines[i]:
                 # Insert before the closing bracket
                 indent = "    "
-                lines.insert(i, f'{indent}{dep_string},\n')
+                lines.insert(i, f"{indent}{dep_string},\n")
                 modified = True
                 print(f"[OK] Added {package} to [project.dependencies]")
                 break
@@ -443,16 +449,16 @@ def add_dependency_scikit_build(manager: DependencyManager, package: str, versio
         for i in range(optional_dev_line + 1, len(lines)):
             if "]" in lines[i]:
                 indent = "    "
-                lines.insert(i, f'{indent}{dep_string},\n')
+                lines.insert(i, f"{indent}{dep_string},\n")
                 modified = True
                 print(f"[OK] Added {package} to [project.optional-dependencies.dev]")
                 break
     else:
-        print(f"[ERROR] Could not find appropriate section in pyproject.toml")
+        print("[ERROR] Could not find appropriate section in pyproject.toml")
         print()
         print("Please add manually:")
         if dev:
-            print(f'  [project.optional-dependencies]')
+            print("  [project.optional-dependencies]")
             print(f'  dev = ["{package}"]')
         else:
             print(f'  dependencies = ["{package}"]')
@@ -478,50 +484,54 @@ def add_dependency_scikit_build(manager: DependencyManager, package: str, versio
 
 def add_dependency_scikit_build_stub(package: str) -> None:
     """Stub for scikit-build dependency management (not yet implemented)."""
-    print(f"[ERROR] scikit-build dependency management not yet implemented")
+    print("[ERROR] scikit-build dependency management not yet implemented")
     print("=" * 50)
     print()
     print("scikit-build projects use a hybrid Python/C++ dependency model:")
     print("  - Python dependencies: managed via Poetry/pip")
     print("  - C++ dependencies: managed via CMake/Conan")
     print()
-    print("This build system will be implemented in Phase 2.")
+    print("This build system is not implemented in this template yet.")
     print()
     print("For now, please add dependencies manually:")
     print("  - Python packages: edit pyproject.toml")
     print("  - C++ libraries: edit conanfile.txt or CMakeLists.txt")
     print()
     print("See: docs/architecture/decisions/002-six-axis-project-profile.md")
-    print("Roadmap: agent_roadmaps/phase-2-build-system-expansion/")
+    print(
+        "Create a temporary roadmap under agent_roadmaps/ if multi-session coordination is needed."
+    )
     sys.exit(1)
 
 
 def add_dependency_bazel_stub(package: str) -> None:
     """Stub for Bazel dependency management (not yet implemented)."""
-    print(f"[ERROR] Bazel dependency management not yet implemented")
+    print("[ERROR] Bazel dependency management not yet implemented")
     print("=" * 50)
     print()
     print("Bazel projects use WORKSPACE and BUILD files for dependencies.")
     print()
-    print("This build system will be implemented in Phase 2.")
+    print("This build system is not implemented in this template yet.")
     print()
     print("For now, please add dependencies manually:")
     print("  - Edit WORKSPACE file")
     print("  - Add http_archive or git_repository rules")
     print()
     print("See: docs/architecture/decisions/002-six-axis-project-profile.md")
-    print("Roadmap: agent_roadmaps/phase-2-build-system-expansion/")
+    print(
+        "Create a temporary roadmap under agent_roadmaps/ if multi-session coordination is needed."
+    )
     sys.exit(1)
 
 
 def add_dependency_mixed_stub(package: str) -> None:
     """Stub for mixed build system dependency management (not yet implemented)."""
-    print(f"[ERROR] Mixed build system dependency management not yet implemented")
+    print("[ERROR] Mixed build system dependency management not yet implemented")
     print("=" * 50)
     print()
     print("Mixed build systems combine multiple dependency backends.")
     print()
-    print("This build system will be implemented in Phase 2.")
+    print("This build system is not implemented in this template yet.")
     print()
     print("For now, please add dependencies manually to the appropriate file:")
     print("  - Python: pyproject.toml or requirements.txt")
@@ -529,7 +539,9 @@ def add_dependency_mixed_stub(package: str) -> None:
     print("  - System: document in README.md")
     print()
     print("See: docs/architecture/decisions/002-six-axis-project-profile.md")
-    print("Roadmap: agent_roadmaps/phase-2-build-system-expansion/")
+    print(
+        "Create a temporary roadmap under agent_roadmaps/ if multi-session coordination is needed."
+    )
     sys.exit(1)
 
 
@@ -572,7 +584,7 @@ def main():
     if version:
         print(f"Version: {version}")
     if dev:
-        print(f"Group: dev")
+        print("Group: dev")
     print()
 
     # Add dependency based on build system

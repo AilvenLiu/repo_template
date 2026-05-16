@@ -78,6 +78,7 @@ class Distribution(Enum):
 
     NONE = "none"
     PYPI = "pypi"
+    PYPI_WHEEL = "pypi-wheel"
     CONDA = "conda"
     SYSTEM = "system"
     HEADER_ONLY = "header-only"

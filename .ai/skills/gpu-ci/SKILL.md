@@ -9,7 +9,7 @@ manylinux wheel validation, multi-arch builds, and GPU gating patterns.
 
 ## Purpose
 
-This skill is guidance-only in Phase 2. No executable wrapper is provided.
+This skill is guidance-only. No executable wrapper is provided.
 It documents CI patterns for hybrid Python/C++/CUDA projects that distribute
 wheels to PyPI or private package indices.
 
@@ -17,7 +17,7 @@ wheels to PyPI or private package indices.
 
 This skill applies when:
 - `distribution=pypi-wheel` in project profile
-- `hardware_targets.cuda_arch` is non-empty
+- `hardware_targets` includes `cuda`
 - Building CUDA-accelerated Python extensions
 - Distributing wheels with CUDA dependencies
 

@@ -18,21 +18,23 @@ from check_session import check_session_initialized
 from utils import RoadmapManager
 
 
-def _get_single_active_phase(manager: RoadmapManager) -> Dict[str, object]:
+def _get_single_active_step(manager: RoadmapManager) -> Dict[str, object]:
     active = manager.find_active_roadmaps()
     if not active:
         print("ERROR: No active roadmap found")
         sys.exit(1)
     if len(active) > 1:
-        print("ERROR: Multiple active phases found")
-        for phase in active:
-            print(f"  - {phase['name']}")
-        print("Fix roadmap.yml so exactly one phase has status.active: true")
+        print("ERROR: Multiple active steps found")
+        for step in active:
+            print(f"  - {step['name']}")
+        print("Fix roadmap.yml so exactly one step has status.active: true")
         sys.exit(2)
     return active[0]
 
 
-def _find_task(tasks: List[Dict[str, object]], task_id: str) -> Optional[Dict[str, object]]:
+def _find_task(
+    tasks: List[Dict[str, object]], task_id: str
+) -> Optional[Dict[str, object]]:
     for task in tasks:
         if isinstance(task, dict) and task.get("id") == task_id:
             return task
@@ -57,7 +59,9 @@ def _dependencies_satisfied(task: Dict[str, object], completed_ids: set) -> bool
     return True
 
 
-def _clear_other_active_tasks(tasks: List[Dict[str, object]], keep_task_id: Optional[str]) -> None:
+def _clear_other_active_tasks(
+    tasks: List[Dict[str, object]], keep_task_id: Optional[str]
+) -> None:
     for task in tasks:
         if not isinstance(task, dict):
             continue
@@ -79,7 +83,9 @@ def complete_task(manager: RoadmapManager, roadmap_dir: Path) -> None:
         current_task_id = manager.get_active_task_id(data)
 
     if not isinstance(current_task_id, str):
-        print("ERROR: No current task set in focus.current_task and no active task found")
+        print(
+            "ERROR: No current task set in focus.current_task and no active task found"
+        )
         sys.exit(1)
 
     current_task = _find_task(tasks, current_task_id)
@@ -113,7 +119,9 @@ def complete_task(manager: RoadmapManager, roadmap_dir: Path) -> None:
     if ready_pending:
         next_task = ready_pending[0]
         next_task_id = next_task.get("id")
-        _clear_other_active_tasks(tasks, next_task_id if isinstance(next_task_id, str) else None)
+        _clear_other_active_tasks(
+            tasks, next_task_id if isinstance(next_task_id, str) else None
+        )
         next_task["status"] = "active"
         data["focus"]["current_task"] = next_task_id
         data["status"]["active"] = True
@@ -125,7 +133,9 @@ def complete_task(manager: RoadmapManager, roadmap_dir: Path) -> None:
         print(f"Advanced to next ready task: {next_task_id} - {next_task.get('title')}")
         return
 
-    unfinished = [task for task in remaining_non_completed if task.get("status") != "completed"]
+    unfinished = [
+        task for task in remaining_non_completed if task.get("status") != "completed"
+    ]
     if unfinished:
         _clear_other_active_tasks(tasks, None)
         data["focus"]["current_task"] = None
@@ -139,7 +149,7 @@ def complete_task(manager: RoadmapManager, roadmap_dir: Path) -> None:
 
         manager.update_roadmap_yml(roadmap_yml, data)
         print(f"Task {current_task_id} completed")
-        print("Phase now blocked: no ready task found.")
+        print("Step now blocked: no ready task found.")
         if blocked_tasks:
             print("Unfinished tasks:")
             for task in blocked_tasks:
@@ -147,7 +157,9 @@ def complete_task(manager: RoadmapManager, roadmap_dir: Path) -> None:
                 status = task.get("status", "unknown")
                 deps = task.get("depends_on", [])
                 print(f"  - {task_id} ({status}) depends_on={deps}")
-        print("Use '/roadmap update set-focus <task-id>' only after dependencies are satisfied.")
+        print(
+            "Use '/roadmap update set-focus <task-id>' only after dependencies are satisfied."
+        )
         return
 
     _clear_other_active_tasks(tasks, None)
@@ -158,15 +170,28 @@ def complete_task(manager: RoadmapManager, roadmap_dir: Path) -> None:
 
     manager.update_roadmap_yml(roadmap_yml, data)
 
-    phase_folder = roadmap_dir.name
-    phase_branch = RoadmapManager.derive_branch_name(phase_folder)
+    step_folder = roadmap_dir.name
+    step_branch = RoadmapManager.derive_branch_name(step_folder)
+    if manager.all_roadmaps_completed():
+        manager.restore_placeholder_workspace()
+        print(f"Task {current_task_id} completed")
+        print("Roadmap completed")
+        print("Temporary roadmap workspace deleted and placeholder README restored.")
+        print()
+        print("Next steps:")
+        print(f"1. Create PR/MR from {step_branch} to base branch")
+        print(
+            "2. After merge, continue from the base branch without roadmap-specific files"
+        )
+        return
+
     print(f"Task {current_task_id} completed")
-    print(f"Phase {phase_folder} completed")
+    print(f"Step {step_folder} completed")
     print()
     print("Next steps:")
-    print(f"1. Create PR/MR from {phase_branch} to base branch")
+    print(f"1. Create PR/MR from {step_branch} to base branch")
     print("2. After merge, switch to base branch and pull latest")
-    print("3. Activate a dependency-ready next phase")
+    print("3. Activate a dependency-ready next step")
 
 
 def block_task(manager: RoadmapManager, roadmap_dir: Path, reason: str) -> None:
@@ -218,14 +243,20 @@ def unblock_task(manager: RoadmapManager, roadmap_dir: Path) -> None:
     focus_task = data.get("focus", {}).get("current_task")
     if isinstance(focus_task, str):
         task = _find_task(tasks, focus_task)
-        if task and task.get("status") == "blocked" and _dependencies_satisfied(task, completed_ids):
+        if (
+            task
+            and task.get("status") == "blocked"
+            and _dependencies_satisfied(task, completed_ids)
+        ):
             candidate = task
 
     if candidate is None:
         for task in tasks:
             if not isinstance(task, dict):
                 continue
-            if task.get("status") == "blocked" and _dependencies_satisfied(task, completed_ids):
+            if task.get("status") == "blocked" and _dependencies_satisfied(
+                task, completed_ids
+            ):
                 candidate = task
                 break
 
@@ -234,7 +265,9 @@ def unblock_task(manager: RoadmapManager, roadmap_dir: Path) -> None:
         sys.exit(1)
 
     candidate_id = candidate.get("id")
-    _clear_other_active_tasks(tasks, candidate_id if isinstance(candidate_id, str) else None)
+    _clear_other_active_tasks(
+        tasks, candidate_id if isinstance(candidate_id, str) else None
+    )
     candidate["status"] = "active"
 
     data["status"]["blocked"] = False
@@ -290,7 +323,9 @@ def main() -> None:
     if len(sys.argv) < 2:
         print("Usage: update.py <action> [args]")
         print("Actions:")
-        print("  complete-task          - Mark current task completed and advance by dependencies")
+        print(
+            "  complete-task          - Mark current task completed and advance by dependencies"
+        )
         print("  block-task <reason>    - Mark current task blocked")
         print("  unblock-task           - Unblock first dependency-ready blocked task")
         print("  set-focus <task-id>    - Focus a dependency-ready task")
@@ -298,7 +333,7 @@ def main() -> None:
 
     action = sys.argv[1]
     manager = RoadmapManager(Path.cwd())
-    active = _get_single_active_phase(manager)
+    active = _get_single_active_step(manager)
     roadmap_dir = active["roadmap_dir"]
 
     if action == "complete-task":

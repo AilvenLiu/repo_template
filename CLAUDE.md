@@ -46,6 +46,7 @@ generated projects live under `templates/`:
 
 - **Python projects**: see `templates/python/CLAUDE.md` and `templates/python/AGENTS.md`
 - **C++/CUDA projects**: see `templates/cpp/CLAUDE.md` and `templates/cpp/AGENTS.md`
+- **Hybrid projects**: see `templates/hybrid/CLAUDE.md` and `templates/hybrid/AGENTS.md`
 
 When a real project is generated via `/create-project`, the appropriate
 `templates/<language>/` overlay is copied to the project root, so each file

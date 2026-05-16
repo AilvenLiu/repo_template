@@ -5,17 +5,17 @@ from pathlib import Path
 import sys
 import tempfile
 
-import yaml
+import yaml  # type: ignore[import-untyped]
 
 sys.path.insert(0, str(Path(__file__).parent.parent / ".ai" / "scripts"))
 
-from project_type import ProjectType
-from session_init import find_active_roadmap, resolve_constraints
+from project_profile import legacy_project_type_to_profile  # type: ignore[import-not-found]
+from session_init import find_active_roadmap, resolve_constraints  # type: ignore[import-not-found]
 
 
 def test_python_docs_and_tests_constraints_load_precisely() -> None:
     keys = resolve_constraints(
-        ProjectType.PYTHON,
+        legacy_project_type_to_profile("python"),
         ["README.md", "tests/test_api.py", "src/app.py"],
         has_roadmap=False,
     )
@@ -28,7 +28,7 @@ def test_python_docs_and_tests_constraints_load_precisely() -> None:
 
 def test_cpp_docs_and_cmake_constraints_load_precisely() -> None:
     keys = resolve_constraints(
-        ProjectType.CPP,
+        legacy_project_type_to_profile("cpp"),
         ["docs/design.md", "cmake/toolchains/linux.cmake", "src/kernel.cu"],
         has_roadmap=False,
     )
@@ -42,31 +42,45 @@ def test_find_active_roadmap_detects_new_schema() -> None:
     with tempfile.TemporaryDirectory() as tmp_dir:
         repo = Path(tmp_dir)
         roadmaps = repo / "agent_roadmaps"
-        inactive = roadmaps / "phase-0-base"
-        active = roadmaps / "phase-1-next"
+        inactive = roadmaps / "step-0-base"
+        active = roadmaps / "step-1-next"
         inactive.mkdir(parents=True)
         active.mkdir(parents=True)
 
         inactive_data = {
-            "phase": 0,
+            "step": 0,
             "name": "Base",
-            "status": {"active": False, "blocked": False, "started_at": None, "completed_at": None},
-            "depends_on_phases": [],
+            "status": {
+                "active": False,
+                "blocked": False,
+                "started_at": None,
+                "completed_at": None,
+            },
+            "depends_on_steps": [],
             "tasks": [],
             "focus": {"current_task": None, "notes": ""},
         }
         active_data = {
-            "phase": 1,
+            "step": 1,
             "name": "Next",
-            "status": {"active": True, "blocked": False, "started_at": "2026-04-17", "completed_at": None},
-            "depends_on_phases": ["phase-0-base"],
+            "status": {
+                "active": True,
+                "blocked": False,
+                "started_at": "2026-04-17",
+                "completed_at": None,
+            },
+            "depends_on_steps": ["step-0-base"],
             "tasks": [],
             "focus": {"current_task": None, "notes": ""},
         }
 
-        (inactive / "roadmap.yml").write_text(yaml.safe_dump(inactive_data, sort_keys=False), encoding="utf-8")
-        (active / "roadmap.yml").write_text(yaml.safe_dump(active_data, sort_keys=False), encoding="utf-8")
+        (inactive / "roadmap.yml").write_text(
+            yaml.safe_dump(inactive_data, sort_keys=False), encoding="utf-8"
+        )
+        (active / "roadmap.yml").write_text(
+            yaml.safe_dump(active_data, sort_keys=False), encoding="utf-8"
+        )
 
         detected = find_active_roadmap(repo)
         assert detected is not None
-        assert detected.name == "phase-1-next"
+        assert detected.name == "step-1-next"
