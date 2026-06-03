@@ -196,7 +196,7 @@ When `agent_roadmaps/` contains an active roadmap:
 - MUST update `roadmap.yml` and create a session handoff at end of every session
 - MUST treat roadmap files as temporary operational state, not durable project documentation
 - MUST delete the whole roadmap workspace once every step in that roadmap is completed
-- MUST NOT copy roadmap-stage identifiers into code, config, documentation, or filenames outside `agent_roadmaps/`
+- MUST NOT copy roadmap-step identifiers into code, config, documentation, or filenames outside `agent_roadmaps/`
 - Authority order inside a step is absolute: `INVARIANTS.md` > `ROADMAP.md` > `roadmap.yml` > `sessions/` > `prompt.md`
 
 ---

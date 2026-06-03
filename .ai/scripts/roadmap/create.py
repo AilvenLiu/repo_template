@@ -87,9 +87,9 @@ def _write_series_readme(
         "<ROADMAP_TITLE>": roadmap_name.replace("-", " ").title(),
         "<ROADMAP_SLUG>": roadmap_name,
         "<ROADMAP_DESCRIPTION>": description_block,
-        "<PHASE_TABLE_ROWS>": _make_step_table_rows(step_names),
-        "<ACTIVE_PHASE_FOLDER>": f"step-0-{step_names[0]}",
-        "<PHASE_DEP_GRAPH>": _make_dependency_graph(step_names),
+        "<STEP_TABLE_ROWS>": _make_step_table_rows(step_names),
+        "<ACTIVE_STEP_FOLDER>": f"step-0-{step_names[0]}",
+        "<STEP_DEP_GRAPH>": _make_dependency_graph(step_names),
     }
 
     content = _replace_placeholders(
@@ -118,11 +118,11 @@ def _create_step_folder(
     step_dir.mkdir(parents=True, exist_ok=False)
 
     replacements = {
-        "<PHASE_FOLDER_NAME>": step_folder_name,
-        "<PHASE_NUMBER>": str(step_number),
-        "<PHASE_TITLE>": step_title,
+        "<STEP_FOLDER_NAME>": step_folder_name,
+        "<STEP_NUMBER>": str(step_number),
+        "<STEP_TITLE>": step_title,
         "<TASK_PREFIX>": task_prefix,
-        "<PHASE_DEPENDENCIES>": _serialise_dependency_inline(step_dependencies),
+        "<STEP_DEPENDENCIES>": _serialise_dependency_inline(step_dependencies),
     }
 
     for template_file in ["INVARIANTS.md", "ROADMAP.md", "roadmap.yml", "prompt.md"]:

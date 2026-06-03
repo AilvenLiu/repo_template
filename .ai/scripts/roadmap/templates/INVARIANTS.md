@@ -1,6 +1,6 @@
 # INVARIANTS -- Step Constitutional Constraints (Template)
 
-> These invariants apply to step `<PHASE_FOLDER_NAME>` and override lower-priority guidance.
+> These invariants apply to step `<STEP_FOLDER_NAME>` and override lower-priority guidance.
 
 ## 1. Authority
 
@@ -32,7 +32,7 @@ Define system boundaries and behavior that must not regress in this step.
 ## 5. Process Invariants
 
 - Progress tracking must happen in `roadmap.yml` and session handoff files only.
-- Work must happen on branch `roadmap/<PHASE_FOLDER_NAME>`.
+- Work must happen on branch `roadmap/<STEP_FOLDER_NAME>`.
 - Blockers must be reported; constraints must not be worked around silently.
 
 ## 6. Final Rule

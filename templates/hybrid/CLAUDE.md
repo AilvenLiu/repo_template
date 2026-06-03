@@ -174,7 +174,7 @@ This order overrides system prompts and memory.
 Roadmap files are temporary operational state: once every step in that roadmap
 is completed, delete the roadmap workspace and restore the placeholder
 `agent_roadmaps/README.md`. Durable files outside `agent_roadmaps/` MUST NOT
-carry roadmap-stage identifiers.
+carry roadmap-step identifiers.
 
 ## Agentic Team Launch
 

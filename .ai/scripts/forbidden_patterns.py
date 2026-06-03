@@ -221,13 +221,13 @@ _CPP_RULES: List[tuple[str, re.Pattern[str], str, str]] = [
 
 _ROADMAP_RESIDUE_RULES: List[tuple[str, re.Pattern[str], str, str]] = [
     (
-        "roadmap-stage-label",
+        "roadmap-step-label",
         re.compile(
             r"(?:^|[^A-Za-z0-9_])"
-            r"(phase-\d+-[a-z0-9-]+|roadmap/phase-\d+-[a-z0-9-]+|"
-            r"step-\d+-[a-z0-9-]+|roadmap/step-\d+-[a-z0-9-]+)"
+            r"(phase-\d+(?:-[a-z0-9-]+)?|roadmap/phase-\d+(?:-[a-z0-9-]+)?|"
+            r"step-\d+(?:-[a-z0-9-]+)?|roadmap/step-\d+(?:-[a-z0-9-]+)?)"
         ),
-        "Roadmap-stage identifier leaked into a durable project file",
+        "Roadmap-step identifier leaked into a durable project file",
         "Keep roadmap labels inside agent_roadmaps/ only, or remove the temporary roadmap reference.",
     ),
 ]

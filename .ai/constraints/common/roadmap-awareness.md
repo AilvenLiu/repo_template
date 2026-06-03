@@ -41,7 +41,7 @@ The agent MUST ask whether to create a roadmap before implementation when work:
 If user approves roadmap creation, the agent MUST create roadmap files before production implementation.
 Roadmap identifiers must stay inside `agent_roadmaps/`; code, configuration,
 durable documentation, and user-facing strings outside that directory MUST NOT
-contain roadmap-stage labels such as `step-*-*`, `roadmap/step-*`, or "Step N".
+contain roadmap-step labels such as `step-*`, `roadmap/step-*`, or "Step N".
 
 ## 3. Required Step Structure
 

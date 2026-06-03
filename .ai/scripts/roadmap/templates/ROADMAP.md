@@ -1,6 +1,6 @@
 # ROADMAP -- Step Execution Guide (Template)
 
-> This document describes the step `<PHASE_FOLDER_NAME>`.
+> This document describes the step `<STEP_FOLDER_NAME>`.
 > It should be explicit enough for a fresh session with zero prior context.
 
 ## 0. Authority Order
@@ -58,7 +58,7 @@ This step is complete only when:
 - Every task in `roadmap.yml` is `completed`
 - `status.completed_at` is set
 - Final handoff exists in `sessions/`
-- PR/MR from `roadmap/<PHASE_FOLDER_NAME>` is ready
+- PR/MR from `roadmap/<STEP_FOLDER_NAME>` is ready
 
 ## 7. Risks and Rollback
 

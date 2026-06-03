@@ -18,14 +18,14 @@ At most one step may be active at any time.
 
 | Step | Folder | Status | Depends On |
 |-------|--------|--------|------------|
-<PHASE_TABLE_ROWS>
+<STEP_TABLE_ROWS>
 
-**Active step**: `<ACTIVE_PHASE_FOLDER>`
+**Active step**: `<ACTIVE_STEP_FOLDER>`
 
 ## 3. Dependency Graph
 
 ```text
-<PHASE_DEP_GRAPH>
+<STEP_DEP_GRAPH>
 ```
 
 Rules:

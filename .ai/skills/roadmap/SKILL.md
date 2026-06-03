@@ -44,7 +44,7 @@ bin/agent-roadmap <subcommand> [args...]
 - Do not start a step before `depends_on_steps` are completed.
 - Operate only on `focus.current_task`.
 - End each roadmap session with roadmap state + handoff update.
-- Do not copy roadmap-stage labels into durable files outside `agent_roadmaps/`.
+- Do not copy roadmap-step labels into durable files outside `agent_roadmaps/`.
 - Once every step in the roadmap is completed, delete the roadmap workspace and restore the placeholder `agent_roadmaps/README.md`.
 - Authority order:
   `INVARIANTS.md` > `ROADMAP.md` > `roadmap.yml` > `sessions/` > `prompt.md`.

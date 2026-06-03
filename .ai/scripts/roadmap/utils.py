@@ -29,9 +29,9 @@ No roadmap is active in this repository.
 ## Rules
 
 - Roadmap files under `agent_roadmaps/` are operational state, not durable project documentation.
-- Durable files outside `agent_roadmaps/` MUST NOT include roadmap-stage identifiers such as `step-*-*`, `roadmap/step-*`, or prose like "this will be done in Step N".
-- A roadmap may keep completed stages while later stages are still in flight.
-- Once every stage in the active roadmap is completed, delete the entire temporary roadmap workspace and return this directory to its empty placeholder state.
+- Durable files outside `agent_roadmaps/` MUST NOT include roadmap-step identifiers such as `step-*`, `roadmap/step-*`, or prose like "this will be done in Step N".
+- A roadmap may keep completed steps while later steps are still in flight.
+- Once every step in the active roadmap is completed, delete the entire temporary roadmap workspace and return this directory to its empty placeholder state.
 - If no roadmap is active, proceed without roadmap-specific authority files.
 """
 

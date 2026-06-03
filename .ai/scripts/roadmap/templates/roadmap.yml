@@ -3,8 +3,8 @@
 # This file is the ONLY authoritative execution state for this step.
 # Keep it machine-readable and deterministic.
 
-step: <PHASE_NUMBER>
-name: <PHASE_TITLE>
+step: <STEP_NUMBER>
+name: <STEP_TITLE>
 
 status:
   active: true
@@ -14,11 +14,11 @@ status:
 
 # Explicit upstream step dependencies by folder name.
 # Example: [upstream-roadmap-step]
-depends_on_steps: <PHASE_DEPENDENCIES>
+depends_on_steps: <STEP_DEPENDENCIES>
 
 tasks:
   - id: <TASK_PREFIX>-1
-    title: Define implementation baseline for <PHASE_TITLE>
+    title: Define implementation baseline for <STEP_TITLE>
     description: >
       Clarify exact scope, constraints, and acceptance criteria for this step.
       Confirm objective boundaries and identify files touched first.
@@ -30,7 +30,7 @@ tasks:
     depends_on: []
 
   - id: <TASK_PREFIX>-2
-    title: Implement dependency-safe core changes for <PHASE_TITLE>
+    title: Implement dependency-safe core changes for <STEP_TITLE>
     description: >
       Implement the primary code changes for this step while preserving
       upstream invariants and compatibility guarantees.

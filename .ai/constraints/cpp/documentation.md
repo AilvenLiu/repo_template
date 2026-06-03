@@ -3,6 +3,13 @@
 > **This document defines mandatory documentation standards for C++/CUDA projects.**
 > All public APIs and CUDA kernels must be documented using Doxygen-style comments.
 
+## 0. Temporary Roadmap Labels
+
+Durable documentation MUST NOT encode temporary roadmap coordination labels such
+as `step-7`, `step-2-rollout`, `phase-3`, or `roadmap/step-*`.
+Describe architecture, ownership, rollout order, and dependencies in business
+terms instead of binding them to `agent_roadmaps/` identifiers.
+
 ## 1. Documentation Requirements
 
 ### 1.1 What Must Be Documented
