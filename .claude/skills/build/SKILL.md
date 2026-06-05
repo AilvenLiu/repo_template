@@ -5,8 +5,7 @@ description: "Orchestrate build workflows. Environment setup, compilation, and t
 
 # /build
 
-Build orchestration. The canonical, vendor-neutral procedure body lives at
-[`.ai/skills/build/SKILL.md`](../../../.ai/skills/build/SKILL.md).
+Build orchestration for Python, C++/CUDA, hybrid (scikit-build-core), and Bazel projects.
 
 ## Execution
 
@@ -16,13 +15,44 @@ bin/agent-build <setup|compile|test|full|doctor|clean>
 
 ## Subcommands
 
-- `setup` — create venv / install deps / configure toolchain
-- `compile` — compile C++ (no-op for Python)
-- `test` — run test suite
-- `full` — setup + compile + test
-- `clean` — remove build artefacts
-- `doctor` — diagnose build environment issues
+| Subcommand | What it does |
+|------------|--------------|
+| `setup` | Create venv / install deps / configure toolchain |
+| `compile` | Compile C++/CUDA extensions (no-op for pure Python) |
+| `test` | Run test suite |
+| `full` | `setup` + `compile` + `test` |
+| `doctor` | Diagnose environment issues (missing tools, wrong versions) |
+| `clean` | Remove build artefacts (`build/`, `dist/`, `__pycache__`) |
 
-When this slash command is invoked, also read
-[`.ai/skills/build/SKILL.md`](../../../.ai/skills/build/SKILL.md) for the full
-behavioural spec.
+## Behaviour (guaranteed)
+
+1. Detects project type via `.ai/project.yml` / heuristics.
+2. **Python**: `poetry install --with dev`, then `poetry run pytest`.
+3. **C++**: `conan install .`, `cmake -B build`, `cmake --build build`, `ctest`.
+4. **Hybrid** (scikit-build-core): `pip install -e . --no-build-isolation` inside the Poetry venv, then `pytest`.
+5. **Bazel**: `bazel build //...`, `bazel test //...` (delegates to `/bazel`).
+
+## Behaviour (best-effort)
+
+- Mixed Python+C++ projects beyond scikit-build-core.
+- Cross-compilation and parallel build flags.
+- Tool installation guidance when compilers/tools are missing.
+
+## Common workflow
+
+```bash
+# First time or after dependency changes
+/build setup
+
+# After editing C++/CUDA source
+/build compile
+
+# Run tests only (deps already installed)
+/build test
+
+# Full clean build
+/build full
+
+# Debug a broken environment
+/build doctor
+```
