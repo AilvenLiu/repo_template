@@ -78,3 +78,99 @@ def test_dependency_blocks_direct_pip_for_python_repo() -> None:
 
         allowed, _ = policy_gate.gate_dependency(repo, {"command": "pip install requests"})
         assert not allowed
+
+
+# ---------------------------------------------------------------------------
+# Extended Python pattern tests (venv paths + version-suffixed interpreters)
+# ---------------------------------------------------------------------------
+
+def _python_repo(tmp: str) -> Path:
+    repo = Path(tmp)
+    _write_state(repo, passed=True)
+    (repo / ".ai").mkdir(exist_ok=True)
+    (repo / ".ai" / "project.yml").write_text("project_type: python\n")
+    return repo
+
+
+def test_bash_blocks_venv_pip_install() -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = _python_repo(tmp)
+        allowed, msg = policy_gate.gate_bash(repo, {"command": ".venv/bin/pip install requests"})
+        assert not allowed
+        assert "BLOCKED" in msg
+
+
+def test_bash_blocks_venv_pip3_install() -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = _python_repo(tmp)
+        allowed, msg = policy_gate.gate_bash(repo, {"command": ".venv/bin/pip3 install requests"})
+        assert not allowed
+        assert "BLOCKED" in msg
+
+
+def test_bash_blocks_versioned_pip_install() -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = _python_repo(tmp)
+        allowed, msg = policy_gate.gate_bash(repo, {"command": "pip3.10 install requests"})
+        assert not allowed
+        assert "BLOCKED" in msg
+
+
+def test_bash_blocks_venv_python_direct() -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = _python_repo(tmp)
+        allowed, msg = policy_gate.gate_bash(repo, {"command": ".venv/bin/python script.py"})
+        assert not allowed
+        assert "BLOCKED" in msg
+
+
+def test_bash_blocks_venv_python3_direct() -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = _python_repo(tmp)
+        allowed, msg = policy_gate.gate_bash(repo, {"command": ".venv/bin/python3 script.py"})
+        assert not allowed
+        assert "BLOCKED" in msg
+
+
+def test_bash_blocks_versioned_python_direct() -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = _python_repo(tmp)
+        allowed, msg = policy_gate.gate_bash(repo, {"command": "python3.10 script.py"})
+        assert not allowed
+        assert "BLOCKED" in msg
+
+
+def test_bash_blocks_versioned_python_m_pip() -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = _python_repo(tmp)
+        allowed, msg = policy_gate.gate_bash(
+            repo, {"command": "python3.10 -m pip install requests"}
+        )
+        assert not allowed
+        assert "BLOCKED" in msg
+
+
+def test_bash_allows_poetry_run_python() -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = _python_repo(tmp)
+        allowed, _ = policy_gate.gate_bash(
+            repo, {"command": "poetry run python script.py"}
+        )
+        assert allowed
+
+
+def test_bash_allows_python_version_check() -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = _python_repo(tmp)
+        for cmd in ("python3 --version", "python3.10 --version", "python3.10 -V"):
+            allowed, _ = policy_gate.gate_bash(repo, {"command": cmd})
+            assert allowed, f"version check should be allowed: {cmd}"
+
+
+def test_bash_allows_ai_script_python() -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = _python_repo(tmp)
+        allowed, _ = policy_gate.gate_bash(
+            repo, {"command": "python3 .ai/scripts/session_init.py --platform codex"}
+        )
+        assert allowed

@@ -35,7 +35,9 @@ run_agent_python() {
   shift
 
   if has_poetry_project "$repo_root"; then
-    poetry run python "$@"
+    # Use python3 (not python) to avoid resolving to Python 2 on macOS systems
+    # where 'python' still maps to /Library/Frameworks/Python.framework/Versions/2.7.
+    poetry run python3 "$@"
   else
     python3 "$@"
   fi
