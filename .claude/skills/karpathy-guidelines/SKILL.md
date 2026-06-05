@@ -6,21 +6,62 @@ version: 1.0.0
 
 # /karpathy-guidelines
 
-Behavioural checklist for non-trivial work. The canonical, vendor-neutral
-procedure body lives at
-[`.ai/skills/karpathy-guidelines/SKILL.md`](../../../.ai/skills/karpathy-guidelines/SKILL.md).
+Behavioural checklist for non-trivial coding, debugging, refactoring, and code
+review work. The full text is also loaded into every session via
+`common/karpathy-guidelines` constraint during `/init`.
 
-The same content is also loaded into every session via
-`.ai/constraints/common/karpathy-guidelines.md`, so the guidance is always
-present even when the slash command is not explicitly invoked.
+## When to apply
 
-## Behaviour (summary)
+- Any implementation work beyond a single obvious line fix
+- Debugging sessions
+- Refactors that touch more than one file
+- Code review
 
-1. **Think before coding** — surface assumptions, stop for clarification.
-2. **Simplicity first** — minimum code that solves the problem.
-3. **Surgical changes** — touch only what the request requires.
-4. **Goal-driven execution** — verify against concrete success criteria.
+## The four rules
 
-When this slash command is invoked, also read
-[`.ai/skills/karpathy-guidelines/SKILL.md`](../../../.ai/skills/karpathy-guidelines/SKILL.md)
-for the full body and source attribution.
+### 1. Think before coding
+
+State material assumptions before writing code. Surface tradeoffs. Stop and ask
+when ambiguity changes the solution shape. Prefer a short plan + verification
+step over diving straight into implementation.
+
+### 2. Simplicity first
+
+Write the minimum code that fully solves the stated problem.
+
+- Do not add features, configurability, or abstractions not requested.
+- Do not build reusable infrastructure for a one-off need.
+- Do not add defensive complexity for scenarios that cannot happen.
+- Three similar lines > a premature abstraction.
+
+### 3. Surgical changes
+
+Touch only the code needed for the requested outcome.
+
+- Do not refactor adjacent code just because you noticed it.
+- Do not rewrite comments, formatting, or APIs unrelated to the task.
+- Match local project patterns unless asked to change direction.
+- Clean up only unused imports/variables created by your own change.
+- Call out unrelated debt separately instead of silently fixing it.
+
+Every changed line must be traceable to the user request or to verification
+required by that request.
+
+### 4. Goal-driven execution
+
+Turn vague instructions into concrete success criteria and verify them.
+
+- Prefer reproduction-first debugging: identify a failing check, then make it pass.
+- Prefer before-and-after validation for refactors.
+- State a short plan for multi-step work with a verification step for each stage.
+- Do not claim completion without evidence from tests, builds, linters, or another
+  concrete check.
+
+## Tradeoff
+
+This skill favours correctness and caution over raw speed on non-trivial work.
+Apply judgment on obvious one-liners — do not over-engineer the process.
+
+## Source
+
+Adapted from `forrestchang/andrej-karpathy-skills` (MIT) for this repository template.

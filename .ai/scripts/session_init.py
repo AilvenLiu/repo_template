@@ -296,7 +296,7 @@ def write_session_state(
 
 def run_init(platform: str, verbose: bool = False) -> int:
     repo_root = _repo_root()
-    effective_verbose = verbose or platform == "claude"
+    effective_verbose = True
 
     separator = "=" * 70
     print(separator)

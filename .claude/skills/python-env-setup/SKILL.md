@@ -5,9 +5,9 @@ description: "Diagnose and fix pyenv+Poetry environment issues. Use when poetry 
 
 # /python-env-setup
 
-Pyenv+Poetry environment diagnosis and repair. The canonical, vendor-neutral
-procedure body lives at
-[`.ai/skills/python-env-setup/SKILL.md`](../../../.ai/skills/python-env-setup/SKILL.md).
+Systematic diagnosis and repair of pyenv+Poetry configuration issues, especially
+the `VIRTUAL_ENV` interference problem where a system-set variable overrides
+pyenv's Python selection.
 
 ## Execution
 
@@ -17,10 +17,36 @@ bin/agent-python-env-setup <diagnose|fix|verify>
 
 ## Subcommands
 
-- `diagnose` — identify environment issues
-- `fix` — automatically fix detected issues
-- `verify` — confirm environment is correct
+| Subcommand | What it does |
+|------------|--------------|
+| `diagnose` | Checks `VIRTUAL_ENV`, Python version, pyenv config, Poetry config, PATH order. Reports issues with severity. |
+| `fix` | Unsets `VIRTUAL_ENV`, configures shell init, removes external Poetry venvs, recreates `.venv/` inside the project. |
+| `verify` | Confirms Python 3.10+, Poetry env inside `.venv/`, and `poetry install` succeeds cleanly. |
 
-When this slash command is invoked, also read
-[`.ai/skills/python-env-setup/SKILL.md`](../../../.ai/skills/python-env-setup/SKILL.md)
-for the full behavioural spec and trigger conditions.
+## Trigger conditions — run this skill when
+
+- `poetry install` fails with a Python version mismatch error
+- `poetry env info` shows the wrong Python version (not 3.10+)
+- `python --version` shows a different version than `poetry run python --version`
+- Setting up a new Python project with pyenv+Poetry on a machine for the first time
+- After upgrading Python or installing a new pyenv version
+
+## Behaviour (guaranteed)
+
+1. Checks `VIRTUAL_ENV`, Python version, pyenv config, Poetry config, PATH order.
+2. Reports issues with severity: CRITICAL / WARNING / INFO.
+3. **Fix mode**: unsets `VIRTUAL_ENV`, patches shell config (`~/.zshrc` /
+   `~/.bashrc`), removes external Poetry venvs, configures `virtualenvs.in-project true`,
+   recreates venv as `.venv/` inside the project.
+
+## Behaviour (best-effort)
+
+- pyenv / Poetry installation if missing (requires network).
+- Shell config edits — may require `source ~/.zshrc` manually after fix.
+
+## Correct environment state
+
+```bash
+poetry env info --path   # Must print <project>/.venv
+poetry run python --version  # Must be Python 3.10+
+```

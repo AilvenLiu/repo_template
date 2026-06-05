@@ -44,7 +44,10 @@ Both Claude and Codex use the shared audit runtime:
 
 ## How It Works
 
-1. **This directory is the source of truth** for all constraint content.
+1. **This directory is the sole source of truth for all constraint content.**
+   Constraints are vendor-neutral and live exclusively under `.ai/constraints/`;
+   there is no platform-specific constraint directory — both Claude Code and Codex
+   load the same bodies from this location.
 2. **Shared runtime** (`.ai/scripts`) implements deterministic checks and gates.
 3. **Native platform entrypoints**:
    - `CLAUDE.md` is loaded automatically by Claude Code.

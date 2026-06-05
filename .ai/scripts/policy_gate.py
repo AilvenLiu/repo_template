@@ -102,18 +102,38 @@ def _check_bash_command(command: str, project_type: ProjectType, repo_root: Path
         return False, "BLOCKED: git reset --hard requires explicit user confirmation."
 
     if project_type == ProjectType.PYTHON:
-        if re.search(r"^\s*(pip|pip3|python[0-9.]*\s+-m\s+pip)\s+install", command):
-            if "poetry run" not in command:
-                return False, "BLOCKED: Direct pip install is forbidden. Use dependency workflow."
+        # Block pip install in all forms: pip, pip3, pip3.10, .venv/bin/pip*, python -m pip
+        _pip_pattern = re.compile(
+            r"""(?x)
+            ^\s*(?:
+                pip[0-9.]*                        |  # pip, pip3, pip3.10
+                python[0-9.]*\s+-m\s+pip          |  # python -m pip, python3.10 -m pip
+                \.venv/bin/pip[0-9.]*             |  # .venv/bin/pip, .venv/bin/pip3
+                \.venv/bin/python[0-9.]*\s+-m\s+pip  # .venv/bin/python -m pip
+            )\s+install
+            """
+        )
+        if _pip_pattern.search(command) and "poetry run" not in command:
+            return False, "BLOCKED: Direct pip install is forbidden. Use dependency workflow."
 
-        if re.search(r"^\s*(python|python3)\s+", command):
+        # Block direct python execution in all forms: python, python3, python3.10,
+        # .venv/bin/python, .venv/bin/python3.10
+        _py_pattern = re.compile(
+            r"""(?x)
+            ^\s*(?:
+                python[0-9.]*          |  # python, python3, python3.10, python3.11
+                \.venv/bin/python[0-9.]*  # .venv/bin/python, .venv/bin/python3
+            )\s+
+            """
+        )
+        if _py_pattern.search(command):
             if re.search(r"\.claude/skills/|\.claude/hooks/|\.ai/scripts/", command):
                 return True, ""
             if "poetry run" in command:
                 return True, ""
-            if re.search(r"python[0-9.]*\s+(-V|--version)", command):
+            if re.search(r"(?:python[0-9.]*|\.venv/bin/python[0-9.]*)\s+(-V|--version)", command):
                 return True, ""
-            return False, "BLOCKED: Direct python/python3 execution is forbidden for app workflows."
+            return False, "BLOCKED: Direct python/python3 execution is forbidden for app workflows. Use poetry run."
 
     if re.search(r"^\s*(sudo\s+)?(apt|apt-get)\s+install", command):
         if re.search(r"lib[a-z]+-dev|libboost|libopencv|libeigen|libfmt|libspdlog|libgtest", command):
