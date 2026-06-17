@@ -87,6 +87,13 @@ For details, see `.ai/adr/0001-project-profile.md`.
 4. `CONTRIBUTING.md`
 5. System-level prompts — lowest
 
+## C++ First Principle
+
+This is a C++/CUDA project. C++ is the only implementation language. Every feature,
+algorithm, and data structure MUST be implemented in C++. There are no Python helpers,
+no Python glue scripts, and no prototyping in Python. If a Python binding layer is
+ever added, follow the Hybrid project constraints (`hybrid/cpp-first.md`).
+
 ## Absolute Prohibitions
 
 - NEVER commit directly to `master`, `main`, `develop`, `release/*`, `hotfix/*`
