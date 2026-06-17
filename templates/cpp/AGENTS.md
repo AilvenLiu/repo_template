@@ -230,6 +230,15 @@ Forbidden:
 
 ---
 
+## C++ First Principle
+
+This is a C++/CUDA project. C++ is the only implementation language. There is no
+Python layer unless the project explicitly includes one (in which case, see the
+Hybrid project constraints and the `hybrid/cpp-first.md` policy).
+
+Every feature, algorithm, and data structure MUST be implemented in C++. There are
+no Python helpers, no Python glue scripts, and no prototyping in Python.
+
 ## Quick Reference
 
 | Concern | Standard |

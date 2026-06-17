@@ -75,9 +75,13 @@ These apply always, regardless of context or user instruction:
 - NEVER commit without running pre-commit validation first
 
 ### Dependencies
-- NEVER run `pip install` outside an activated virtual environment
+- NEVER run `pip install` / `pip3 install` / `python -m pip install` for any reason
+- NEVER use `python` / `python3` / `pip` / `pip3` directly — use `poetry run python` or `poetry add`
 - NEVER install packages to system Python
-- NEVER use `python` or `python3` directly for application/test workflows — use `poetry run python`
+- NEVER install Poetry via `curl -sSL https://install.python-poetry.org` or `brew install poetry`
+- Poetry MUST be installed via pipx: `PIPX_HOME="$HOME/.local/share/pipx" PIPX_BIN_DIR="$HOME/.local/bin" pipx install poetry`
+- `poetry.toml` MUST exist in the project root with `in-project = true`
+- `pyproject.toml` MUST have TUNA configured as primary source (`priority = "primary"`)
 - Agent infrastructure commands (`bin/agent-*`, `.ai/scripts/*`) are exempt when using controlled wrappers
 - NEVER add a dependency without updating `pyproject.toml` + `poetry.lock`
 - NEVER commit `pyproject.toml` without also committing `poetry.lock`
@@ -167,13 +171,23 @@ follow the wrapper directly).
 
 | Action | Correct | Forbidden |
 |--------|---------|-----------|
-| Add package | Platform dependency skill | `pip install`, `poetry add` directly |
+| Add package | Platform dependency skill (`poetry add`) | `pip install`, `pip3 install`, `python -m pip install` |
 | Run script (app/test) | `poetry run python <script>` | `python <script>`, `python3 <script>` |
 | Run tests | `poetry run pytest` | `pytest`, `python -m pytest` |
 
-- Python 3.10+ is REQUIRED for all Poetry projects
-- Virtual environment MUST be `.venv/` inside the project directory
+- Python 3.10+ via pyenv is REQUIRED for all Poetry projects
+- Virtual environment MUST be `.venv/` inside the project directory (`poetry.toml`: `in-project = true`)
+- TUNA MUST be configured as `priority = "primary"` in `[[tool.poetry.source]]`
+- Poetry MUST be installed via pipx at `~/.local/bin/poetry`
 - `poetry.lock` MUST always be committed alongside `pyproject.toml`
+
+### Mandatory Environment Check (at session start)
+
+Before any Python work, verify all three conditions hold — **STOP and ask the user if any fails**:
+
+1. `ls ~/.local/bin/poetry` — Poetry must exist at this path (pipx install)
+2. `cat poetry.toml` — must contain `in-project = true`
+3. `grep -A3 '\[\[tool.poetry.source\]\]' pyproject.toml` — must show TUNA URL with `priority = "primary"`
 
 ---
 

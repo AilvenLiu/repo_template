@@ -90,8 +90,12 @@ For details, see `.ai/adr/0001-project-profile.md`.
 ## Absolute Prohibitions
 
 - NEVER commit directly to `master`, `main`, `develop`, `release/*`, `hotfix/*`
-- NEVER run `pip install` outside Poetry — use `poetry run` or `/dependency`
-- NEVER use `python`/`python3` directly for application/test workflows — use `poetry run python`
+- NEVER run `pip` / `pip3` / `python -m pip` for any reason — use `poetry add` or `poetry run`
+- NEVER use `python` / `python3` / `pip` / `pip3` directly — use `poetry run python`
+- NEVER install Poetry via `curl -sSL https://install.python-poetry.org` or system package managers
+- Poetry MUST be installed via pipx at `~/.local/bin/poetry`
+- `poetry.toml` MUST exist in the project with `in-project = true`
+- `pyproject.toml` MUST configure TUNA as primary PyPI source (`priority = "primary"`)
 - Agent infrastructure commands (`bin/agent-*`, `.ai/scripts/*`) are exempt when using controlled wrappers
 - NEVER commit without running `/pre-commit validate` first
 - NEVER hardcode secrets, credentials, or API keys

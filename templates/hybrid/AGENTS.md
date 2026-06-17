@@ -83,9 +83,13 @@ These apply always, regardless of context or user instruction:
 - NEVER commit without running pre-commit validation first
 
 ### Python Dependencies
-- NEVER run `pip install` outside an activated virtual environment
+- NEVER run `pip` / `pip3` / `python -m pip` for any reason
+- NEVER use `python` / `python3` / `pip` / `pip3` directly — use `poetry run python` or `poetry add`
 - NEVER install packages to system Python
-- NEVER use `python` or `python3` directly for application/test workflows -- use `poetry run python`
+- NEVER install Poetry via `curl -sSL https://install.python-poetry.org` or system package managers
+- Poetry MUST be installed via pipx: `PIPX_HOME="$HOME/.local/share/pipx" PIPX_BIN_DIR="$HOME/.local/bin" pipx install poetry`
+- `poetry.toml` MUST exist with `in-project = true`
+- `pyproject.toml` MUST configure TUNA as primary PyPI source (`priority = "primary"`)
 - Agent infrastructure commands (`bin/agent-*`, `.ai/scripts/*`) are exempt when using controlled wrappers
 - NEVER add a Python dependency without updating `pyproject.toml` + `poetry.lock`
 - NEVER commit `pyproject.toml` without also committing `poetry.lock`
@@ -248,6 +252,44 @@ Suggested agent types:
 Full policy: `.ai/constraints/common/agentic-team.md`. Parallel execution MUST
 NOT bypass capability audit, protected-branch rules, dependency ordering, or
 pre-commit validation.
+
+---
+
+## C++ First Policy
+
+**MANDATORY**: C++ is the primary implementation language. Python is the binding and
+distribution layer only. This is non-negotiable.
+
+### What belongs in C++
+
+- All core algorithms, data structures, and computational logic
+- CUDA kernels and GPU computation
+- State management and error types
+- I/O abstractions and protocol handling
+- Mathematical and numerical routines
+- Memory management and resource lifecycle
+
+### What Python is permitted for
+
+| Permitted | Examples |
+|-----------|---------|
+| Binding layer | `NB_MODULE` / `PYBIND11_MODULE` definitions only |
+| Python-facing type stubs | `.pyi` files |
+| CLI entry points | Thin dispatch — must immediately call C++ |
+| Test orchestration | `pytest` calling C++ extension functions |
+| Package metadata | `__init__.py` re-exports, `__version__` |
+| Build config | `pyproject.toml`, scikit-build-core integration |
+
+### Design order
+
+1. Design the C++ interface (types, functions, error codes)
+2. Implement and unit-test in C++ (Google Test / Catch2)
+3. Expose via nanobind / pybind11 (minimal binding code)
+4. Write thin Python tests calling the C++ extension
+
+**Never start from the Python side.** If asked to add logic in Python that could be
+in C++, flag the violation, propose the C++ implementation, and ask the user to confirm
+before proceeding. Full policy: `.ai/constraints/hybrid/cpp-first.md`.
 
 ---
 

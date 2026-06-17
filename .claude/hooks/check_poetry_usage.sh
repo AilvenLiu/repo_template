@@ -1,92 +1,109 @@
 #!/bin/bash
 # Poetry Enforcement Hook
-# This hook checks if commands are using system Python instead of Poetry
-# and provides warnings to guide the agent toward correct usage.
-# It also enforces Python 3.10+ requirement for Poetry projects.
+#
+# Blocks direct use of system Python/pip commands and enforces:
+#   1. Poetry as the only dependency/environment tool
+#   2. Poetry installed via pipx at ~/.local/bin
+#   3. Python 3.10+ available
+#
+# This hook is non-negotiable. There are no "trivial project" exceptions.
 
 COMMAND="$1"
 
-# Check if this is a Python project
+# Not a Python project — allow all commands
 if [ ! -f "pyproject.toml" ] && [ ! -f "requirements.txt" ]; then
-    # Not a Python project, allow command
     exit 0
 fi
 
-# Check if this is a Poetry project
+# -----------------------------------------------------------------------
+# Block: direct pip / pip3 / python / python3 usage
+# These are forbidden in all Python projects without exception.
+# -----------------------------------------------------------------------
+
+if echo "$COMMAND" | grep -qE "^[[:space:]]*(pip3?|python3?)[[:space:]]"; then
+    # Allow commands that are already wrapped in 'poetry run'
+    if echo "$COMMAND" | grep -q "poetry run"; then
+        exit 0
+    fi
+
+    # Allow agent infrastructure scripts (controlled runtime)
+    if echo "$COMMAND" | grep -qE "bin/agent-|\.ai/scripts/"; then
+        exit 0
+    fi
+
+    echo "ERROR: Direct Python/pip command is forbidden." >&2
+    echo "  Command: $COMMAND" >&2
+    echo "" >&2
+    echo "  REQUIRED: Use Poetry for all Python operations." >&2
+    echo "" >&2
+
+    if echo "$COMMAND" | grep -qE "^[[:space:]]*(pip3?)[[:space:]]+install"; then
+        PKG=$(echo "$COMMAND" | sed -E 's/^[[:space:]]*(pip3?)[[:space:]]+install[[:space:]]+//')
+        echo "  Instead of: $COMMAND" >&2
+        echo "  Use:        poetry add $PKG" >&2
+    elif echo "$COMMAND" | grep -qE "^[[:space:]]*(python3?)[[:space:]]"; then
+        SCRIPT=$(echo "$COMMAND" | sed -E 's/^[[:space:]]*(python3?)[[:space:]]+//')
+        echo "  Instead of: $COMMAND" >&2
+        echo "  Use:        poetry run python $SCRIPT" >&2
+    fi
+
+    echo "" >&2
+    echo "  See .ai/constraints/python/dependencies.md for full policy." >&2
+    exit 1
+fi
+
+# -----------------------------------------------------------------------
+# For Poetry projects: verify Poetry is installed via pipx and Python 3.10+
+# -----------------------------------------------------------------------
+
 IS_POETRY_PROJECT=false
 if [ -f "pyproject.toml" ]; then
-    if grep -q "\[tool.poetry\]" pyproject.toml || grep -q "poetry-core" pyproject.toml; then
+    if grep -q "\[tool.poetry\]" pyproject.toml 2>/dev/null || \
+       grep -q "poetry-core" pyproject.toml 2>/dev/null; then
         IS_POETRY_PROJECT=true
     fi
 fi
 
-# For Poetry projects, check Python version requirement
 if [ "$IS_POETRY_PROJECT" = true ]; then
-    # Check if Python 3.10+ is available
-    PYTHON_VERSION=""
-    if command -v python3.10 &> /dev/null; then
-        PYTHON_VERSION="3.10+"
-    elif command -v python3.11 &> /dev/null; then
-        PYTHON_VERSION="3.11+"
-    elif command -v python3.12 &> /dev/null; then
-        PYTHON_VERSION="3.12+"
-    elif command -v python3 &> /dev/null; then
-        # Check if python3 is 3.10+
-        PY_VERSION=$(python3 --version 2>&1 | grep -oP '(?<=Python )\d+\.\d+')
-        PY_MAJOR=$(echo $PY_VERSION | cut -d. -f1)
-        PY_MINOR=$(echo $PY_VERSION | cut -d. -f2)
-        if [ "$PY_MAJOR" -eq 3 ] && [ "$PY_MINOR" -ge 10 ]; then
-            PYTHON_VERSION="$PY_VERSION"
+
+    # Check Python 3.10+
+    PYTHON_OK=false
+    for pybin in python3.10 python3.11 python3.12 python3.13; do
+        if command -v "$pybin" &>/dev/null; then
+            PYTHON_OK=true
+            break
         fi
+    done
+    if [ "$PYTHON_OK" = false ] && command -v python3 &>/dev/null; then
+        PY_MINOR=$(python3 -c "import sys; print(sys.version_info.minor)" 2>/dev/null)
+        [ "${PY_MINOR:-0}" -ge 10 ] && PYTHON_OK=true
     fi
 
-    if [ -z "$PYTHON_VERSION" ]; then
-        echo "ERROR: Python 3.10+ is required for Poetry projects" >&2
-        echo "" >&2
-        echo "  This project uses Poetry, which requires Python 3.10 or higher." >&2
-        echo "" >&2
-        echo "  Install Python 3.10+ using one of these methods:" >&2
-        echo "" >&2
-        echo "  Option 1: Using pyenv (Recommended)" >&2
+    if [ "$PYTHON_OK" = false ]; then
+        echo "ERROR: Python 3.10+ is required for Poetry projects." >&2
+        echo "  Install via pyenv:" >&2
         echo "    curl https://pyenv.run | bash" >&2
-        echo "    pyenv install 3.10" >&2
-        echo "    pyenv global 3.10" >&2
-        echo "" >&2
-        echo "  Option 2: Using system package manager" >&2
-        echo "    # macOS: brew install python@3.10" >&2
-        echo "    # Ubuntu: sudo apt install python3.10 python3.10-venv" >&2
-        echo "    # Fedora: sudo dnf install python3.10" >&2
-        echo "" >&2
-        echo "  See .ai/constraints/python/dependencies.md for details" >&2
-        echo "" >&2
+        echo "    pyenv install 3.10.12 && pyenv local 3.10.12" >&2
         exit 1
     fi
-fi
 
-# Check for forbidden patterns
-if echo "$COMMAND" | grep -qE "^(python|python3|pip|pip3)\s"; then
-    # Check if it's already wrapped in poetry run
-    if ! echo "$COMMAND" | grep -q "poetry run"; then
-        echo "WARNING: Direct Python/pip usage detected!" >&2
-        echo "  Command: $COMMAND" >&2
+    # Check Poetry is installed via pipx at ~/.local/bin
+    EXPECTED_POETRY="$HOME/.local/bin/poetry"
+    if [ ! -f "$EXPECTED_POETRY" ]; then
+        echo "ERROR: Poetry not found at ~/.local/bin/poetry." >&2
         echo "" >&2
-        echo "  You should use Poetry instead:" >&2
-
-        if echo "$COMMAND" | grep -qE "^pip\s+install"; then
-            PKG=$(echo "$COMMAND" | sed 's/^pip[0-9]* install //')
-            echo "  Correct: poetry add $PKG" >&2
-        elif echo "$COMMAND" | grep -qE "^python[0-9]*\s"; then
-            SCRIPT=$(echo "$COMMAND" | sed 's/^python[0-9]* //')
-            echo "  Correct: poetry run python $SCRIPT" >&2
-        fi
-
+        echo "  Poetry MUST be installed via pipx into \$HOME/.local:" >&2
         echo "" >&2
-        echo "  See .ai/constraints/python/dependencies.md for details" >&2
+        echo '  PIPX_HOME="$HOME/.local/share/pipx" \\' >&2
+        echo '  PIPX_BIN_DIR="$HOME/.local/bin" \\' >&2
+        echo '  pipx install poetry' >&2
         echo "" >&2
-
-        # Return non-zero to block the command
+        echo "  Do NOT use: curl -sSL https://install.python-poetry.org | python3 -" >&2
+        echo "  Do NOT use: pip install poetry" >&2
+        echo "  Do NOT use: brew install poetry" >&2
         exit 1
     fi
+
 fi
 
 # Allow command

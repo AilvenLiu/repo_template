@@ -98,9 +98,12 @@ For details, see `.ai/adr/0001-project-profile.md`.
 ## Absolute Prohibitions
 
 - NEVER commit directly to `master`, `main`, `develop`, `release/*`, `hotfix/*`
-- NEVER run `pip install` outside Poetry -- use `poetry run` or `/dependency`
-- NEVER use `python`/`python3` directly for application/test workflows -- use `poetry run python`
-- NEVER install C++ libraries via system package managers -- use documented mechanisms (Conan, vcpkg, FetchContent, CPM, git submodules); NVIDIA/AMD GPU libraries excepted
+- NEVER run `pip` / `pip3` / `python -m pip` for any reason -- use `poetry add` or `poetry run`
+- NEVER use `python` / `python3` / `pip` / `pip3` directly -- use `poetry run python`
+- NEVER install Poetry via `curl -sSL https://install.python-poetry.org` or system package managers
+- Poetry MUST be installed via pipx at `~/.local/bin/poetry`
+- `poetry.toml` MUST exist with `in-project = true`; `pyproject.toml` MUST configure TUNA as primary source
+- NEVER install C++ libraries via system package managers -- use Conan, vcpkg, FetchContent, CPM, or git submodules; NVIDIA/AMD GPU libraries excepted
 - NEVER use raw `new`/`delete` -- use smart pointers and RAII
 - NEVER use C-style casts -- use `static_cast`/`dynamic_cast`/`reinterpret_cast`
 - NEVER ignore CUDA API error codes
@@ -108,6 +111,7 @@ For details, see `.ai/adr/0001-project-profile.md`.
 - NEVER commit code with compiler warnings (`-Wall -Wextra -Wpedantic -Werror`)
 - NEVER hardcode secrets, credentials, or API keys
 - NEVER use bare `except:`, mutable default arguments, or `eval()`/`exec()`
+- NEVER implement core logic in Python when it belongs in C++ -- Python is binding/wrapper only (C++ First policy)
 
 ## Required Workflow Commands
 

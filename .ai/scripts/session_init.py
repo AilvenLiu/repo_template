@@ -233,6 +233,7 @@ def resolve_constraints(
     # Load hybrid constraints when both Python and C++ are present
     if profile.has_language(Language.PYTHON) and profile.has_language(Language.CPP):
         keys.append("hybrid/ffi-boundary")
+        keys.append("hybrid/cpp-first")
         if profile.build_system in (BuildSystem.SCIKIT_BUILD, BuildSystem.SCIKIT_BUILD_CORE):
             keys.append("hybrid/python-cpp-build")
         elif profile.distribution == Distribution.PYPI_WHEEL:

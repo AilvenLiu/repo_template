@@ -1,13 +1,18 @@
 ---
 name: python-env-setup
-description: "Diagnose and fix pyenv+Poetry environment issues. Use when poetry install fails or wrong Python version detected."
+description: "Diagnose and fix pyenv+Poetry environment issues. Checks pipx install, in-project venv, TUNA source, Python version. STOP and ask user if any mandatory check fails."
 ---
 
 # /python-env-setup
 
-Systematic diagnosis and repair of pyenv+Poetry configuration issues, especially
-the `VIRTUAL_ENV` interference problem where a system-set variable overrides
-pyenv's Python selection.
+Systematic diagnosis and repair of pyenv+Poetry configuration, enforcing the
+mandatory three-check policy:
+
+1. **Poetry via pipx** — must be at `~/.local/bin/poetry`
+2. **In-project venv** — `poetry.toml` must have `in-project = true`
+3. **TUNA as primary source** — `pyproject.toml` must have TUNA with `priority = "primary"`
+
+If any of checks 1–3 fail, the agent **MUST STOP and ask the user** before proceeding.
 
 ## Execution
 
@@ -19,34 +24,41 @@ bin/agent-python-env-setup <diagnose|fix|verify>
 
 | Subcommand | What it does |
 |------------|--------------|
-| `diagnose` | Checks `VIRTUAL_ENV`, Python version, pyenv config, Poetry config, PATH order. Reports issues with severity. |
-| `fix` | Unsets `VIRTUAL_ENV`, configures shell init, removes external Poetry venvs, recreates `.venv/` inside the project. |
-| `verify` | Confirms Python 3.10+, Poetry env inside `.venv/`, and `poetry install` succeeds cleanly. |
+| `diagnose` | Runs all checks. Reports CRITICAL / WARNING / OK per check. |
+| `fix` | Best-effort repair: creates `poetry.toml`, relocates external venvs. |
+| `verify` | Confirms all checks pass; exits 0 if environment is correct. |
+
+## Checks performed
+
+| # | Check | Severity if fails |
+|---|-------|------------------|
+| 1 | `~/.local/bin/poetry` exists (pipx install) | CRITICAL |
+| 2 | `poetry.toml` present with `in-project = true` | CRITICAL |
+| 3 | TUNA configured as `priority = "primary"` in `pyproject.toml` | CRITICAL |
+| 4 | `VIRTUAL_ENV` env var not set | CRITICAL |
+| 5 | Poetry venv Python matches `pyproject.toml` requirement | WARNING |
+| 6 | pyenv installed and shims on PATH | WARNING |
+| 7 | `~/.local/bin` on PATH before system directories | WARNING |
 
 ## Trigger conditions — run this skill when
 
-- `poetry install` fails with a Python version mismatch error
-- `poetry env info` shows the wrong Python version (not 3.10+)
-- `python --version` shows a different version than `poetry run python --version`
-- Setting up a new Python project with pyenv+Poetry on a machine for the first time
+- Any Python or Hybrid project session starts (MANDATORY check)
+- `poetry install` fails with a Python version or venv error
+- `poetry env info` shows the wrong Python version or wrong path
+- Setting up a new Python project for the first time
 - After upgrading Python or installing a new pyenv version
 
-## Behaviour (guaranteed)
+## On critical failure
 
-1. Checks `VIRTUAL_ENV`, Python version, pyenv config, Poetry config, PATH order.
-2. Reports issues with severity: CRITICAL / WARNING / INFO.
-3. **Fix mode**: unsets `VIRTUAL_ENV`, patches shell config (`~/.zshrc` /
-   `~/.bashrc`), removes external Poetry venvs, configures `virtualenvs.in-project true`,
-   recreates venv as `.venv/` inside the project.
-
-## Behaviour (best-effort)
-
-- pyenv / Poetry installation if missing (requires network).
-- Shell config edits — may require `source ~/.zshrc` manually after fix.
+```
+STOP — report which check failed, show the exact fix command, wait for user.
+```
 
 ## Correct environment state
 
 ```bash
-poetry env info --path   # Must print <project>/.venv
-poetry run python --version  # Must be Python 3.10+
+ls ~/.local/bin/poetry              # Must exist
+cat poetry.toml                     # Must have: in-project = true
+poetry env info --path              # Must print <project>/.venv
+poetry run python --version         # Must be Python 3.10+
 ```

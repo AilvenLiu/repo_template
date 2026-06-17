@@ -232,5 +232,6 @@ def test_e2e_hybrid_project_generation_and_codex_init(template_root):
         loaded = set(state["loaded_constraints"])
         assert "common/roadmap-awareness" not in loaded
         assert "hybrid/ffi-boundary" in loaded
+        assert "hybrid/cpp-first" in loaded
         assert "hybrid/python-cpp-build" in loaded
         assert "hybrid/system-deps" in loaded
