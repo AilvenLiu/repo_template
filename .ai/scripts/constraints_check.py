@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import subprocess
 import sys
 from dataclasses import dataclass
@@ -128,6 +129,106 @@ def _check_cpp(repo_root: Path, profile: ProjectProfile) -> List[Violation]:
     return violations
 
 
+def _read_text(path: Path) -> str:
+    try:
+        return path.read_text(encoding="utf-8", errors="ignore")
+    except OSError:
+        return ""
+
+
+def _check_native_build_ownership(
+    repo_root: Path, profile: ProjectProfile
+) -> List[Violation]:
+    violations: List[Violation] = []
+    if not profile.has_language(Language.CPP):
+        return violations
+
+    cmake = repo_root / "CMakeLists.txt"
+    if not cmake.exists():
+        violations.append(
+            Violation(
+                category="Native Build Ownership",
+                severity="CRITICAL",
+                message="C++/CUDA profile has no root CMakeLists.txt",
+                remediation="Restore CMake as the native build authority before editing Python packaging.",
+            )
+        )
+
+    setup_py = repo_root / "setup.py"
+    if setup_py.exists():
+        text = _read_text(setup_py)
+        native_setup_patterns = [
+            r"\bsetuptools\s*\.\s*Extension\s*\(",
+            r"\bExtension\s*\(",
+            r"\bCUDAExtension\s*\(",
+            r"\bCppExtension\s*\(",
+            r"\bBuildExtension\b",
+            r"\bextra_compile_args\b",
+            r"\bextra_link_args\b",
+            r"\bdefine_macros\b",
+            r"\blibrary_dirs\b",
+            r"\binclude_dirs\b",
+        ]
+        if any(re.search(pattern, text) for pattern in native_setup_patterns):
+            violations.append(
+                Violation(
+                    category="Native Build Ownership",
+                    severity="CRITICAL",
+                    message="setup.py appears to define native C++/CUDA build logic",
+                    remediation=(
+                        "Move native targets, compiler/link flags, CUDA policy, and dependency "
+                        "discovery into CMake; keep Python packaging as a thin bridge."
+                    ),
+                )
+            )
+
+    pyproject = repo_root / "pyproject.toml"
+    if pyproject.exists():
+        text = _read_text(pyproject)
+        if re.search(r'build-backend\s*=\s*["\']setuptools\.build_meta', text):
+            native_markers = [
+                "tool.setuptools",
+                "ext_modules",
+                "Extension(",
+                "CUDAExtension",
+                "CppExtension",
+            ]
+            if any(marker in text for marker in native_markers):
+                violations.append(
+                    Violation(
+                        category="Native Build Ownership",
+                        severity="CRITICAL",
+                        message="pyproject.toml routes native extension building through setuptools",
+                        remediation="Use scikit-build-core only as a bridge to the CMake-owned native graph.",
+                    )
+                )
+
+        python_owned_native_policy = [
+            "CMAKE_CUDA_ARCHITECTURES",
+            "CUDA_ARCHITECTURES",
+            "TORCH_CUDA_ARCH_LIST",
+            "extra_compile_args",
+            "extra_link_args",
+            "define_macros",
+            "library_dirs",
+            "include_dirs",
+        ]
+        if any(marker in text for marker in python_owned_native_policy):
+            violations.append(
+                Violation(
+                    category="Native Build Ownership",
+                    severity="CRITICAL",
+                    message="pyproject.toml appears to own native compiler/link/CUDA policy",
+                    remediation=(
+                        "Define native compiler flags, link flags, CUDA architectures, and "
+                        "dependency discovery in CMake instead of Python packaging metadata."
+                    ),
+                )
+            )
+
+    return violations
+
+
 def check_constraints(repo_root: Path, profile: ProjectProfile) -> List[Violation]:
     violations = _check_git(repo_root)
 
@@ -135,6 +236,7 @@ def check_constraints(repo_root: Path, profile: ProjectProfile) -> List[Violatio
         violations.extend(_check_python(repo_root, profile))
     if profile.has_language(Language.CPP):
         violations.extend(_check_cpp(repo_root, profile))
+        violations.extend(_check_native_build_ownership(repo_root, profile))
 
     return violations
 

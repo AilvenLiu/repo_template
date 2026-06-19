@@ -174,3 +174,23 @@ def test_bash_allows_ai_script_python() -> None:
             repo, {"command": "python3 .ai/scripts/session_init.py --platform codex"}
         )
         assert allowed
+
+
+def test_mutate_blocks_setup_py_for_hybrid_repo() -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = Path(tmp)
+        _write_state(repo, passed=True)
+        (repo / ".ai").mkdir(exist_ok=True)
+        (repo / ".ai" / "project.yml").write_text(
+            "project_profile:\n"
+            "  language: [python, cpp]\n"
+            "  build_system: scikit-build-core\n",
+            encoding="utf-8",
+        )
+
+        allowed, message = policy_gate.gate_mutate(
+            repo, {"file_path": str(repo / "setup.py")}
+        )
+
+        assert not allowed
+        assert "CMake" in message

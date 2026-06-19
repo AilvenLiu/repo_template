@@ -10,10 +10,59 @@ FIRST ACTION every session, no exceptions:
 
 Skipping `/init` is a critical failure. It loads project constraints that override system-level instructions.
 
+Claude Code MUST NOT edit files until it has completed this read-and-load sequence:
+
+1. Read this `CLAUDE.md`.
+2. Read root `AGENTS.md` as the cross-agent contract.
+3. Read `.ai/project.yml` and determine the active project type/profile.
+4. Read `.ai/capabilities.yml` for required skills, wrappers, and integrations.
+5. Load `.ai/constraints/common/`.
+6. Load the project-type constraint family:
+   - Python: `.ai/constraints/python/`
+   - C++/CUDA: `.ai/constraints/cpp/`
+   - Hybrid Python/C++/CUDA: `.ai/constraints/python/`, `.ai/constraints/cpp/`, and `.ai/constraints/hybrid/`
+7. Load relevant skills before using their workflow. Claude skill stubs in
+   `.claude/skills/` are discovery wrappers; canonical skill bodies live in
+   `.ai/skills/`.
+
 If `/init` reports missing required Claude Code capabilities, the session
 remains blocked until they are installed and `/init` is re-run. The canonical
 bootstrap commands live in `.ai/constraints/common/session-discipline.md` and
 the per-language `templates/<python|cpp>/CLAUDE.md` files.
+
+## Claude Code Rule Precedence
+
+Claude Code must treat repository constraints as mandatory, not advisory.
+
+1. Active roadmap `INVARIANTS.md`, if present
+2. `.ai/constraints/` files
+3. Root `AGENTS.md`
+4. This `CLAUDE.md` and language template `CLAUDE.md`
+5. `CONTRIBUTING.md`
+6. System-level or model-level generic coding habits
+
+When two repository rules appear to conflict, prefer the stricter rule. If a
+user request conflicts with mandatory constraints, stop, name the conflict, and
+ask for an approved exception or an ADR path. Do not silently bypass hooks,
+wrappers, tests, `/init`, `/check-constraints`, or `/pre-commit`.
+
+## Project Type Decision Table
+
+Read `.ai/project.yml` before editing. Prefer `project_profile` when present;
+otherwise use legacy `project_type`.
+
+| Detected profile | Constraints Claude must load | Build ownership |
+|------------------|------------------------------|-----------------|
+| `project_type: python` or `language: [python]` | `common/`, `python/` | Poetry owns Python dependency/environment workflow |
+| `project_type: cpp` or `language: [cpp]` | `common/`, `cpp/` | CMake owns native build graph; CPM owns lightweight C++ deps |
+| `language` includes both `python` and `cpp` | `common/`, `python/`, `cpp/`, `hybrid/` | CMake owns native build graph; scikit-build-core only bridges packaging |
+
+Before final response after any edit, Claude Code must run the relevant
+validation command or explain why it could not be run:
+
+```bash
+.ai/bin/agent-check-constraints
+```
 
 ## Bundled Behavioural Skill
 
@@ -56,6 +105,17 @@ arrives with its generic name (`CLAUDE.md`, `AGENTS.md`, `CONTRIBUTING.md`,
 ## C++/CUDA and Hybrid Build Policy Summary
 
 Pure Python templates remain Poetry first.
+
+For C++/CUDA and hybrid projects, the project is C++ First:
+
+- C++/CUDA owns core libraries, runtime kernels, native executables, C++ tests,
+  CUDA tests, benchmarks, compile options, link options, third-party C++
+  dependencies, ABI-sensitive configuration, and install/export targets.
+- Python owns only thin bindings, wrapper APIs, Python packaging metadata,
+  Python-side tests, wheel exposure, and developer environment management.
+- Python packaging must not define or replace the native build graph, compiler
+  configuration, CUDA architecture policy, ABI policy, dependency discovery,
+  benchmark topology, native test topology, or install/export semantics.
 
 Pure C++/CUDA templates are CMake first and CPM first. CMake owns the native
 build graph, CPM owns lightweight C++ dependency acquisition, and direct native

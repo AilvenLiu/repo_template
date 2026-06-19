@@ -14,6 +14,14 @@ session state.
 On Claude, the normal init path also prints the full text of each selected
 constraint so those rules are actually present in the live session context.
 
+Before editing, Claude Code MUST read `AGENTS.md`, `.ai/project.yml`,
+`.ai/capabilities.yml`, `.ai/constraints/common/`, and `.ai/constraints/cpp/`.
+Load relevant skills from `.claude/skills/` or `.ai/skills/` before following a
+workflow. Treat constraints as mandatory; when rules conflict, prefer the
+stricter rule. If a request conflicts with these constraints, stop and explain.
+Do not bypass hooks, wrappers, `/init`, `/check-constraints`, tests, or
+pre-commit validation.
+
 ### Capability Audit
 
 The `/init` skill runs a deterministic capability audit that verifies:

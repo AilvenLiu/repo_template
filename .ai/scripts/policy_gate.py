@@ -14,11 +14,13 @@ from typing import Dict, Tuple
 try:
     from .constants import PROTECTED_BRANCHES, PROTECTED_PREFIXES
     from .paths import resolve_repo_root
+    from .project_profile import Language, detect as detect_profile
     from .project_type import ProjectType, detect
     from .session_state import read_state
 except ImportError:
     from constants import PROTECTED_BRANCHES, PROTECTED_PREFIXES
     from paths import resolve_repo_root
+    from project_profile import Language, detect as detect_profile
     from project_type import ProjectType, detect
     from session_state import read_state
 
@@ -151,8 +153,24 @@ def _check_bash_command(command: str, project_type: ProjectType, repo_root: Path
 
 
 def gate_mutate(repo_root: Path, context: Dict[str, str]) -> Tuple[bool, str]:
-    del context
-    return _session_gate(repo_root)
+    ok, message = _session_gate(repo_root)
+    if not ok:
+        return False, message
+
+    file_path = str(context.get("file_path", ""))
+    if not file_path:
+        return True, ""
+
+    profile = detect_profile(repo_root)
+    if profile is not None and profile.has_language(Language.CPP):
+        path = Path(file_path)
+        if path.name == "setup.py":
+            return (
+                False,
+                "BLOCKED: setup.py edits in C++/CUDA or hybrid projects risk moving native build ownership out of CMake. Use CMake/scikit-build-core bridge policy or document an ADR exception.",
+            )
+
+    return True, ""
 
 
 def gate_bash(repo_root: Path, context: Dict[str, str]) -> Tuple[bool, str]:

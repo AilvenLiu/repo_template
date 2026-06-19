@@ -2,3 +2,11 @@
 # This file is read by session initialization to determine project type.
 
 project_type: python
+
+project_profile:
+  language: [python]
+  build_system: poetry
+  bindings: none
+  distribution: none
+  hardware_targets: [cpu]
+  external_dependencies: none

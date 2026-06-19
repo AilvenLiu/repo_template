@@ -2,3 +2,11 @@
 # This file is read by session initialization to determine project type.
 
 project_type: cpp
+
+project_profile:
+  language: [cpp]
+  build_system: cmake
+  bindings: none
+  distribution: none
+  hardware_targets: [cuda]
+  external_dependencies: system_cuda

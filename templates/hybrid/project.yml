@@ -1,6 +1,8 @@
 # Project configuration -- source of truth for AI agent tooling.
 # This file is read by session initialization to determine project profile.
 
+project_type: hybrid
+
 project_profile:
   language: [python, cpp]
   build_system: scikit-build-core

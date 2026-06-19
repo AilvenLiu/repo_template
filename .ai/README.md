@@ -57,6 +57,41 @@ Both Claude and Codex use the shared audit runtime:
    the shared runtime. Non-Claude platforms consult `AGENTS.md`,
    `.ai/skills/<name>/SKILL.md`, and the `.ai/bin/agent-*` wrappers directly.
 
+## Constraint Loading Contract
+
+Project type is determined from `.ai/project.yml`. Prefer `project_profile`
+when present and fall back to legacy `project_type` only when needed.
+
+| Profile | Constraint families loaded before edits |
+|---------|------------------------------------------|
+| Python | `.ai/constraints/common/`, `.ai/constraints/python/` |
+| C++/CUDA | `.ai/constraints/common/`, `.ai/constraints/cpp/` |
+| Hybrid Python/C++/CUDA | `.ai/constraints/common/`, `.ai/constraints/python/`, `.ai/constraints/cpp/`, `.ai/constraints/hybrid/` |
+
+The canonical rule bodies remain in `.ai/constraints/`. Short mandatory
+summaries are repeated in `AGENTS.md`, `CLAUDE.md`, and generated-template
+entrypoints because Claude Code is more reliable when critical constraints are
+visible in its native first-read file. Those summaries must point back here
+instead of becoming separate policy sources.
+
+## Native Build Ownership Enforcement
+
+For C++/CUDA and hybrid projects, CMake owns the native build graph and CPM owns
+lightweight C++ dependency acquisition. Python packaging may expose native
+artifacts, but must not become the owner of compiler flags, CUDA architecture
+policy, native dependency discovery, native tests, benchmarks, or install/export
+targets.
+
+Run the fast policy sweep with:
+
+```bash
+.ai/bin/agent-check-constraints
+```
+
+It combines structural constraint checks with forbidden-pattern scanning,
+including representative checks for Python-first native build orchestration in
+C++/CUDA and hybrid projects.
+
 ## Adding a New AI Agent Platform
 
 To support a new agent platform:

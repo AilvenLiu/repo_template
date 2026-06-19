@@ -41,9 +41,64 @@ The constraint system has three layers:
    - Loaded dynamically by session initialization
    - Common constraints + language-specific constraints
 
+## Mandatory Cross-Agent Contract
+
+Agents must treat repository constraints as mandatory, not advisory. Before any
+edit, every agent must:
+
+1. Read the native entrypoint for its platform (`AGENTS.md`, and `CLAUDE.md`
+   for Claude Code).
+2. Read `.ai/project.yml` and determine the active project type/profile.
+3. Read `.ai/capabilities.yml` and verify required skills/wrappers exist.
+4. Load `.ai/constraints/common/`.
+5. Load the project-type constraint family from the table below.
+6. Load the relevant skill body under `.ai/skills/<skill>/SKILL.md` before
+   following that workflow. Platform-specific skill files are wrappers.
+
+Global precedence is:
+
+1. Active roadmap `INVARIANTS.md`, if present
+2. `.ai/constraints/` files
+3. This `AGENTS.md`
+4. Platform-specific entrypoints such as `CLAUDE.md`
+5. `CONTRIBUTING.md`
+6. Generic system/model guidance
+
+When two repository rules appear to conflict, prefer the stricter rule. If a
+requested change conflicts with mandatory constraints, stop, explain the
+conflict, and ask for an approved exception or ADR path.
+
+### Project Type to Constraint Family
+
+Prefer `project_profile` in `.ai/project.yml`; use legacy `project_type` only
+when `project_profile` is absent.
+
+| Project metadata | Required constraint families | Primary build authority |
+|------------------|------------------------------|-------------------------|
+| `project_type: python` or `language: [python]` | `.ai/constraints/common/`, `.ai/constraints/python/` | Poetry for Python environment and dependencies |
+| `project_type: cpp` or `language: [cpp]` | `.ai/constraints/common/`, `.ai/constraints/cpp/` | CMake for native build graph; CPM for lightweight C++ deps |
+| `language` includes both `python` and `cpp` | `.ai/constraints/common/`, `.ai/constraints/python/`, `.ai/constraints/cpp/`, `.ai/constraints/hybrid/` | CMake for native build graph; scikit-build-core only bridges packaging |
+
+Before final response after edits, run the relevant validation command, or state
+why it could not be run:
+
+```bash
+.ai/bin/agent-check-constraints
+```
+
 ## C++/CUDA and Hybrid Build Policy Summary
 
 Pure Python templates remain Poetry first.
+
+For C++/CUDA and hybrid templates, the project is C++ First:
+- C++/CUDA owns core libraries, runtime kernels, native executables, C++ tests,
+  CUDA tests, benchmarks, compile options, link options, third-party C++
+  dependencies, ABI-sensitive configuration, and installation/export targets.
+- Python owns only thin bindings, wrapper APIs, Python packaging metadata,
+  Python-side tests, wheel exposure, and developer environment management.
+- Python packaging must not define or replace the native build graph, compiler
+  configuration, CUDA architecture policy, ABI policy, dependency discovery,
+  benchmark topology, native test topology, or installation/export semantics.
 
 Pure C++/CUDA templates are CMake first and CPM first:
 - CMake owns the native build graph.

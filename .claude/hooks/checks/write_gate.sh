@@ -7,9 +7,6 @@ INPUT="$1"
 HOOK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 REPO_ROOT="$(cd "$HOOK_DIR/../.." && pwd)"
 
-# Shared mutate gate (session initialized + audit passed)
-python3 "$REPO_ROOT/.ai/scripts/policy_gate.py" --op mutate --context '{}' >/dev/null
-
 FILE_PATH="$(echo "$INPUT" | python3 -c '
 import json,sys
 try:
@@ -20,11 +17,25 @@ except Exception:
 ' 2>/dev/null)"
 
 if [ -z "$FILE_PATH" ]; then
+    python3 "$REPO_ROOT/.ai/scripts/policy_gate.py" --op mutate --context '{}' >/dev/null
     exit 0
 fi
 
+CONTEXT_JSON="$(python3 -c '
+import json,sys
+print(json.dumps({"file_path": sys.argv[1]}))
+' "$FILE_PATH")"
+
+# Shared mutate gate (session initialized + audit passed + high-risk file policy)
+python3 "$REPO_ROOT/.ai/scripts/policy_gate.py" --op mutate --context "$CONTEXT_JSON" >/dev/null
+
 if echo "$FILE_PATH" | grep -qE '\.claude/settings\.json$'; then
     echo "WARNING: Modifying .claude/settings.json changes hook enforcement." >&2
+    exit 0
+fi
+
+if echo "$FILE_PATH" | grep -qE '(^|/)pyproject\.toml$|(^|/)CMakeLists\.txt$|(^|/)cmake/Dependencies\.cmake$|(^|/)cmake/Options\.cmake$'; then
+    echo "WARNING: This file can affect dependency/build ownership. Run .ai/bin/agent-check-constraints before final response." >&2
     exit 0
 fi
 
