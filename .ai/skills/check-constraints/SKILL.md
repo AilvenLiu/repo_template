@@ -10,7 +10,7 @@ Lightweight constraint compliance check without running full pre-commit.
 ## Execution
 
 ```bash
-bin/agent-check-constraints
+.ai/bin/agent-check-constraints
 ```
 
 ## Behaviour (guaranteed)

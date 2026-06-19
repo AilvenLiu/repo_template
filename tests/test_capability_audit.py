@@ -22,8 +22,8 @@ def _write_manifest(repo: Path, data: dict) -> None:
 
 def _create_common_layout(repo: Path) -> None:
     (repo / ".ai" / "skills").mkdir(parents=True, exist_ok=True)
+    (repo / ".ai" / "bin").mkdir(parents=True, exist_ok=True)
     (repo / ".claude" / "skills").mkdir(parents=True, exist_ok=True)
-    (repo / "bin").mkdir(parents=True, exist_ok=True)
 
 
 def _create_skill(repo: Path, skill_id: str, *, with_claude_stub: bool = True) -> None:
@@ -77,7 +77,7 @@ def test_codex_audit_passes_with_required_skills_and_commands() -> None:
                 "repo_commands": [
                     {
                         "id": "agent-init",
-                        "path": "bin/agent-init",
+                        "path": ".ai/bin/agent-init",
                         "required": True,
                         "executable": True,
                     }
@@ -90,7 +90,7 @@ def test_codex_audit_passes_with_required_skills_and_commands() -> None:
         # Codex audit only requires the .ai/skills body (no Claude stub needed).
         _create_skill(repo, "init", with_claude_stub=False)
 
-        cmd = repo / "bin" / "agent-init"
+        cmd = repo / ".ai" / "bin" / "agent-init"
         cmd.write_text("#!/bin/sh\nexit 0\n")
         cmd.chmod(0o755)
 
@@ -110,7 +110,7 @@ def test_codex_audit_fails_when_command_missing() -> None:
                     "repo_commands": [
                         {
                             "id": "agent-precommit",
-                            "path": "bin/agent-precommit",
+                            "path": ".ai/bin/agent-precommit",
                             "required": True,
                             "executable": True,
                         }
@@ -276,7 +276,7 @@ def test_codex_repo_commands_are_deduplicated_between_common_and_platform() -> N
                     "repo_commands": [
                         {
                             "id": "agent-init",
-                            "path": "bin/agent-init",
+                            "path": ".ai/bin/agent-init",
                             "required": True,
                             "executable": True,
                         }
@@ -287,7 +287,7 @@ def test_codex_repo_commands_are_deduplicated_between_common_and_platform() -> N
                         "repo_commands": [
                             {
                                 "id": "agent-init",
-                                "path": "bin/agent-init",
+                                "path": ".ai/bin/agent-init",
                                 "required": True,
                                 "executable": True,
                             }
@@ -297,7 +297,7 @@ def test_codex_repo_commands_are_deduplicated_between_common_and_platform() -> N
             },
         )
 
-        cmd = repo / "bin" / "agent-init"
+        cmd = repo / ".ai" / "bin" / "agent-init"
         cmd.write_text("#!/bin/sh\nexit 0\n")
         cmd.chmod(0o755)
 

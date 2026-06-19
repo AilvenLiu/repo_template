@@ -3,19 +3,23 @@ id: hybrid/python-cpp-build
 name: Python/C++ Build System Patterns
 description: Build system patterns for hybrid Python/C++/CUDA projects
 category: hybrid
-status: draft
+status: mandatory
 applies_to:
   - "pyproject.toml"
   - "CMakeLists.txt"
   - "setup.py"
-severity: advisory
+severity: critical
 ---
 
 # Python/C++ Build System Patterns
 
-**Status**: DRAFT (advisory only, does not block commits)
+**Status**: MANDATORY
 
-This constraint defines build system patterns for hybrid Python/C++/CUDA projects in AI infrastructure. It covers scikit-build-core integration, PyTorch extension building, CXX11 ABI compatibility, manylinux compliance, auditwheel workflows, and multi-CUDA toolkit wheel matrices.
+This constraint defines mandatory build system patterns for hybrid
+Python/C++/CUDA projects. CMake owns the native build graph, CPM owns
+lightweight C++ dependency acquisition, scikit-build-core bridges CMake into
+Python packaging, and Poetry owns only the Python virtualenv and Python
+dependencies.
 
 ## Scope
 
@@ -24,6 +28,39 @@ This constraint applies to:
 - PyTorch/JAX/TensorFlow custom operators
 - Wheel distribution for multiple platforms and CUDA versions
 - CMake-based Python extension builds
+
+## 0. Ownership and Required Build Order
+
+Hybrid projects are C++ First. C++/CUDA owns core libraries, runtime kernels,
+native executables, native tests, benchmarks, compile and link options,
+third-party C++ dependencies, ABI-sensitive configuration, and install/export
+targets.
+
+Python owns only thin bindings, wrapper APIs, Python packaging metadata,
+Python-side tests, wheel exposure, and developer environment management.
+
+Agents must validate direct CMake before Python packaging:
+
+```bash
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DPROJECT_ENABLE_PYTHON=ON
+cmake --build build -j
+ctest --test-dir build --output-on-failure
+```
+
+Only after that passes may agents validate Python exposure:
+
+```bash
+poetry run pip install -e . --no-build-isolation
+poetry run python -c "import PROJECT_NAME; print(PROJECT_NAME)"
+poetry run pytest tests/python
+```
+
+`pip install -e .` is not the authoritative C++ build command. It is the
+wrapper-development command for exposing an already CMake-governed project to
+Python.
+
+Heavy C++/CUDA projects must not replace CMake with `setuptools.Extension(...)`.
+Only trivial compatibility shims with no real native build graph may use it.
 
 ## 1. scikit-build-core: Modern CMake Integration
 
@@ -51,37 +88,30 @@ This constraint applies to:
 
 ```toml
 [build-system]
-requires = ["scikit-build-core>=0.8.0", "nanobind>=1.0.0"]
+requires = ["scikit-build-core", "pybind11", "ninja", "cmake"]
 build-backend = "scikit_build_core.build"
 
 [project]
-name = "my_extension"
-version = "1.0.0"
-requires-python = ">=3.8"
-dependencies = ["torch>=2.0.0", "numpy>=1.20.0"]
+name = "PROJECT_NAME"
+version = "0.1.0"
+requires-python = ">=3.10"
 
 [tool.scikit-build]
-cmake.build-type = "Release"
-cmake.verbose = true
-wheel.packages = ["my_extension"]
-wheel.py-api = "cp38"
-
-# Pass CMake arguments
-cmake.args = ["-DUSE_CUDA=ON"]
-
-# Define preprocessor macros
-cmake.define = {USE_CUDA = "ON", CUDA_ARCH = "80;86;89;90"}
-
-# Editable install mode
-editable.mode = "redirect"  # or "inplace" for faster rebuilds
+cmake.build-type = "RelWithDebInfo"
+build-dir = "build/{wheel_tag}"
+wheel.packages = ["python/PROJECT_NAME"]
 ```
 
 ### 1.3 CMake Integration Pattern
 
 **CMakeLists.txt**:
 ```cmake
-cmake_minimum_required(VERSION 3.18)
+cmake_minimum_required(VERSION 3.24)
 project(my_extension LANGUAGES CXX CUDA)
+
+include(cmake/Options.cmake)
+include(cmake/CPM.cmake)
+include(cmake/Dependencies.cmake)
 
 # Find dependencies
 find_package(Python3 REQUIRED COMPONENTS Interpreter Development.Module)
@@ -213,7 +243,9 @@ Control which GPU architectures to compile for:
 **Environment variable**:
 ```bash
 export TORCH_CUDA_ARCH_LIST="7.0;7.5;8.0;8.6;8.9;9.0"
-python -m pip install .
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DPROJECT_ENABLE_PYTHON=ON
+cmake --build build -j
+poetry run pip install -e . --no-build-isolation
 ```
 
 **CMake**:
@@ -460,11 +492,11 @@ pip install my_extension[cu118] --extra-index-url https://download.pytorch.org/w
 
 ## 5. CMake Best Practices
 
-### 5.1 Modern CMake (3.18+)
+### 5.1 Modern CMake (3.24+)
 
 **Minimum version**:
 ```cmake
-cmake_minimum_required(VERSION 3.18)  # CUDA_ARCHITECTURES support
+cmake_minimum_required(VERSION 3.24)
 ```
 
 **Enable CUDA language**:

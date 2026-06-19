@@ -4,7 +4,7 @@
 project_profile:
   language: [python, cpp]
   build_system: scikit-build-core
-  bindings: nanobind
+  bindings: pybind11
   distribution: pypi-wheel
   hardware_targets: [cuda]
   external_dependencies: system_cuda

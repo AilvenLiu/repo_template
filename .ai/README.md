@@ -40,7 +40,7 @@ results (`claude mcp list`) and falls back to plugin metadata
 Both Claude and Codex use the shared audit runtime:
 - Claude Code: `/init` -> `.ai/scripts/session_init.py --platform claude`
 - Codex / Cursor / Cline / generic agents.md consumers:
-  `bin/agent-init --platform codex`
+  `.ai/bin/agent-init --platform codex`
 
 ## How It Works
 
@@ -53,9 +53,9 @@ Both Claude and Codex use the shared audit runtime:
    - `CLAUDE.md` is loaded automatically by Claude Code.
    - `AGENTS.md` is loaded automatically by Codex / Cursor / Cline /
      other agents.md-aware tools (per the [agents.md spec](https://agents.md)).
-4. **Vendor-specific wrappers** (`.claude/skills/`, `bin/agent-*`) call into
+4. **Vendor-specific wrappers** (`.claude/skills/`, `.ai/bin/agent-*`) call into
    the shared runtime. Non-Claude platforms consult `AGENTS.md`,
-   `.ai/skills/<name>/SKILL.md`, and the `bin/agent-*` wrappers directly.
+   `.ai/skills/<name>/SKILL.md`, and the `.ai/bin/agent-*` wrappers directly.
 
 ## Adding a New AI Agent Platform
 
@@ -64,9 +64,9 @@ To support a new agent platform:
 1. If the platform reads `AGENTS.md` natively (most agents.md-aware tools), no
    new entrypoint is needed — `AGENTS.md` already covers it.
 2. Otherwise, add a single platform-specific entrypoint at the project root
-   that points back to `AGENTS.md` and lists `bin/agent-*` wrappers.
+   that points back to `AGENTS.md` and lists `.ai/bin/agent-*` wrappers.
 3. Map the platform's invocation style (slash command, native skill loader,
-   plain shell, etc.) onto the wrappers in `bin/`.
+   plain shell, etc.) onto the wrappers in `.ai/bin/`.
 
 ### Platform-Specific Skill Mappings
 
@@ -74,13 +74,13 @@ Different platforms have different ways to invoke procedures:
 
 | Procedure | Claude Code | Codex / Cursor / Cline / generic |
 |-----------|-------------|----------------------------------|
-| Session init | `/init` | `bin/agent-init --platform codex` |
-| Pre-commit | `/pre-commit validate` | `bin/agent-precommit` |
-| Add dependency | `/dependency add <pkg>` | `bin/agent-dependency add <pkg>` |
-| Roadmap workflow | `/roadmap <cmd>` | `bin/agent-roadmap <cmd>` |
-| Constraint check | `/check-constraints` | `bin/agent-check-constraints` |
-| Build orchestration | `/build` | `bin/agent-build <subcommand>` |
-| Commit with policy | _(not exposed)_ | `bin/agent-commit -m "..." <files...>` |
+| Session init | `/init` | `.ai/bin/agent-init --platform codex` |
+| Pre-commit | `/pre-commit validate` | `.ai/bin/agent-precommit` |
+| Add dependency | `/dependency add <pkg>` | `.ai/bin/agent-dependency add <pkg>` |
+| Roadmap workflow | `/roadmap <cmd>` | `.ai/bin/agent-roadmap <cmd>` |
+| Constraint check | `/check-constraints` | `.ai/bin/agent-check-constraints` |
+| Build orchestration | `/build` | `.ai/bin/agent-build <subcommand>` |
+| Commit with policy | _(not exposed)_ | `.ai/bin/agent-commit -m "..." <files...>` |
 
 The constraint files describe **what** must be done; the wrappers implement
 **how** to do it.
@@ -105,7 +105,7 @@ The constraint files describe **what** must be done; the wrappers implement
 - **forbidden-practices.md** - Banned patterns and anti-patterns
 
 ### C++/CUDA
-- **dependencies.md** - Conan/vcpkg, CMake integration
+- **dependencies.md** - CPM-first dependency policy, CMake integration
 - **error-handling.md** - Exception safety, RAII
 - **memory-safety.md** - Smart pointers, ownership, RAII
 - **documentation.md** - Doxygen-style comments
@@ -113,5 +113,5 @@ The constraint files describe **what** must be done; the wrappers implement
 - **formatting.md** - clang-format, naming conventions
 - **static-analysis.md** - clang-tidy, cppcheck
 - **forbidden-practices.md** - Banned patterns
-- **cmake.md** - CMake 3.20+, modern targets
+- **cmake.md** - CMake 3.24+, modern targets
 - **cuda.md** - CUDA APIs, error checking, memory management

@@ -12,10 +12,10 @@ compatibility), and warns about protected branches and active roadmaps.
 
 ```bash
 # Claude Code
-bin/agent-init --platform claude
+.ai/bin/agent-init --platform claude
 
 # Codex / Cursor / Cline / generic agents
-bin/agent-init --platform codex
+.ai/bin/agent-init --platform codex
 ```
 
 ## Behaviour (guaranteed)
@@ -30,4 +30,4 @@ bin/agent-init --platform codex
 
 If the capability audit fails, the wrapper exits non-zero. The session is
 considered blocked for mutating operations until the failure is resolved
-and `bin/agent-init` is re-run.
+and `.ai/bin/agent-init` is re-run.

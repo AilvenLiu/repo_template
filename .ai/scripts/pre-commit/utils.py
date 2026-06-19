@@ -84,7 +84,8 @@ class PreCommitManager:
         return (
             False,
             "No supported Python environment found.\n"
-            "Use Poetry (`poetry install`), scikit-build-core (`pip install -e .`), "
+            "Use Poetry (`poetry install`) or the scikit-build-core bridge "
+            "(`poetry run pip install -e . --no-build-isolation`), "
             "or create `.venv` before validating.",
         )
 

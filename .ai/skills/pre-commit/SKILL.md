@@ -9,7 +9,7 @@ Orchestrates code-quality tools appropriate to the detected project type.
 ## Execution
 
 ```bash
-bin/agent-precommit
+.ai/bin/agent-precommit
 ```
 
 ## Behaviour (guaranteed)

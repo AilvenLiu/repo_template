@@ -1,4 +1,4 @@
-"""Tests for bin/agent-build build system dispatch logic."""
+"""Tests for .ai/bin/agent-build build system dispatch logic."""
 
 import os
 import shutil
@@ -16,7 +16,7 @@ def run_agent_build(
     extra_files: dict[str, str] | None = None,
     extra_path_scripts: dict[str, str] | None = None,
 ) -> tuple[int, str, str]:
-    """Run bin/agent-build in a temporary directory with given project.yml content.
+    """Run .ai/bin/agent-build in a temporary directory with given project.yml content.
 
     Returns:
         Tuple of (exit_code, stdout, stderr)
@@ -34,10 +34,11 @@ def run_agent_build(
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_text(content)
 
-        # Copy entire bin directory to get all dependencies
+        # Copy entire .ai/bin directory to get all dependencies
         repo_root = Path(__file__).parent.parent.parent.parent
-        src_bin_dir = repo_root / "bin"
-        dst_bin_dir = tmpdir_path / "bin"
+        src_bin_dir = repo_root / ".ai" / "bin"
+        dst_bin_dir = tmpdir_path / ".ai" / "bin"
+        dst_bin_dir.parent.mkdir(parents=True, exist_ok=True)
         shutil.copytree(src_bin_dir, dst_bin_dir)
 
         env = None
@@ -63,7 +64,7 @@ def run_agent_build(
 
 
 class TestBuildSystemDispatch:
-    """Test that bin/agent-build correctly dispatches based on build_system."""
+    """Test that .ai/bin/agent-build correctly dispatches based on build_system."""
 
     def test_poetry_build_system(self):
         """Test that build_system: poetry uses poetry branch."""

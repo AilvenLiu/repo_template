@@ -41,6 +41,23 @@ The constraint system has three layers:
    - Loaded dynamically by session initialization
    - Common constraints + language-specific constraints
 
+## C++/CUDA and Hybrid Build Policy Summary
+
+Pure Python templates remain Poetry first.
+
+Pure C++/CUDA templates are CMake first and CPM first:
+- CMake owns the native build graph.
+- CPM owns lightweight C++ dependency acquisition.
+- Direct native validation is `cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo`, `cmake --build build -j`, then `ctest --test-dir build --output-on-failure`.
+
+C++/Python hybrid templates are CMake first, CPM first, scikit-build-core bridge:
+- CMake owns native targets, compile/link options, tests, benchmarks, install/export targets, and ABI-sensitive configuration.
+- scikit-build-core bridges CMake into Python packaging only.
+- Poetry owns Python virtualenv and Python dependencies only.
+- `pip install -e .` is not the authoritative C++ build command; use `poetry run pip install -e . --no-build-isolation` only after direct CMake validation passes.
+
+Conan, vcpkg, Bazel, and git submodules are exceptional choices for these templates and require an ADR.
+
 ## For Template Users
 
 To create a new project from this template:

@@ -29,13 +29,15 @@ project/
     project.yml          # source of truth for project profile
     constraints/         # vendor-neutral constraint files
     scripts/             # shared runtime enforcement tools
+    bin/                 # guarded workflow command wrappers
   .claude/               # Claude Code skills and hooks
-  bin/                   # guarded workflow command wrappers
   agent_roadmaps/
   AGENTS.md              # vendor-neutral agent constraints (Codex / agents.md spec)
   CLAUDE.md              # Claude Code entrypoint (self-sufficient)
   CONTRIBUTING.md
   .gitignore
   README.md
-  src/  tests/           # (+ include/ for C++/Hybrid)
+  src/  tests/           # Python projects
+  cmake/  3rdparty/      # C++/CUDA and hybrid projects
+  cpp/  cuda/            # C++/CUDA and hybrid projects
 ```

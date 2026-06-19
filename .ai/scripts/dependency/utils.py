@@ -243,8 +243,10 @@ class DependencyManager:
         manifests = []
         candidates = [
             "CMakeLists.txt",
-            "conanfile.txt",
-            "conanfile.py",
+            "cmake/CPM.cmake",
+            "cmake/Dependencies.cmake",
+            "cmake/Options.cmake",
+            "3rdparty/cpm-cache/.gitkeep",
         ]
 
         for candidate in candidates:
@@ -435,43 +437,46 @@ class DependencyManager:
         cmake_file.write_text(new_content)
         return True
 
-    def add_to_conanfile_txt(
-        self, package: str, version: Optional[str] = None
+    def add_to_cpm_dependencies(
+        self,
+        name: str,
+        repository: str,
+        tag: str,
+        reason: str = "TODO: document reason",
+        target: str = "TODO::target",
+        license_note: str = "TODO: document license",
+        scope: str = "runtime",
     ) -> bool:
-        """Add package to conanfile.txt."""
-        conan_file = self.repo_root / "conanfile.txt"
+        """Add a pinned CPM dependency declaration."""
+        deps_file = self.repo_root / "cmake" / "Dependencies.cmake"
+        deps_file.parent.mkdir(parents=True, exist_ok=True)
 
-        if not conan_file.exists():
-            # Create basic conanfile.txt
-            conan_file.write_text("[requires]\n\n[generators]\ncmake\n")
+        if not deps_file.exists():
+            deps_file.write_text(
+                'set(CPM_SOURCE_CACHE\n'
+                '    "${CMAKE_SOURCE_DIR}/3rdparty/cpm-cache"\n'
+                '    CACHE PATH "CPM source cache")\n'
+            )
 
-        content = conan_file.read_text()
-
-        # Check if package already exists
-        if package in content:
-            print(f"Package {package} already in conanfile.txt")
+        content = deps_file.read_text()
+        if f"NAME {name}" in content or repository in content:
+            print(f"Dependency {name} already appears in cmake/Dependencies.cmake")
             return False
 
-        # Find [requires] section
-        requires_match = re.search(r"\[requires\]", content)
-        if not requires_match:
-            print("Could not find [requires] section in conanfile.txt")
-            return False
+        block = (
+            "\n"
+            f"# {name}\n"
+            f"# Upstream: https://github.com/{repository}\n"
+            f"# Reason: {reason}\n"
+            f"# Target: {target}\n"
+            f"# License: {license_note}\n"
+            f"# Scope: {scope}\n"
+            "CPMAddPackage(\n"
+            f"  NAME {name}\n"
+            f"  GITHUB_REPOSITORY {repository}\n"
+            f"  GIT_TAG {tag}\n"
+            ")\n"
+        )
 
-        # Find next section or end of file
-        next_section = re.search(r"\n\[", content[requires_match.end():])
-        if next_section:
-            insert_pos = requires_match.end() + next_section.start()
-        else:
-            insert_pos = len(content)
-
-        # Create package line
-        if version:
-            new_line = f"\n{package}/{version}"
-        else:
-            new_line = f"\n{package}/latest"
-
-        # Insert
-        new_content = content[:insert_pos] + new_line + content[insert_pos:]
-        conan_file.write_text(new_content)
+        deps_file.write_text(content.rstrip() + "\n" + block)
         return True

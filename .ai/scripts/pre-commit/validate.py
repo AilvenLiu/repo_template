@@ -205,30 +205,38 @@ def validate_cpp(manager: PreCommitManager) -> list[ValidationResult]:
     """Run C++/CUDA validation checks."""
     results: list[ValidationResult] = []
 
-    # CRITICAL: Check for package manager configuration (dependency management)
-    conan_file = manager.repo_root / "conanfile.txt"
-    vcpkg_file = manager.repo_root / "vcpkg.json"
-    has_package_manager = conan_file.exists() or vcpkg_file.exists()
+    # CRITICAL: Check for CMake/CPM dependency layout.
+    cpm_files = [
+        manager.repo_root / "cmake" / "CPM.cmake",
+        manager.repo_root / "cmake" / "Dependencies.cmake",
+        manager.repo_root / "cmake" / "Options.cmake",
+        manager.repo_root / "3rdparty" / "cpm-cache" / ".gitkeep",
+    ]
+    missing_cpm_files = [path for path in cpm_files if not path.exists()]
 
-    if has_package_manager:
-        pkg_mgr = "conanfile.txt" if conan_file.exists() else "vcpkg.json"
+    if not missing_cpm_files:
         results.append(
             ValidationResult(
-                "package manager",
+                "CMake/CPM dependency layout",
                 True,
-                f"Found package manager configuration: {pkg_mgr}",
+                "Found cmake/CPM.cmake, cmake/Dependencies.cmake, "
+                "cmake/Options.cmake, and 3rdparty/cpm-cache/.gitkeep",
                 "",
             )
         )
     else:
         results.append(
             ValidationResult(
-                "package manager",
+                "CMake/CPM dependency layout",
                 False,
                 "",
-                "No package manager configuration found (conanfile.txt or vcpkg.json).\n"
-                "CRITICAL: NEVER install C++ libraries system-wide (apt, yum, brew).\n"
-                "Create conanfile.txt or vcpkg.json for dependency management.",
+                "Missing CMake/CPM dependency layout files:\n"
+                + "\n".join(
+                    f"  - {path.relative_to(manager.repo_root)}"
+                    for path in missing_cpm_files
+                )
+                + "\nCRITICAL: CMake owns the native build graph and CPM owns "
+                "lightweight C++ dependency acquisition.",
             )
         )
 
@@ -366,7 +374,9 @@ def validate_cpp(manager: PreCommitManager) -> list[ValidationResult]:
                     "cmake build",
                     False,
                     "",
-                    "Build directory not found. Run: cmake -B build",
+                    "Build directory not found. Run: "
+                    "cmake -S . -B build -G Ninja "
+                    "-DCMAKE_BUILD_TYPE=RelWithDebInfo",
                 )
             )
 

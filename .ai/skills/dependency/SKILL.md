@@ -10,7 +10,7 @@ package, and reminds you to update documentation.
 ## Execution
 
 ```bash
-bin/agent-dependency add <package> [version] [--dev]
+.ai/bin/agent-dependency add <package> [version] [--dev]
 ```
 
 ## Behaviour (guaranteed)
@@ -18,10 +18,10 @@ bin/agent-dependency add <package> [version] [--dev]
 1. Detects project type via shared `project_type.py`.
 2. Python: runs `poetry add`, updates pyproject.toml + poetry.lock.
    - Configures in-project venvs; removes external venvs if found.
-3. C++: adds to conanfile.txt, adds `find_package()` to CMakeLists.txt.
+3. C++: adds a pinned `CPMAddPackage` block to `cmake/Dependencies.cmake`.
 4. Prints reminder to update README.md and commit manifest files.
 
 ## Behaviour (best-effort)
 
 - Trivial Python projects (requirements.txt only): uses pip, warns to migrate to Poetry.
-- Conan install after adding C++ dependency (requires network + conan).
+- Native CMake validation after adding C++ dependencies.

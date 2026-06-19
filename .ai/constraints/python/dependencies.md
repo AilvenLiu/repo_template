@@ -27,7 +27,7 @@ Poetry provides:
 - manual `venv` creation without Poetry
 - direct `python` / `python3` / `pip` / `pip3` invocations for application or test workflows
 
-The only exception is agent infrastructure (`bin/agent-*`, `.ai/scripts/*`) which use
+The only exception is agent infrastructure (`.ai/bin/agent-*`, `.ai/scripts/*`) which use
 controlled interpreter fallback for bootstrap purposes only.
 
 ### 1.2 Environment Check Procedure (MANDATORY at Session Start)

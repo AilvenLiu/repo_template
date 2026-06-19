@@ -16,7 +16,7 @@ enforcing the mandatory Poetry environment policy:
 ## Execution
 
 ```bash
-bin/agent-python-env-setup <diagnose|fix|verify>
+.ai/bin/agent-python-env-setup <diagnose|fix|verify>
 ```
 
 ## Subcommands

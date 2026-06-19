@@ -15,12 +15,12 @@ guidance for hybrid Python/C++/CUDA projects.
 
 ## 1. CUDA Toolkit Discovery
 
-### 1.1 Modern CMake Pattern (3.18+)
+### 1.1 Modern CMake Pattern (3.24+)
 
 Use `find_package(CUDAToolkit)` for CUDA library discovery:
 
 ```cmake
-cmake_minimum_required(VERSION 3.18)
+cmake_minimum_required(VERSION 3.24)
 project(my_cuda_extension LANGUAGES CXX CUDA)
 
 find_package(CUDAToolkit REQUIRED)

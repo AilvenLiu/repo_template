@@ -105,20 +105,23 @@ def _check_cpp(repo_root: Path, profile: ProjectProfile) -> List[Violation]:
     violations: List[Violation] = []
 
     cmake = repo_root / "CMakeLists.txt"
-    has_dep_manifest = (repo_root / "conanfile.txt").exists() or (
-        repo_root / "vcpkg.json"
-    ).exists()
-    if (
-        cmake.exists()
-        and profile.build_system == BuildSystem.CMAKE
-        and not has_dep_manifest
-    ):
+    cpm_files = [
+        repo_root / "cmake" / "CPM.cmake",
+        repo_root / "cmake" / "Dependencies.cmake",
+        repo_root / "cmake" / "Options.cmake",
+        repo_root / "3rdparty" / "cpm-cache" / ".gitkeep",
+    ]
+    missing = [path for path in cpm_files if not path.exists()]
+    if cmake.exists() and profile.has_language(Language.CPP) and missing:
         violations.append(
             Violation(
                 category="Dependency Management",
                 severity="CRITICAL",
-                message="C++ project missing dependency manifest",
-                remediation="Add conanfile.txt (preferred) or vcpkg.json.",
+                message="C++ project missing CMake/CPM dependency layout",
+                remediation=(
+                    "Add cmake/CPM.cmake, cmake/Dependencies.cmake, "
+                    "cmake/Options.cmake, and 3rdparty/cpm-cache/.gitkeep."
+                ),
             )
         )
 

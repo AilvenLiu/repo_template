@@ -112,11 +112,9 @@ Thumbs.db
 *.swo
 *~
 
-# Package managers
-vcpkg_installed/
-conan.lock
-conanbuildinfo.*
-conaninfo.txt
+# CPM dependency cache
+3rdparty/cpm-cache/*
+!3rdparty/cpm-cache/.gitkeep
 
 # Documentation
 docs/_build/

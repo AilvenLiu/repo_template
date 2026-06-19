@@ -7,7 +7,7 @@
 #
 # Codex / Cursor / Cline / generic agents.md consumers read AGENTS.md
 # natively; the procedures table there points back at .ai/skills/<id>/SKILL.md
-# and bin/agent-<id> wrappers. There is no Codex-side folder.
+# and .ai/bin/agent-<id> wrappers. There is no Codex-side folder.
 
 common_requirements:
   project_skills:
@@ -58,48 +58,48 @@ common_requirements:
 
   repo_commands:
     - id: agent-init
-      path: bin/agent-init
+      path: .ai/bin/agent-init
       required: true
       executable: true
 
     - id: agent-build
-      path: bin/agent-build
+      path: .ai/bin/agent-build
       required: true
       executable: true
 
     - id: agent-precommit
-      path: bin/agent-precommit
+      path: .ai/bin/agent-precommit
       required: true
       executable: true
 
     - id: agent-dependency
-      path: bin/agent-dependency
+      path: .ai/bin/agent-dependency
       required: true
       executable: true
 
     - id: agent-python-env-setup
-      path: bin/agent-python-env-setup
+      path: .ai/bin/agent-python-env-setup
       required: true
       executable: true
       when: language=python
 
     - id: agent-commit
-      path: bin/agent-commit
+      path: .ai/bin/agent-commit
       required: true
       executable: true
 
     - id: agent-check-constraints
-      path: bin/agent-check-constraints
+      path: .ai/bin/agent-check-constraints
       required: true
       executable: true
 
     - id: agent-roadmap
-      path: bin/agent-roadmap
+      path: .ai/bin/agent-roadmap
       required: true
       executable: true
 
     - id: agent-bazel
-      path: bin/agent-bazel
+      path: .ai/bin/agent-bazel
       required: true
       executable: true
       when: build_system=bazel
@@ -127,6 +127,6 @@ platform_requirements:
   codex:
     # Codex / Cursor / Cline / generic agents.md consumers read AGENTS.md
     # natively. They do not need a skill folder; the project_skills above
-    # are audited against .ai/skills/<id>/SKILL.md, and the bin/agent-*
+    # are audited against .ai/skills/<id>/SKILL.md, and the .ai/bin/agent-*
     # wrappers are audited via the shared repo_commands list.
     integrations: []

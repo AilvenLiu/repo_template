@@ -82,7 +82,7 @@ Normal `/init` already prints the selected constraint bodies. If you need to
 run the adapter directly while debugging the skill path, you can still invoke:
 
 ```bash
-bin/agent-init --platform claude --verbose
+.ai/bin/agent-init --platform claude --verbose
 ```
 
 ## Constraint Files
@@ -263,7 +263,7 @@ The main documentation files remain as comprehensive references. The `/init` ski
 ## Contributing
 
 To improve the `/init` skill:
-1. Modify `bin/agent-init` for detection logic
+1. Modify `.ai/bin/agent-init` for detection logic
 2. Update `.claude/skills/init/SKILL.md` for documentation
 3. Add new constraint files to `.ai/constraints/` as needed
 4. Test with both Python and C++/CUDA projects

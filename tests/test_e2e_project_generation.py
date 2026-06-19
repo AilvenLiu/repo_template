@@ -56,7 +56,7 @@ def _assert_common_generated_assets(target: Path, project_type: str) -> None:
     assert (target / ".ai" / "skills" / "navigate" / "SKILL.md").exists()
     # Claude stubs (frontmatter for slash-command discovery) must exist for each.
     assert (target / ".claude" / "skills" / "karpathy-guidelines" / "SKILL.md").exists()
-    assert (target / "bin" / "agent-build").exists()
+    assert (target / ".ai" / "bin" / "agent-build").exists()
     manifest = yaml.safe_load(
         (Path(__file__).parent.parent / ".ai" / "capabilities.yml").read_text()
     )
@@ -72,26 +72,28 @@ def _assert_common_generated_assets(target: Path, project_type: str) -> None:
         assert (
             target / ".claude" / "skills" / "python-env-setup" / "SKILL.md"
         ).exists()
-        assert (target / "bin" / "agent-python-env-setup").exists()
+        assert (target / ".ai" / "bin" / "agent-python-env-setup").exists()
     else:
         assert not (target / ".ai" / "skills" / "python-env-setup").exists()
         assert not (target / ".claude" / "skills" / "python-env-setup").exists()
         assert not (
             target / ".claude" / "docs" / "python-env-quick-reference.md"
         ).exists()
-        assert not (target / "bin" / "agent-python-env-setup").exists()
-        assert (target / "conanfile.txt").exists()
+        assert not (target / ".ai" / "bin" / "agent-python-env-setup").exists()
+        assert (target / "cmake" / "CPM.cmake").exists()
+        assert (target / "cmake" / "Dependencies.cmake").exists()
+        assert (target / "3rdparty" / "cpm-cache" / ".gitkeep").exists()
     if project_type == "hybrid":
         assert (target / "pyproject.toml").exists()
         assert (target / "CMakeLists.txt").exists()
     assert expected_skills <= ai_skill_dirs
     # Claude has the same skills + the 'common' utility folder.
     assert expected_skills <= (claude_skill_dirs - {"common"})
-    assert (target / "bin" / "agent-init").exists()
-    assert (target / "bin" / "agent-precommit").exists()
-    assert (target / "bin" / "agent-check-constraints").exists()
-    assert (target / "bin" / "agent-roadmap").exists()
-    assert (target / "bin" / "_agent_common.sh").exists()
+    assert (target / ".ai" / "bin" / "agent-init").exists()
+    assert (target / ".ai" / "bin" / "agent-precommit").exists()
+    assert (target / ".ai" / "bin" / "agent-check-constraints").exists()
+    assert (target / ".ai" / "bin" / "agent-roadmap").exists()
+    assert (target / ".ai" / "bin" / "_agent_common.sh").exists()
     assert (target / "agent_roadmaps" / "README.md").exists()
     roadmap_dirs = [
         path.name
@@ -139,7 +141,7 @@ def test_e2e_python_project_generation_and_codex_init(template_root):
         assert audit.passed
 
         result = subprocess.run(
-            ["bash", "bin/agent-init", "--platform", "codex"],
+            ["bash", ".ai/bin/agent-init", "--platform", "codex"],
             cwd=target,
             capture_output=True,
             text=True,
@@ -157,7 +159,7 @@ def test_e2e_python_project_generation_and_codex_init(template_root):
             check=True,
         )
         constraints = subprocess.run(
-            ["bash", "bin/agent-check-constraints"],
+            ["bash", ".ai/bin/agent-check-constraints"],
             cwd=target,
             capture_output=True,
             text=True,
@@ -181,7 +183,7 @@ def test_e2e_cpp_project_generation_and_codex_init(template_root):
         assert audit.passed
 
         result = subprocess.run(
-            ["bash", "bin/agent-init", "--platform", "codex"],
+            ["bash", ".ai/bin/agent-init", "--platform", "codex"],
             cwd=target,
             capture_output=True,
             text=True,
@@ -199,7 +201,7 @@ def test_e2e_cpp_project_generation_and_codex_init(template_root):
             check=True,
         )
         constraints = subprocess.run(
-            ["bash", "bin/agent-check-constraints"],
+            ["bash", ".ai/bin/agent-check-constraints"],
             cwd=target,
             capture_output=True,
             text=True,
@@ -221,7 +223,7 @@ def test_e2e_hybrid_project_generation_and_codex_init(template_root):
         assert audit.passed
 
         result = subprocess.run(
-            ["bash", "bin/agent-init", "--platform", "codex"],
+            ["bash", ".ai/bin/agent-init", "--platform", "codex"],
             cwd=target,
             capture_output=True,
             text=True,
@@ -235,3 +237,51 @@ def test_e2e_hybrid_project_generation_and_codex_init(template_root):
         assert "hybrid/cpp-first" in loaded
         assert "hybrid/python-cpp-build" in loaded
         assert "hybrid/system-deps" in loaded
+
+
+def test_e2e_hybrid_dependency_add_routes_python_and_cpp(template_root):
+    with tempfile.TemporaryDirectory() as tmpdir:
+        target = Path(tmpdir) / "test_hybrid_deps"
+        create_project(template_root, target, "hybrid")
+
+        init = subprocess.run(
+            ["bash", ".ai/bin/agent-init", "--platform", "codex"],
+            cwd=target,
+            capture_output=True,
+            text=True,
+        )
+        assert init.returncode == 0, init.stdout + "\n" + init.stderr
+
+        subprocess.run(
+            ["git", "checkout", "-b", "chore/e2e-hybrid-deps"],
+            cwd=target,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+
+        cpp_dep = subprocess.run(
+            ["bash", ".ai/bin/agent-dependency", "add", "fmtlib/fmt", "10.2.1"],
+            cwd=target,
+            capture_output=True,
+            text=True,
+        )
+        assert cpp_dep.returncode == 0, cpp_dep.stdout + "\n" + cpp_dep.stderr
+
+        py_dep = subprocess.run(
+            ["bash", ".ai/bin/agent-dependency", "add", "numpy", ">=1.24.0"],
+            cwd=target,
+            capture_output=True,
+            text=True,
+        )
+        assert py_dep.returncode == 0, py_dep.stdout + "\n" + py_dep.stderr
+
+        deps_cmake = (target / "cmake" / "Dependencies.cmake").read_text()
+        pyproject = (target / "pyproject.toml").read_text()
+
+        assert "GITHUB_REPOSITORY fmtlib/fmt" in deps_cmake
+        assert "GIT_TAG 10.2.1" in deps_cmake
+        assert "fmtlib/fmt" not in pyproject
+
+        assert '"numpy>=1.24.0"' in pyproject
+        assert "numpy" not in deps_cmake

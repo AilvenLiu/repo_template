@@ -111,7 +111,9 @@ pyenv install 3.12.13
 pyenv local 3.12.13
 
 # 5. Install Poetry
-curl -sSL https://install.python-poetry.org | python3 -
+python3 -m pip install --user pipx
+python3 -m pipx ensurepath
+pipx install poetry
 
 # 6. Configure Poetry
 poetry config virtualenvs.in-project true --local

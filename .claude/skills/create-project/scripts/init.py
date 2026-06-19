@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Initialize a new project from the repo_template.
 
-Copies the shared template tree (.ai/, .claude/, bin/, agent_roadmaps/)
-verbatim, then overlays the language-specific files from
+Copies the shared template tree (.ai/, .claude/, agent_roadmaps/) verbatim,
+then overlays the language-specific files from
 templates/<language>/ onto the target directory using the language's
 generic file names (CLAUDE.md, AGENTS.md, CONTRIBUTING.md, .gitignore).
 """
@@ -60,8 +60,71 @@ _FILE_MAP = {
 }
 
 # Directories to copy verbatim
-_COPY_DIRS = [".ai", ".claude", "agent_roadmaps", "bin"]
+_COPY_DIRS = [".ai", ".claude", "agent_roadmaps"]
 _COPY_IGNORE = shutil.ignore_patterns("__pycache__", "*.pyc", "*.pyo", ".DS_Store")
+
+
+def _write_if_missing(path: Path, content: str) -> None:
+    if not path.exists():
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(content)
+
+
+def _create_cpm_layout(target_dir: Path) -> None:
+    for dirname in [
+        "cmake/Toolchains",
+        "3rdparty/cpm-cache",
+        "3rdparty/patches",
+        "3rdparty/licenses",
+        "cpp/include",
+        "cpp/src",
+        "cuda/include",
+        "cuda/src",
+        "benchmarks",
+    ]:
+        (target_dir / dirname).mkdir(parents=True, exist_ok=True)
+
+    for keep in [
+        "3rdparty/.gitkeep",
+        "3rdparty/cpm-cache/.gitkeep",
+        "cpp/include/.gitkeep",
+        "cpp/src/.gitkeep",
+        "cuda/include/.gitkeep",
+        "cuda/src/.gitkeep",
+        "benchmarks/.gitkeep",
+    ]:
+        _write_if_missing(target_dir / keep, "")
+
+    _write_if_missing(
+        target_dir / "3rdparty" / "README.md",
+        "# Third-Party Dependencies\n\n"
+        "CPM-managed source caches live under `cpm-cache/` and are normally "
+        "ignored by Git except for `.gitkeep`.\n\n"
+        "- Store local patches under `patches/`.\n"
+        "- Store licence notes or snapshots under `licenses/`.\n"
+        "- Do not silently vendor large dependency trees.\n",
+    )
+
+    _write_if_missing(
+        target_dir / "cmake" / "CPM.cmake",
+        "# Project-local CPM entrypoint.\n"
+        "# Replace this placeholder with a pinned CPM.cmake release when adding\n"
+        "# the first CPM-managed dependency.\n",
+    )
+
+    _write_if_missing(
+        target_dir / "cmake" / "Dependencies.cmake",
+        'set(CPM_SOURCE_CACHE\n'
+        '    "${CMAKE_SOURCE_DIR}/3rdparty/cpm-cache"\n'
+        '    CACHE PATH "CPM source cache")\n',
+    )
+
+    _write_if_missing(
+        target_dir / "cmake" / "Options.cmake",
+        "option(PROJECT_ENABLE_TESTS \"Build native tests\" ON)\n"
+        "option(PROJECT_ENABLE_BENCHMARKS \"Build benchmarks\" OFF)\n"
+        "option(PROJECT_ENABLE_PYTHON \"Build Python bindings\" OFF)\n",
+    )
 
 
 def create_project(template_root: Path, target_dir: Path, project_type: str) -> None:
@@ -112,64 +175,124 @@ def create_project(template_root: Path, target_dir: Path, project_type: str) -> 
         (target_dir / "src").mkdir(exist_ok=True)
         (target_dir / "tests").mkdir(exist_ok=True)
     elif project_type == "cpp":
-        (target_dir / "src").mkdir(exist_ok=True)
-        (target_dir / "include").mkdir(exist_ok=True)
+        _create_cpm_layout(target_dir)
         (target_dir / "tests").mkdir(exist_ok=True)
-        cmake = target_dir / "CMakeLists.txt"
-        if not cmake.exists():
-            cmake.write_text(
-                'cmake_minimum_required(VERSION 3.20)\n'
-                'project(MyProject VERSION 1.0.0 LANGUAGES CXX)\n\n'
-                'set(CMAKE_CXX_STANDARD 17)\n'
-                'set(CMAKE_CXX_STANDARD_REQUIRED ON)\n'
-                'set(CMAKE_CXX_EXTENSIONS OFF)\n\n'
-                '# Add your targets here\n'
-            )
-        conanfile = target_dir / "conanfile.txt"
-        if not conanfile.exists():
-            conanfile.write_text(
-                "[requires]\n\n"
-                "[generators]\n"
-                "CMakeDeps\n"
-                "CMakeToolchain\n"
-            )
+        _write_if_missing(target_dir / "tests" / ".gitkeep", "")
+        _write_if_missing(
+            target_dir / "CMakeLists.txt",
+            "cmake_minimum_required(VERSION 3.24)\n"
+            "project(myproject VERSION 0.1.0 LANGUAGES CXX CUDA)\n\n"
+            "include(cmake/Options.cmake)\n"
+            "include(cmake/CPM.cmake)\n"
+            "include(cmake/Dependencies.cmake)\n\n"
+            "add_subdirectory(cpp)\n\n"
+            "if(PROJECT_ENABLE_TESTS)\n"
+            "  enable_testing()\n"
+            "  add_subdirectory(tests)\n"
+            "endif()\n\n"
+            "if(PROJECT_ENABLE_BENCHMARKS)\n"
+            "  add_subdirectory(benchmarks)\n"
+            "endif()\n",
+        )
+        _write_if_missing(
+            target_dir / "cpp" / "CMakeLists.txt",
+            "add_library(myproject_core INTERFACE)\n"
+            "target_compile_features(myproject_core INTERFACE cxx_std_17)\n"
+            "target_include_directories(myproject_core INTERFACE\n"
+            "  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>\n"
+            "  $<INSTALL_INTERFACE:include>)\n",
+        )
+        _write_if_missing(target_dir / "tests" / "CMakeLists.txt", "")
     elif project_type == "hybrid":
-        (target_dir / "src").mkdir(exist_ok=True)
-        (target_dir / "include").mkdir(exist_ok=True)
-        (target_dir / "tests").mkdir(exist_ok=True)
+        _create_cpm_layout(target_dir)
+        for dirname in [
+            "bindings/python",
+            "python/myproject",
+            "tests/cpp",
+            "tests/python",
+        ]:
+            (target_dir / dirname).mkdir(parents=True, exist_ok=True)
+        for keep in [
+            "bindings/python/.gitkeep",
+            "tests/cpp/.gitkeep",
+            "tests/python/.gitkeep",
+        ]:
+            _write_if_missing(target_dir / keep, "")
 
         # Create pyproject.toml for scikit-build-core
-        pyproject = target_dir / "pyproject.toml"
-        if not pyproject.exists():
-            pyproject.write_text(
-                '[build-system]\n'
-                'requires = ["scikit-build-core>=0.8.0", "nanobind>=1.0.0"]\n'
-                'build-backend = "scikit_build_core.build"\n\n'
-                '[project]\n'
-                'name = "myproject"\n'
-                'version = "0.1.0"\n'
-                'requires-python = ">=3.8"\n'
-                'dependencies = ["torch>=2.0.0", "numpy>=1.20.0"]\n\n'
-                '[tool.scikit-build]\n'
-                'cmake.build-type = "Release"\n'
-                'cmake.verbose = true\n'
-                'wheel.packages = ["myproject"]\n'
-            )
+        _write_if_missing(
+            target_dir / "pyproject.toml",
+            "[build-system]\n"
+            "requires = [\n"
+            '  "scikit-build-core",\n'
+            '  "pybind11",\n'
+            '  "ninja",\n'
+            '  "cmake"\n'
+            "]\n"
+            'build-backend = "scikit_build_core.build"\n\n'
+            "[project]\n"
+            'name = "myproject"\n'
+            'version = "0.1.0"\n'
+            'requires-python = ">=3.10"\n\n'
+            "[tool.scikit-build]\n"
+            'cmake.build-type = "RelWithDebInfo"\n'
+            'build-dir = "build/{wheel_tag}"\n'
+            'wheel.packages = ["python/myproject"]\n',
+        )
+        _write_if_missing(
+            target_dir / "poetry.toml",
+            "[virtualenvs]\n"
+            "in-project = true\n",
+        )
 
         # Create CMakeLists.txt for hybrid build
-        cmake = target_dir / "CMakeLists.txt"
-        if not cmake.exists():
-            cmake.write_text(
-                'cmake_minimum_required(VERSION 3.18)\n'
-                'project(myproject LANGUAGES CXX CUDA)\n\n'
-                'set(CMAKE_CXX_STANDARD 17)\n'
-                'set(CMAKE_CXX_STANDARD_REQUIRED ON)\n'
-                'set(CMAKE_CXX_EXTENSIONS OFF)\n\n'
-                '# Find dependencies\n'
-                'find_package(Python3 REQUIRED COMPONENTS Interpreter Development.Module)\n'
-                'find_package(CUDAToolkit REQUIRED)\n\n'
-                '# Add your extension module here\n'
-            )
+        _write_if_missing(
+            target_dir / "CMakeLists.txt",
+            "cmake_minimum_required(VERSION 3.24)\n"
+            "project(myproject VERSION 0.1.0 LANGUAGES CXX CUDA)\n\n"
+            "include(cmake/Options.cmake)\n"
+            "include(cmake/CPM.cmake)\n"
+            "include(cmake/Dependencies.cmake)\n\n"
+            "add_subdirectory(cpp)\n\n"
+            "if(PROJECT_ENABLE_PYTHON)\n"
+            "  add_subdirectory(bindings/python)\n"
+            "endif()\n\n"
+            "if(PROJECT_ENABLE_TESTS)\n"
+            "  enable_testing()\n"
+            "  add_subdirectory(tests/cpp)\n"
+            "endif()\n\n"
+            "if(PROJECT_ENABLE_BENCHMARKS)\n"
+            "  add_subdirectory(benchmarks)\n"
+            "endif()\n",
+        )
+        _write_if_missing(
+            target_dir / "cpp" / "CMakeLists.txt",
+            "add_library(myproject_core INTERFACE)\n"
+            "target_compile_features(myproject_core INTERFACE cxx_std_17)\n"
+            "target_include_directories(myproject_core INTERFACE\n"
+            "  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>\n"
+            "  $<INSTALL_INTERFACE:include>)\n",
+        )
+        _write_if_missing(
+            target_dir / "bindings" / "python" / "CMakeLists.txt",
+            "find_package(Python REQUIRED COMPONENTS Interpreter Development.Module)\n"
+            "find_package(pybind11 CONFIG REQUIRED)\n\n"
+            "pybind11_add_module(_core_ext bindings.cpp)\n"
+            "target_link_libraries(_core_ext PRIVATE myproject_core)\n"
+            "install(TARGETS _core_ext DESTINATION myproject)\n",
+        )
+        _write_if_missing(
+            target_dir / "bindings" / "python" / "bindings.cpp",
+            "#include <pybind11/pybind11.h>\n\n"
+            "PYBIND11_MODULE(_core_ext, module) {\n"
+            '  module.doc() = "myproject native bindings";\n'
+            "}\n",
+        )
+        _write_if_missing(
+            target_dir / "python" / "myproject" / "__init__.py",
+            "from ._core_ext import *  # noqa: F403\n",
+        )
+        _write_if_missing(target_dir / "tests" / "cpp" / "CMakeLists.txt", "")
     step += 1
 
     # 5. Create README.md
@@ -197,7 +320,7 @@ def create_project(template_root: Path, target_dir: Path, project_type: str) -> 
         if python_env_doc.exists():
             python_env_doc.unlink()
 
-        python_env_wrapper = target_dir / "bin" / "agent-python-env-setup"
+        python_env_wrapper = target_dir / ".ai" / "bin" / "agent-python-env-setup"
         if python_env_wrapper.exists():
             python_env_wrapper.unlink()
 
@@ -221,7 +344,7 @@ def create_project(template_root: Path, target_dir: Path, project_type: str) -> 
     print("Done. Next steps:")
     print(f"  cd {target_dir}")
     print("  # Claude Code: run /init")
-    print("  # Codex / Cursor / Cline: run bin/agent-init --platform codex")
+    print("  # Codex / Cursor / Cline: run .ai/bin/agent-init --platform codex")
 
 
 def main():

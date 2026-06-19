@@ -14,6 +14,17 @@ This policy prevents the common anti-pattern of implementing core logic in Pytho
 calling C++ only for performance-critical hot paths. The rule is simpler and more
 absolute: core logic goes in C++ first, always.
 
+The same ownership model applies to builds:
+
+```text
+CMake owns the native build graph.
+CPM owns lightweight C++ dependency acquisition.
+scikit-build-core bridges CMake into Python packaging.
+Poetry owns Python virtualenv and Python dependencies only.
+```
+
+Python packaging is not allowed to become the primary native build orchestrator.
+
 ## 1. The Rule
 
 ### 1.1 C++ Owns the Core

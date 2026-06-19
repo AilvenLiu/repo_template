@@ -17,7 +17,7 @@ If any of checks 1–3 fail, the agent **MUST STOP and ask the user** before pro
 ## Execution
 
 ```bash
-bin/agent-python-env-setup <diagnose|fix|verify>
+.ai/bin/agent-python-env-setup <diagnose|fix|verify>
 ```
 
 ## Subcommands

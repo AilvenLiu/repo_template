@@ -6,7 +6,7 @@ version: 1.0.0
 
 # /gpu-ci
 
-Guidance-only skill. No `bin/agent-gpu-ci` wrapper exists. Applies when
+Guidance-only skill. No `.ai/bin/agent-gpu-ci` wrapper exists. Applies when
 `.ai/project.yml` declares `distribution: pypi-wheel` or `hardware_targets: [cuda]`.
 
 Covers: sccache compilation caching, auditwheel manylinux validation,

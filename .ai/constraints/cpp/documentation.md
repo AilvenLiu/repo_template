@@ -380,7 +380,7 @@ Brief description of the project.
 ## Requirements
 
 ### Build Requirements
-- CMake 3.20 or later
+- CMake 3.24 or later
 - C++17 compatible compiler:
   - GCC 9.0+
   - Clang 10.0+

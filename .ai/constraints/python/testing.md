@@ -13,9 +13,9 @@
 ### 1.2 Required Testing Tools
 ```bash
 # Use repository dependency workflow (preferred)
-bin/agent-dependency add pytest --dev
-bin/agent-dependency add pytest-cov --dev
-bin/agent-dependency add pytest-mock --dev
+.ai/bin/agent-dependency add pytest --dev
+.ai/bin/agent-dependency add pytest-cov --dev
+.ai/bin/agent-dependency add pytest-mock --dev
 ```
 
 ## 2. Test Organization

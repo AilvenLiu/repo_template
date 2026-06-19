@@ -78,7 +78,7 @@ This project uses the `project_profile` schema in `.ai/project.yml`:
 project_profile:
   language: [python, cpp, cuda]
   build_system: scikit-build-core
-  bindings: nanobind
+  bindings: pybind11
   distribution: pypi-wheel
   hardware_targets: [cuda]
   external_dependencies:
@@ -86,6 +86,26 @@ project_profile:
 ```
 
 For details, see `.ai/adr/0001-project-profile.md`.
+
+## Build Ownership
+
+```text
+CMake owns the native build graph.
+CPM owns lightweight C++ dependency acquisition.
+scikit-build-core bridges CMake into Python packaging.
+Poetry owns Python virtualenv and Python dependencies only.
+pip install -e . is not the authoritative C++ build command.
+```
+
+Required validation order:
+
+```bash
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DPROJECT_ENABLE_PYTHON=ON
+cmake --build build -j
+ctest --test-dir build --output-on-failure
+poetry run pip install -e . --no-build-isolation
+poetry run pytest tests/python
+```
 
 ## Authority Hierarchy
 
@@ -103,7 +123,10 @@ For details, see `.ai/adr/0001-project-profile.md`.
 - NEVER install Poetry via `curl -sSL https://install.python-poetry.org` or system package managers
 - Poetry MUST be installed via pipx at `~/.local/bin/poetry`
 - `poetry.toml` MUST exist with `in-project = true`; `pyproject.toml` MUST configure TUNA as primary source
-- NEVER install C++ libraries via system package managers -- use Conan, vcpkg, FetchContent, CPM, or git submodules; NVIDIA/AMD GPU libraries excepted
+- NEVER install C++ libraries via system package managers; NVIDIA/AMD GPU libraries and toolchains are external SDKs
+- NEVER add lightweight C++ source dependencies outside `cmake/Dependencies.cmake`
+- NEVER use floating dependency branches such as `main`, `master`, or `develop`
+- Conan, vcpkg, Bazel, and git submodules require an ADR and are not defaults
 - NEVER use raw `new`/`delete` -- use smart pointers and RAII
 - NEVER use C-style casts -- use `static_cast`/`dynamic_cast`/`reinterpret_cast`
 - NEVER ignore CUDA API error codes
@@ -115,36 +138,36 @@ For details, see `.ai/adr/0001-project-profile.md`.
 
 ## Required Workflow Commands
 
-These `bin/agent-*` commands are the canonical tool interface. Use them
+These `.ai/bin/agent-*` commands are the canonical tool interface. Use them
 directly whenever performing the corresponding workflow step:
 
-- Init: `bin/agent-init --platform claude`
-- Build orchestration: `bin/agent-build <setup|compile|test|full|doctor|clean>`
-- Constraint check: `bin/agent-check-constraints`
-- Pre-commit validation: `bin/agent-precommit`
-- Dependency add (Python): `bin/agent-dependency add <package> [version] [--dev]`
-- Dependency add (C++): `bin/agent-dependency add <package> [version]`
-- Python env recovery: `bin/agent-python-env-setup <diagnose|fix|verify>`
-- Roadmap workflow: `bin/agent-roadmap <check|create|status|update|handoff|complete|validate>`
-- Commit with policy guard: `bin/agent-commit -m "type(scope): description" <file1> [file2 ...]`
+- Init: `.ai/bin/agent-init --platform claude`
+- Build orchestration: `.ai/bin/agent-build <setup|compile|test|full|doctor|clean>`
+- Constraint check: `.ai/bin/agent-check-constraints`
+- Pre-commit validation: `.ai/bin/agent-precommit`
+- Dependency add (Python): `.ai/bin/agent-dependency add <package> [version] [--dev]`
+- Dependency add (C++): `.ai/bin/agent-dependency add <package> [version]`
+- Python env recovery: `.ai/bin/agent-python-env-setup <diagnose|fix|verify>`
+- Roadmap workflow: `.ai/bin/agent-roadmap <check|create|status|update|handoff|complete|validate>`
+- Commit with policy guard: `.ai/bin/agent-commit -m "type(scope): description" <file1> [file2 ...]`
 
 ## Claude Code Skill Mappings
 
-Skills are convenience wrappers around `bin/agent-*` commands.
+Skills are convenience wrappers around `.ai/bin/agent-*` commands.
 When a slash command is unavailable or you need finer control, call the
-`bin/agent-*` command directly.
+`.ai/bin/agent-*` command directly.
 
 | Procedure | Skill | Underlying command |
 |-----------|-------|--------------------|
-| Session init | `/init` | `bin/agent-init --platform claude` |
-| Build orchestration | `/build <cmd>` | `bin/agent-build <setup|compile|test|full|doctor|clean>` |
-| Pre-commit | `/pre-commit validate` | `bin/agent-precommit` |
-| Add dependency | `/dependency add <pkg> [ver] [--dev]` | `bin/agent-dependency add <pkg> [ver] [--dev]` |
-| Check constraints | `/check-constraints` | `bin/agent-check-constraints` |
-| Commit | *(use command directly)* | `bin/agent-commit -m "msg" <files...>` |
-| Roadmap management | `/roadmap <cmd>` | `bin/agent-roadmap <check|create|status|update|handoff|complete|validate>` |
+| Session init | `/init` | `.ai/bin/agent-init --platform claude` |
+| Build orchestration | `/build <cmd>` | `.ai/bin/agent-build <setup|compile|test|full|doctor|clean>` |
+| Pre-commit | `/pre-commit validate` | `.ai/bin/agent-precommit` |
+| Add dependency | `/dependency add <pkg> [ver] [--dev]` | `.ai/bin/agent-dependency add <pkg> [ver] [--dev]` |
+| Check constraints | `/check-constraints` | `.ai/bin/agent-check-constraints` |
+| Commit | *(use command directly)* | `.ai/bin/agent-commit -m "msg" <files...>` |
+| Roadmap management | `/roadmap <cmd>` | `.ai/bin/agent-roadmap <check|create|status|update|handoff|complete|validate>` |
 | Doc lookup | `/context7` | -- |
-| Python env fix | `/python-env-setup` | `bin/agent-python-env-setup <diagnose|fix|verify>` |
+| Python env fix | `/python-env-setup` | `.ai/bin/agent-python-env-setup <diagnose|fix|verify>` |
 | GPU CI guidance | `/gpu-ci` | -- |
 
 ## Vendor-Neutral Constraints

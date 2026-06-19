@@ -30,5 +30,5 @@ Code navigation and structural analysis for Python and C++ projects.
 ## For agents without a native navigate skill
 
 Use `rg` (ripgrep) and your platform's native code-search tools. The procedure
-is informational; the actual navigation has no `bin/agent-*` wrapper because
+is informational; the actual navigation has no `.ai/bin/agent-*` wrapper because
 all sane agent platforms ship with their own search/grep capabilities.

@@ -65,7 +65,7 @@ def _is_init_command(command: str) -> bool:
         return False
 
     patterns = [
-        r"^bin/agent-init(\s+--platform\s+(claude|codex))?(\s+--verbose)?\s*$",
+        r"^\.ai/bin/agent-init(\s+--platform\s+(claude|codex))?(\s+--verbose)?\s*$",
     ]
     return any(re.match(pattern, command) for pattern in patterns)
 
@@ -73,7 +73,7 @@ def _is_init_command(command: str) -> bool:
 def _session_gate(repo_root: Path) -> Tuple[bool, str]:
     state = read_state(repo_root)
     if state is None:
-        return False, "BLOCKED: Session not initialized. Run /init or bin/agent-init first."
+        return False, "BLOCKED: Session not initialized. Run /init or .ai/bin/agent-init first."
 
     if not state.get("initialized", False):
         return False, "BLOCKED: Session initialization incomplete. Re-run init."
@@ -140,7 +140,7 @@ def _check_bash_command(command: str, project_type: ProjectType, repo_root: Path
             return False, "BLOCKED: System package manager install for C++ libs is forbidden."
 
     if re.search(r"^\s*brew\s+install", command):
-        if not re.search(r"brew\s+install\s+(cmake|conan|python|llvm|clang-format|cppcheck|ninja|pkg-config|git)", command):
+        if not re.search(r"brew\s+install\s+(cmake|python|llvm|clang-format|cppcheck|ninja|pkg-config|git)", command):
             return False, "BLOCKED: brew install for non-toolchain package is forbidden for dependency flow."
 
     if re.search(r"rm\s+-rf\s+", command):
@@ -205,7 +205,7 @@ def gate_dependency(repo_root: Path, context: Dict[str, str]) -> Tuple[bool, str
 
     if project_type == ProjectType.CPP and command:
         if re.search(r"\b(apt|apt-get|brew|yum|dnf)\s+install\b", command):
-            return False, "BLOCKED: use Conan/vcpkg workflow, not system package manager."
+            return False, "BLOCKED: use the CMake/CPM workflow, not system package manager."
 
     return True, ""
 

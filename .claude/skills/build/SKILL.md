@@ -10,7 +10,7 @@ Build orchestration for Python, C++/CUDA, hybrid (scikit-build-core), and Bazel 
 ## Execution
 
 ```bash
-bin/agent-build <setup|compile|test|full|doctor|clean>
+.ai/bin/agent-build <setup|compile|test|full|doctor|clean>
 ```
 
 ## Subcommands
@@ -28,8 +28,8 @@ bin/agent-build <setup|compile|test|full|doctor|clean>
 
 1. Detects project type via `.ai/project.yml` / heuristics.
 2. **Python**: `poetry install --with dev`, then `poetry run pytest`.
-3. **C++**: `conan install .`, `cmake -B build`, `cmake --build build`, `ctest`.
-4. **Hybrid** (scikit-build-core): `pip install -e . --no-build-isolation` inside the Poetry venv, then `pytest`.
+3. **C++**: `cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo`, `cmake --build build -j`, `ctest --test-dir build --output-on-failure`.
+4. **Hybrid** (scikit-build-core): direct CMake configure/build/test first, then `poetry run pip install -e . --no-build-isolation`, then `poetry run pytest tests/python`.
 5. **Bazel**: `bazel build //...`, `bazel test //...` (delegates to `/bazel`).
 
 ## Behaviour (best-effort)

@@ -51,9 +51,6 @@ dmypy.json
 profile_default/
 ipython_config.py
 
-# Poetry
-poetry.lock
-
 # Cython
 cython_debug/
 
@@ -130,11 +127,9 @@ coverage.info
 *.qdrep
 *.qdstrm
 
-# C++ Package managers
-vcpkg_installed/
-conan.lock
-conanbuildinfo.*
-conaninfo.txt
+# CPM dependency cache
+3rdparty/cpm-cache/*
+!3rdparty/cpm-cache/.gitkeep
 
 # scikit-build-core
 _skbuild/

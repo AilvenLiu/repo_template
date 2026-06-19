@@ -187,13 +187,13 @@ def compliance(tmp_path_factory) -> list[Scenario]:
             wrappers_expected = _expected_wrappers(manifest, target)
             wrappers_present = {
                 p.name
-                for p in (target / "bin").iterdir()
+                for p in (target / ".ai" / "bin").iterdir()
                 if p.is_file() and os.access(p, os.X_OK) and p.name.startswith("agent-")
             }
             scenario.add("wrappers_executable", wrappers_present, wrappers_expected)
 
             # Constraint hit rate via /init
-            init = _run(["bash", "bin/agent-init", "--platform", platform], target)
+            init = _run(["bash", ".ai/bin/agent-init", "--platform", platform], target)
             state_path = target / ".ai" / "session_state.json"
             loaded = set(
                 json.loads(state_path.read_text()).get("loaded_constraints", [])

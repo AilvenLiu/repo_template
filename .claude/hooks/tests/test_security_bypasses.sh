@@ -120,21 +120,21 @@ echo ""
 test_allowed "Init wrapper bare" '{
   "tool_name": "Bash",
   "tool_input": {
-    "command": "bin/agent-init"
+    "command": ".ai/bin/agent-init"
   }
 }'
 
 test_allowed "Init wrapper with --platform claude" '{
   "tool_name": "Bash",
   "tool_input": {
-    "command": "bin/agent-init --platform claude"
+    "command": ".ai/bin/agent-init --platform claude"
   }
 }'
 
 test_allowed "Init wrapper with --platform codex" '{
   "tool_name": "Bash",
   "tool_input": {
-    "command": "bin/agent-init --platform codex"
+    "command": ".ai/bin/agent-init --platform codex"
   }
 }'
 
@@ -259,7 +259,7 @@ echo ""
 # Policy Test 5: Init-prefix bypass attempts all blocked
 #
 # These test the specific vulnerability reported:
-#   "bin/agent-init && echo hacked"
+#   ".ai/bin/agent-init && echo hacked"
 # passes the OLD prefix-match check but must be blocked by the new code.
 # ============================================================================
 echo "=== Policy 5: Init-Prefix Bypass Attempts Blocked ==="
@@ -270,84 +270,84 @@ echo ""
 test_blocked "init && command chaining (&&)" '{
   "tool_name": "Bash",
   "tool_input": {
-    "command": "bin/agent-init && echo hacked > .claude/session_state.json"
+    "command": ".ai/bin/agent-init && echo hacked > .claude/session_state.json"
   }
 }'
 
 test_blocked "init ; command chaining (;)" '{
   "tool_name": "Bash",
   "tool_input": {
-    "command": "bin/agent-init; echo hacked > .claude/session_state.json"
+    "command": ".ai/bin/agent-init; echo hacked > .claude/session_state.json"
   }
 }'
 
 test_blocked "init | pipe injection" '{
   "tool_name": "Bash",
   "tool_input": {
-    "command": "bin/agent-init | tee .claude/session_state.json"
+    "command": ".ai/bin/agent-init | tee .claude/session_state.json"
   }
 }'
 
 test_blocked "init with dollar-paren command substitution" '{
   "tool_name": "Bash",
   "tool_input": {
-    "command": "bin/agent-init $(echo hacked)"
+    "command": ".ai/bin/agent-init $(echo hacked)"
   }
 }'
 
 test_blocked "init with backtick command substitution" '{
   "tool_name": "Bash",
   "tool_input": {
-    "command": "bin/agent-init `echo hacked`"
+    "command": ".ai/bin/agent-init `echo hacked`"
   }
 }'
 
 test_blocked "init with newline-separated suffix" '{
   "tool_name": "Bash",
   "tool_input": {
-    "command": "bin/agent-init\necho hacked > .claude/session_state.json"
+    "command": ".ai/bin/agent-init\necho hacked > .claude/session_state.json"
   }
 }'
 
 test_blocked "init with unknown flag (not in allowlist)" '{
   "tool_name": "Bash",
   "tool_input": {
-    "command": "bin/agent-init --unknown-flag"
+    "command": ".ai/bin/agent-init --unknown-flag"
   }
 }'
 
 test_blocked "init with extra positional argument" '{
   "tool_name": "Bash",
   "tool_input": {
-    "command": "bin/agent-init extra_arg"
+    "command": ".ai/bin/agent-init extra_arg"
   }
 }'
 
 test_blocked "init with redirect output" '{
   "tool_name": "Bash",
   "tool_input": {
-    "command": "bin/agent-init > .claude/session_state.json"
+    "command": ".ai/bin/agent-init > .claude/session_state.json"
   }
 }'
 
 test_blocked "init with input redirect" '{
   "tool_name": "Bash",
   "tool_input": {
-    "command": "bin/agent-init < /etc/passwd"
+    "command": ".ai/bin/agent-init < /etc/passwd"
   }
 }'
 
 test_blocked "init with env var expansion" '{
   "tool_name": "Bash",
   "tool_input": {
-    "command": "bin/agent-init $HOME"
+    "command": ".ai/bin/agent-init $HOME"
   }
 }'
 
 test_blocked "init with || chaining" '{
   "tool_name": "Bash",
   "tool_input": {
-    "command": "bin/agent-init || echo hacked > .claude/session_state.json"
+    "command": ".ai/bin/agent-init || echo hacked > .claude/session_state.json"
   }
 }'
 

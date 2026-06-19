@@ -10,7 +10,7 @@ skill support across Claude Code and Codex-style `agents.md` consumers.
 Language-specific source files live under `templates/<language>/` with their
 generic names (`CLAUDE.md`, `AGENTS.md`, `CONTRIBUTING.md`, `.gitignore`,
 `project.yml`). The `/create-project` skill copies the shared template tree
-(`.ai/`, `.claude/`, `bin/`, `agent_roadmaps/`) and overlays the chosen
+(`.ai/`, `.claude/`, `agent_roadmaps/`) and overlays the chosen
 language's directory onto the target. The copied `agent_roadmaps/` directory is
 an empty placeholder for temporary roadmap state only; generated projects must
 not inherit historical roadmap files.
@@ -72,9 +72,9 @@ templates/
   by `/create-project` from `templates/<language>/project.yml`)
 - `.ai/constraints/` -- vendor-neutral constraint files (common, python, cpp, hybrid)
 - `.ai/skills/` -- vendor-neutral skill procedure manifests (`<name>/SKILL.md`)
-- `.ai/scripts/` -- shared runtime tools used by `bin/agent-*` wrappers
+- `.ai/scripts/` -- shared runtime tools used by `.ai/bin/agent-*` wrappers
+- `.ai/bin/` -- platform-neutral guarded workflow commands (`agent-*`)
 - `.claude/` -- Claude Code skill stubs, hooks, and settings (native loader)
-- `bin/` -- platform-neutral guarded workflow commands (`agent-*`)
 - `agent_roadmaps/` -- temporary multi-session workflow workspace
 
 ### Claude Code Skills
@@ -85,7 +85,7 @@ templates/
 | `/init` | Session initialisation (mandatory at session start) |
 | `/create-project` | Bootstrap a new project from this template |
 | `/pre-commit` | Code quality validation before commits |
-| `/dependency` | Add dependencies (Poetry for Python, Conan for C++) |
+| `/dependency` | Add dependencies (Poetry for Python, CPM through CMake for C++) |
 | `/build` | Build orchestration (setup, compile, test) |
 | `/roadmap` | Dependency-aware multi-session workflow management |
 | `/navigate` | Code navigation and structural analysis |
@@ -114,10 +114,10 @@ This template is designed to work with multiple AI agent platforms:
 
 - **Claude Code**: Reads `CLAUDE.md` natively. Slash commands (`/init`, etc.)
   are auto-discovered from `.claude/skills/<name>/SKILL.md` (each is a
-  frontmatter+pointer stub) and dispatch to `bin/agent-*` wrappers.
+  frontmatter+pointer stub) and dispatch to `.ai/bin/agent-*` wrappers.
 - **Codex / Cursor / Cline / generic agents.md consumers**: Read `AGENTS.md`
   natively. The `Procedures and Wrappers` table in `AGENTS.md` lists every
-  `bin/agent-*` wrapper, with the canonical procedure descriptions in
+  `.ai/bin/agent-*` wrapper, with the canonical procedure descriptions in
   `.ai/skills/<name>/SKILL.md`.
 
 Both platforms inherit the bundled `karpathy-guidelines` behaviour:

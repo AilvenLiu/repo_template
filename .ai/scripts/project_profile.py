@@ -358,9 +358,6 @@ def _heuristic_detect(repo_root: Path) -> Optional[ProjectProfile]:
                 python_score += 1
             elif name in (
                 "CMakeLists.txt",
-                "conanfile.txt",
-                "conanfile.py",
-                "vcpkg.json",
                 "Makefile",
             ):
                 cpp_score += 3
@@ -368,6 +365,8 @@ def _heuristic_detect(repo_root: Path) -> Optional[ProjectProfile]:
                 cpp_score += 1
 
         elif entry.is_dir():
+            if entry.name in ("cmake", "cpp", "cuda", "3rdparty"):
+                cpp_score += 2
             try:
                 children = list(entry.iterdir())
             except PermissionError:

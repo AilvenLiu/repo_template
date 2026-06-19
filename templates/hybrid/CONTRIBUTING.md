@@ -44,7 +44,7 @@ This repository uses a modular constraint system. Instead of duplicating all tec
 - `cpp/testing.md` - GoogleTest, test organisation, GPU test gating
 - `cpp/formatting.md` - clang-format, naming conventions
 - `cpp/static-analysis.md` - clang-tidy, compiler warnings
-- `cpp/dependencies.md` - Conan/vcpkg/FetchContent/CPM workflow
+- `cpp/dependencies.md` - CMake/CPM-first dependency workflow
 - `cpp/documentation.md` - Doxygen, inline comments
 - `cpp/error-handling.md` - Exception safety, RAII
 - `cpp/memory-safety.md` - Smart pointers, ownership semantics
@@ -146,7 +146,7 @@ Why is this change necessary? What problem does it solve?
 
 ## Dependencies
 - New Python packages added (with versions in pyproject.toml)
-- New C++ packages added (with versions in conanfile.txt/vcpkg.json)
+- New C++ packages added (with pinned versions in cmake/Dependencies.cmake)
 - Updated packages
 
 ## Performance
@@ -187,7 +187,7 @@ This checks:
 
 - Python 3.10+ with Poetry
 - C++17-compatible compiler (GCC 9+, Clang 10+, MSVC 2019+)
-- CMake 3.18+
+- CMake 3.24+
 - CUDA Toolkit 11.8+ (if building GPU extensions)
 - Optional: cuDNN, NCCL, TensorRT (for specific features)
 
@@ -197,41 +197,43 @@ This checks:
 # Install Python dependencies
 poetry install
 
-# Configure CMake (CPU-only)
-poetry run cmake -B build -S .
-
-# Configure CMake (with CUDA)
+# Configure native CMake build
 CUDA_HOME=/usr/local/cuda \
 TORCH_CUDA_ARCH_LIST="8.0;8.6;8.9;9.0" \
-poetry run cmake -B build -S .
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DPROJECT_ENABLE_PYTHON=ON
 
 # Build C++/CUDA extensions
-poetry run cmake --build build
+cmake --build build -j
 
-# Run tests
+# Run native tests
+ctest --test-dir build --output-on-failure
+
+# Expose the CMake-governed project to Python
+poetry run pip install -e . --no-build-isolation
+
+# Run Python tests
 poetry run pytest tests/python/
-cd build && ctest --output-on-failure
 ```
 
 ### Using Agent Commands
 
-The repository provides `bin/agent-*` commands for common workflows:
+The repository provides `.ai/bin/agent-*` commands for common workflows:
 
 ```bash
 # Full build (setup + compile + test)
-bin/agent-build full
+.ai/bin/agent-build full
 
 # Just compile
-bin/agent-build compile
+.ai/bin/agent-build compile
 
 # Run pre-commit checks
-bin/agent-precommit
+.ai/bin/agent-precommit
 
 # Add Python dependency
-bin/agent-dependency add numpy ">=1.24.0"
+.ai/bin/agent-dependency add numpy ">=1.24.0"
 
-# Add C++ dependency (via Conan)
-bin/agent-dependency add fmt/10.1.1
+# Add C++ dependency (via CPM)
+.ai/bin/agent-dependency add fmtlib/fmt 10.2.1
 ```
 
 ## 6. Testing Requirements
@@ -401,23 +403,21 @@ poetry lock --no-update
 
 ### C++ Dependencies
 
-- Use Conan, vcpkg, FetchContent, or CPM for C++ dependencies
-- Document dependency choices in CMakeLists.txt
-- Pin versions explicitly
-- CUDA/cuDNN/NCCL/TensorRT are system-installed (not managed)
+- Use CPM in `cmake/Dependencies.cmake` for lightweight C++ source dependencies
+- Pin every dependency by immutable tag, commit, or archive hash
+- Record reason, linked CMake target, licence note, and scope
+- CUDA/cuDNN/NCCL/TensorRT are discovered as external system SDKs
 
 ```cmake
-# Conan
-find_package(fmt REQUIRED)
-target_link_libraries(mylib PRIVATE fmt::fmt)
-
-# FetchContent
-include(FetchContent)
-FetchContent_Declare(fmt
-    GIT_REPOSITORY https://github.com/fmtlib/fmt.git
-    GIT_TAG 10.1.1
+CPMAddPackage(
+  NAME fmt
+  GITHUB_REPOSITORY fmtlib/fmt
+  GIT_TAG 10.2.1
 )
-FetchContent_MakeAvailable(fmt)
+
+find_package(CUDAToolkit REQUIRED)
+
+target_link_libraries(mylib PRIVATE fmt::fmt CUDA::cudart)
 ```
 
 ## 10. Documentation

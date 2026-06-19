@@ -37,7 +37,7 @@ Context7 MUST be used for:
 - Third-party library documentation (Boost, Eigen, OpenCV, etc.)
 - CUDA toolkit APIs and programming guides
 - CMake configuration patterns and best practices
-- Package managers (Conan, vcpkg)
+- CMake/CPM dependency configuration
 - Testing frameworks (Google Test, Catch2)
 
 ### 1.3 Automatic Invocation

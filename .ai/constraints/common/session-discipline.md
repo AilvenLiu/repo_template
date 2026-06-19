@@ -66,7 +66,7 @@ The agent MUST:
 **For configuration and dependencies:**
 - `README.md` - Installation and setup instructions
 - `requirements.txt` / `pyproject.toml` (Python) - Dependency versions
-- `conanfile.txt` / `conanfile.py` / `vcpkg.json` (C++/CUDA) - Dependency versions
+- `cmake/Dependencies.cmake` and `3rdparty/cpm-cache/.gitkeep` (C++/CUDA) - Dependency declarations/cache root
 - `CMakeLists.txt` (C++/CUDA) - Build configuration
 - `.python-version` (Python) - Python version
 - Configuration files (`.toml`, `.yaml`, `.json`)
@@ -121,7 +121,7 @@ The agent MUST:
 **At the beginning of EVERY session, the agent MUST:**
 
 1. Run the platform's session initialization procedure
-   (e.g., `/init` for Claude Code, `bin/agent-init --platform codex` for Codex)
+   (e.g., `/init` for Claude Code, `.ai/bin/agent-init --platform codex` for Codex)
    - This loads project constraints
    - Detects project type
    - Runs capability audit (verifies required plugins/skills/integrations)

@@ -54,7 +54,7 @@ def _bootstrap(tmp_path: Path, project_type: str, platform: str) -> Path:
     target = tmp_path / f"real_{project_type}"
     create_project(ROOT, target, project_type)
     _run(["git", "checkout", "-b", "feat/real-scenario", "-q"], target)
-    _run(["bash", "bin/agent-init", "--platform", platform], target)
+    _run(["bash", ".ai/bin/agent-init", "--platform", platform], target)
     _force_audit_pass(target)
     return target
 
@@ -191,7 +191,28 @@ def _seed_realistic_cpp_clean(project: Path) -> None:
         ).strip()
         + "\n"
     )
-    (project / "conanfile.txt").write_text("[requires]\nfmt/10.1.1\n")
+    (project / "cmake").mkdir(exist_ok=True)
+    (project / "3rdparty" / "cpm-cache").mkdir(parents=True, exist_ok=True)
+    (project / "cmake" / "CPM.cmake").write_text("# CPM placeholder\n")
+    (project / "cmake" / "Options.cmake").write_text(
+        'option(PROJECT_ENABLE_TESTS "Build native tests" ON)\n'
+    )
+    (project / "cmake" / "Dependencies.cmake").write_text(
+        'set(CPM_SOURCE_CACHE "${CMAKE_SOURCE_DIR}/3rdparty/cpm-cache" CACHE PATH "CPM source cache")\n'
+        "\n"
+        "# fmt\n"
+        "# Upstream: https://github.com/fmtlib/fmt\n"
+        "# Reason: formatting library\n"
+        "# Target: fmt::fmt\n"
+        "# License: MIT\n"
+        "# Scope: runtime\n"
+        "CPMAddPackage(\n"
+        "  NAME fmt\n"
+        "  GITHUB_REPOSITORY fmtlib/fmt\n"
+        "  GIT_TAG 10.2.1\n"
+        ")\n"
+    )
+    (project / "3rdparty" / "cpm-cache" / ".gitkeep").write_text("")
 
 
 def _seed_realistic_cpp_dirty(project: Path) -> dict[str, int]:
@@ -270,7 +291,7 @@ def _findings_for(project: Path) -> list[dict]:
     res = _run(
         [
             "bash",
-            "bin/agent-check-constraints",
+            ".ai/bin/agent-check-constraints",
             "--skip-forbidden-scan",  # we'll run forbidden_patterns explicitly w/ --json
         ],
         project,
@@ -364,9 +385,9 @@ def test_check_constraints_wrapper_fails_on_seeded_python_repo(tmp_path: Path, p
     project = _bootstrap(tmp_path, "python", platform)
     _seed_realistic_python_dirty(project)
 
-    res = _run(["bash", "bin/agent-check-constraints"], project)
+    res = _run(["bash", ".ai/bin/agent-check-constraints"], project)
     assert res.returncode != 0, (
-        "bin/agent-check-constraints should surface seeded violations via forbidden_patterns.\n"
+        ".ai/bin/agent-check-constraints should surface seeded violations via forbidden_patterns.\n"
         + res.stdout
     )
     combined = res.stdout + res.stderr
@@ -379,7 +400,7 @@ def test_check_constraints_wrapper_fails_on_seeded_cpp_repo(tmp_path: Path, plat
     project = _bootstrap(tmp_path, "cpp", platform)
     _seed_realistic_cpp_dirty(project)
 
-    res = _run(["bash", "bin/agent-check-constraints"], project)
+    res = _run(["bash", ".ai/bin/agent-check-constraints"], project)
     assert res.returncode != 0
     combined = res.stdout + res.stderr
     for cat in ("raw-new", "raw-delete", "c-style-cast", "cuda-error-ignored"):
@@ -432,7 +453,7 @@ def effectiveness_matrix(tmp_path_factory) -> list[Effectiveness]:
             target = tmp / "proj"
             create_project(ROOT, target, project_type)
             _run(["git", "checkout", "-b", "feat/eff", "-q"], target)
-            _run(["bash", "bin/agent-init", "--platform", platform], target)
+            _run(["bash", ".ai/bin/agent-init", "--platform", platform], target)
             _force_audit_pass(target)
             seeded = seeder(target)
             findings = _findings_for(target)

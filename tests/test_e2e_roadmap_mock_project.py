@@ -3,8 +3,8 @@
 
 Verifies the full chain:
 - create-project produces a working repo
-- bin/agent-init prints agentic-team constraint
-- bin/agent-roadmap create produces complete step folders with all 4 files
+- .ai/bin/agent-init prints agentic-team constraint
+- .ai/bin/agent-roadmap create produces complete step folders with all 4 files
 - validate_schema.py enforces structural and authority-order completeness
 - Tampering with the step (e.g. removing ROADMAP.md or stripping the
   authority-order tokens from prompt.md) is detected
@@ -83,7 +83,7 @@ def test_roadmap_create_produces_complete_step(project_root: Path) -> None:
     create = _run(
         [
             "bash",
-            "bin/agent-roadmap",
+            ".ai/bin/agent-roadmap",
             "create",
             "demo",
             "--steps",
@@ -123,7 +123,7 @@ def test_completed_step_is_not_deleted_while_later_step_remains(
     create = _run(
         [
             "bash",
-            "bin/agent-roadmap",
+            ".ai/bin/agent-roadmap",
             "create",
             "demo",
             "--steps",
@@ -138,7 +138,7 @@ def test_completed_step_is_not_deleted_while_later_step_remains(
 
     for _ in range(3):
         result = _run(
-            ["bash", "bin/agent-roadmap", "update", "complete-task"], project_root
+            ["bash", ".ai/bin/agent-roadmap", "update", "complete-task"], project_root
         )
         assert result.returncode == 0, result.stdout + "\n" + result.stderr
 
@@ -154,7 +154,7 @@ def test_roadmap_validate_passes_for_freshly_created_step(project_root: Path) ->
     _run(
         [
             "bash",
-            "bin/agent-roadmap",
+            ".ai/bin/agent-roadmap",
             "create",
             "demo",
             "--steps",
@@ -165,7 +165,7 @@ def test_roadmap_validate_passes_for_freshly_created_step(project_root: Path) ->
         project_root,
     )
     result = _run(
-        ["bash", "bin/agent-roadmap", "validate", "step-0-baseline"],
+        ["bash", ".ai/bin/agent-roadmap", "validate", "step-0-baseline"],
         project_root,
     )
     assert result.returncode == 0, result.stdout + "\n" + result.stderr
@@ -175,7 +175,7 @@ def test_roadmap_validate_detects_missing_roadmap_md(project_root: Path) -> None
     _run(
         [
             "bash",
-            "bin/agent-roadmap",
+            ".ai/bin/agent-roadmap",
             "create",
             "demo",
             "--steps",
@@ -189,7 +189,7 @@ def test_roadmap_validate_detects_missing_roadmap_md(project_root: Path) -> None
     target.unlink()
 
     result = _run(
-        ["bash", "bin/agent-roadmap", "validate", "step-0-baseline"],
+        ["bash", ".ai/bin/agent-roadmap", "validate", "step-0-baseline"],
         project_root,
     )
     assert result.returncode != 0
@@ -201,7 +201,7 @@ def test_roadmap_validate_detects_authority_order_strip(project_root: Path) -> N
     _run(
         [
             "bash",
-            "bin/agent-roadmap",
+            ".ai/bin/agent-roadmap",
             "create",
             "demo",
             "--steps",
@@ -218,7 +218,7 @@ def test_roadmap_validate_detects_authority_order_strip(project_root: Path) -> N
     )
 
     result = _run(
-        ["bash", "bin/agent-roadmap", "validate", "step-0-baseline"],
+        ["bash", ".ai/bin/agent-roadmap", "validate", "step-0-baseline"],
         project_root,
     )
     assert result.returncode != 0

@@ -10,7 +10,7 @@ Session initialization. FIRST ACTION every session — skipping is a critical fa
 ## Execution
 
 ```bash
-bin/agent-init --platform claude
+.ai/bin/agent-init --platform claude
 ```
 
 ## Behaviour (guaranteed)
@@ -18,7 +18,7 @@ bin/agent-init --platform claude
 1. Reads `.ai/project.yml` for project type (Python / C++ / hybrid); falls back to heuristic scan.
 2. Runs the capability audit defined by `.ai/capabilities.yml`:
    - checks required project skills under `.claude/skills/` and `.ai/skills/`
-   - checks required `bin/agent-*` wrappers are executable
+   - checks required `.ai/bin/agent-*` wrappers are executable
    - checks Context7 MCP is configured
 3. Prints the **full text** of every selected constraint (common + language-specific) into stdout so the agent ingests it immediately.
 4. Writes `.ai/session_state.json` and mirrors it to `.claude/session_state.json`.

@@ -10,7 +10,7 @@ Pre-commit validation. Run before every `git commit`. Must pass with zero errors
 ## Execution
 
 ```bash
-bin/agent-precommit
+.ai/bin/agent-precommit
 ```
 
 ## Behaviour (guaranteed)

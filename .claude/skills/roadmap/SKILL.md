@@ -12,23 +12,23 @@ durable project files.
 ## Execution
 
 ```bash
-bin/agent-roadmap <subcommand> [args...]
+.ai/bin/agent-roadmap <subcommand> [args...]
 ```
 
 ## Subcommands
 
 | Subcommand | Usage | What it does |
 |------------|-------|--------------|
-| `check` | `bin/agent-roadmap check` | Detect active step and dependency readiness (run at session start) |
-| `create` | `bin/agent-roadmap create <name> --steps <N> --step-names <names...>` | Create a new step series with explicit dependencies |
-| `status` | `bin/agent-roadmap status` | Show cross-step and task dependency status |
-| `update complete-task` | `bin/agent-roadmap update complete-task` | Complete current task and advance to next dependency-ready task |
-| `update block-task` | `bin/agent-roadmap update block-task <reason>` | Mark current task blocked |
-| `update unblock-task` | `bin/agent-roadmap update unblock-task` | Unblock first dependency-ready blocked task |
-| `update set-focus` | `bin/agent-roadmap update set-focus <task-id>` | Set focus to a dependency-ready task |
-| `handoff` | `bin/agent-roadmap handoff` | Generate session handoff file under `sessions/` |
-| `complete` | `bin/agent-roadmap complete` | Mark active step completed |
-| `validate` | `bin/agent-roadmap validate <step>` | Validate a step's structural files |
+| `check` | `.ai/bin/agent-roadmap check` | Detect active step and dependency readiness (run at session start) |
+| `create` | `.ai/bin/agent-roadmap create <name> --steps <N> --step-names <names...>` | Create a new step series with explicit dependencies |
+| `status` | `.ai/bin/agent-roadmap status` | Show cross-step and task dependency status |
+| `update complete-task` | `.ai/bin/agent-roadmap update complete-task` | Complete current task and advance to next dependency-ready task |
+| `update block-task` | `.ai/bin/agent-roadmap update block-task <reason>` | Mark current task blocked |
+| `update unblock-task` | `.ai/bin/agent-roadmap update unblock-task` | Unblock first dependency-ready blocked task |
+| `update set-focus` | `.ai/bin/agent-roadmap update set-focus <task-id>` | Set focus to a dependency-ready task |
+| `handoff` | `.ai/bin/agent-roadmap handoff` | Generate session handoff file under `sessions/` |
+| `complete` | `.ai/bin/agent-roadmap complete` | Mark active step completed |
+| `validate` | `.ai/bin/agent-roadmap validate <step>` | Validate a step's structural files |
 
 ## Behaviour (guaranteed)
 
@@ -43,7 +43,7 @@ bin/agent-roadmap <subcommand> [args...]
 - **At most one step active.** Never activate a step before its `depends_on_steps` are completed.
 - **Branch discipline.** Work must be on branch `roadmap/<step-folder-name>`.
 - **Focus discipline.** Operate only on `focus.current_task`.
-- **Session end.** End every roadmap session with `bin/agent-roadmap handoff`.
+- **Session end.** End every roadmap session with `.ai/bin/agent-roadmap handoff`.
 - **No label leakage.** Never copy roadmap-step identifiers (`phase-N`, `step-N`,
   `roadmap/step-N`) into source files, config, docs, or filenames outside `agent_roadmaps/`.
 - **Cleanup.** Once every step in the roadmap is completed, delete the whole roadmap

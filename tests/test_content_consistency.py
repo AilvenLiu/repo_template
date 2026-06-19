@@ -47,19 +47,19 @@ def test_codex_entrypoint_files_removed() -> None:
 def test_canonical_check_constraints_skill_uses_wrapper() -> None:
     root = Path(__file__).parent.parent
     skill = (root / ".ai" / "skills" / "check-constraints" / "SKILL.md").read_text()
-    assert "bin/agent-check-constraints" in skill
+    assert ".ai/bin/agent-check-constraints" in skill
 
 
 def test_canonical_build_skill_uses_wrapper() -> None:
     root = Path(__file__).parent.parent
     skill = (root / ".ai" / "skills" / "build" / "SKILL.md").read_text()
-    assert "bin/agent-build" in skill
+    assert ".ai/bin/agent-build" in skill
 
 
 def test_canonical_python_env_skill_uses_wrapper() -> None:
     root = Path(__file__).parent.parent
     skill = (root / ".ai" / "skills" / "python-env-setup" / "SKILL.md").read_text()
-    assert "bin/agent-python-env-setup" in skill
+    assert ".ai/bin/agent-python-env-setup" in skill
 
 
 def test_repo_contains_no_removed_legacy_behavior_references() -> None:

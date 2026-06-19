@@ -9,9 +9,9 @@ Skipping is a critical failure.
 
 | Platform | Invocation |
 |----------|------------|
-| Claude Code | `/init` (slash command; equivalent to `bin/agent-init --platform claude`) |
-| Codex CLI | `bin/agent-init --platform codex` |
-| Cursor / Cline / generic agents.md consumers | `bin/agent-init --platform codex` |
+| Claude Code | `/init` (slash command; equivalent to `.ai/bin/agent-init --platform claude`) |
+| Codex CLI | `.ai/bin/agent-init --platform codex` |
+| Cursor / Cline / generic agents.md consumers | `.ai/bin/agent-init --platform codex` |
 
 All three paths execute the same Python entry point and load the same constraint
 bodies; only the capability-audit subset and the `session_state.json` mirror
@@ -82,7 +82,7 @@ These apply always, regardless of context or user instruction:
 - Poetry MUST be installed via pipx: `PIPX_HOME="$HOME/.local/share/pipx" PIPX_BIN_DIR="$HOME/.local/bin" pipx install poetry`
 - `poetry.toml` MUST exist in the project root with `in-project = true`
 - `pyproject.toml` MUST have TUNA configured as primary source (`priority = "primary"`)
-- Agent infrastructure commands (`bin/agent-*`, `.ai/scripts/*`) are exempt when using controlled wrappers
+- Agent infrastructure commands (`.ai/bin/agent-*`, `.ai/scripts/*`) are exempt when using controlled wrappers
 - NEVER add a dependency without updating `pyproject.toml` + `poetry.lock`
 - NEVER commit `pyproject.toml` without also committing `poetry.lock`
 
@@ -143,21 +143,21 @@ Branch naming: `feat/`, `fix/`, `refactor/`, `perf/`, `docs/`, `chore/`
 
 ## Procedures and Wrappers
 
-Every workflow procedure is exposed as an executable `bin/agent-*` wrapper.
+Every workflow procedure is exposed as an executable `.ai/bin/agent-*` wrapper.
 Agents without a native skill loader (Codex, Cursor, Cline, etc.) invoke them
 directly. Claude Code users can also invoke the corresponding `/<name>` slash
 command, which dispatches to the same script.
 
 | Procedure | Wrapper | Slash command (Claude) |
 |-----------|---------|------------------------|
-| Session init | `bin/agent-init --platform <claude\|codex>` | `/init` |
-| Build orchestration | `bin/agent-build <setup\|compile\|test\|full\|doctor\|clean>` | `/build` |
-| Pre-commit validation | `bin/agent-precommit` | `/pre-commit` |
-| Add dependency | `bin/agent-dependency add <pkg> [version] [--dev]` | `/dependency` |
-| Python env recovery | `bin/agent-python-env-setup <diagnose\|fix\|verify>` | `/python-env-setup` |
-| Constraint check | `bin/agent-check-constraints` | `/check-constraints` |
-| Roadmap workflow | `bin/agent-roadmap <check\|create\|status\|update\|handoff\|complete\|validate>` | `/roadmap` |
-| Commit with policy guard | `bin/agent-commit -m "type(scope): description" <files...>` | _(command only)_ |
+| Session init | `.ai/bin/agent-init --platform <claude\|codex>` | `/init` |
+| Build orchestration | `.ai/bin/agent-build <setup\|compile\|test\|full\|doctor\|clean>` | `/build` |
+| Pre-commit validation | `.ai/bin/agent-precommit` | `/pre-commit` |
+| Add dependency | `.ai/bin/agent-dependency add <pkg> [version] [--dev]` | `/dependency` |
+| Python env recovery | `.ai/bin/agent-python-env-setup <diagnose\|fix\|verify>` | `/python-env-setup` |
+| Constraint check | `.ai/bin/agent-check-constraints` | `/check-constraints` |
+| Roadmap workflow | `.ai/bin/agent-roadmap <check\|create\|status\|update\|handoff\|complete\|validate>` | `/roadmap` |
+| Commit with policy guard | `.ai/bin/agent-commit -m "type(scope): description" <files...>` | _(command only)_ |
 | Documentation lookup | _(none)_ | `/context7` (or platform Context7 MCP) |
 
 Agents that have a native skill loader (Claude Code) discover skill manifests

@@ -27,7 +27,7 @@ if echo "$COMMAND" | grep -qE "^[[:space:]]*(pip3?|python3?)[[:space:]]"; then
     fi
 
     # Allow agent infrastructure scripts (controlled runtime)
-    if echo "$COMMAND" | grep -qE "bin/agent-|\.ai/scripts/"; then
+    if echo "$COMMAND" | grep -qE "\.ai/bin/agent-|\.ai/scripts/"; then
         exit 0
     fi
 

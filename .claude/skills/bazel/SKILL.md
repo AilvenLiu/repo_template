@@ -12,18 +12,18 @@ Use this skill when `.ai/project.yml` declares `build_system: bazel`.
 ## Execution
 
 ```bash
-bin/agent-bazel <build|test|run|clean|query>
+.ai/bin/agent-bazel <build|test|run|clean|query>
 ```
 
 ## Subcommands
 
 | Subcommand | Usage | What it does |
 |------------|-------|--------------|
-| `build` | `bin/agent-bazel build [--config=<cfg>] [targets...]` | Build targets |
-| `test` | `bin/agent-bazel test [--config=<cfg>] [targets...]` | Run test suite |
-| `run` | `bin/agent-bazel run [--config=<cfg>] <target> [-- <args>]` | Execute a runnable target |
-| `clean` | `bin/agent-bazel clean [--expunge]` | Remove build artefacts |
-| `query` | `bin/agent-bazel query <expr>` | Query the build graph |
+| `build` | `.ai/bin/agent-bazel build [--config=<cfg>] [targets...]` | Build targets |
+| `test` | `.ai/bin/agent-bazel test [--config=<cfg>] [targets...]` | Run test suite |
+| `run` | `.ai/bin/agent-bazel run [--config=<cfg>] <target> [-- <args>]` | Execute a runnable target |
+| `clean` | `.ai/bin/agent-bazel clean [--expunge]` | Remove build artefacts |
+| `query` | `.ai/bin/agent-bazel query <expr>` | Query the build graph |
 
 ## Behaviour (guaranteed)
 
@@ -47,16 +47,16 @@ bin/agent-bazel <build|test|run|clean|query>
 
 ```bash
 # Build all targets
-bin/agent-bazel build
+.ai/bin/agent-bazel build
 
 # Build a specific CUDA kernel with optimisation
-bin/agent-bazel build --config=cuda --config=opt //src/kernels:flash_attention
+.ai/bin/agent-bazel build --config=cuda --config=opt //src/kernels:flash_attention
 
 # Run all tests
-bin/agent-bazel test //...
+.ai/bin/agent-bazel test //...
 
 # Query reverse dependencies
-bin/agent-bazel query "rdeps(//..., //src/kernels:attention)"
+.ai/bin/agent-bazel query "rdeps(//..., //src/kernels:attention)"
 ```
 
 ## Environment variables required for CUDA

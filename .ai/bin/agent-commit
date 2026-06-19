@@ -7,7 +7,7 @@ source "$SCRIPT_DIR/_agent_common.sh"
 REPO_ROOT="$(agent_repo_root)"
 
 if [[ $# -lt 3 ]]; then
-  echo "Usage: bin/agent-commit -m \"type(scope): description\" <file1> [file2 ...]" >&2
+  echo "Usage: .ai/bin/agent-commit -m \"type(scope): description\" <file1> [file2 ...]" >&2
   exit 1
 fi
 
@@ -45,7 +45,7 @@ for file in "${FILES[@]}"; do
 
 done
 
-"$REPO_ROOT/bin/agent-precommit"
+"$REPO_ROOT/.ai/bin/agent-precommit"
 
 BRANCH="$(git -C "$REPO_ROOT" branch --show-current || true)"
 run_agent_python "$REPO_ROOT" "$REPO_ROOT/.ai/scripts/policy_gate.py" --op commit --message "$MESSAGE" --branch "$BRANCH"

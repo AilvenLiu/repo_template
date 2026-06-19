@@ -87,8 +87,10 @@ def ensure_poetry_available(manager: DependencyManager) -> None:
         print()
         print("Poetry is MANDATORY for Python dependency management.")
         print()
-        print("Install Poetry:")
-        print("  curl -sSL https://install.python-poetry.org | python3 -")
+        print("Install Poetry with pipx:")
+        print("  python3 -m pip install --user pipx")
+        print("  python3 -m pipx ensurepath")
+        print("  pipx install poetry")
         print()
         print("Or see: https://python-poetry.org/docs/#installation")
         print()
@@ -296,81 +298,76 @@ def add_python_dependency_trivial(
 def add_cpp_dependency_cmake(
     manager: DependencyManager, package: str, version: str = None
 ) -> None:
-    """Add a C++/CUDA dependency using CMake with Conan/vcpkg.
+    """Add a C++/CUDA dependency using CMake with CPM.
 
-    CRITICAL: This function enforces package manager usage (Conan/vcpkg).
+    CRITICAL: This function enforces CMake/CPM usage.
     NEVER installs C++ libraries system-wide (apt, yum, brew).
     """
     print(f"Adding C++/CUDA dependency (CMake): {package}")
     print("-" * 50)
 
-    # Check for package manager configuration
-    conan_file = manager.repo_root / "conanfile.txt"
-    vcpkg_file = manager.repo_root / "vcpkg.json"
     cmake_file = manager.repo_root / "CMakeLists.txt"
+    cpm_file = manager.repo_root / "cmake" / "CPM.cmake"
+    deps_file = manager.repo_root / "cmake" / "Dependencies.cmake"
+    options_file = manager.repo_root / "cmake" / "Options.cmake"
+    cpm_cache_keep = manager.repo_root / "3rdparty" / "cpm-cache" / ".gitkeep"
 
-    has_package_manager = conan_file.exists() or vcpkg_file.exists()
-
-    if not has_package_manager:
-        print("[ERROR] No package manager configuration found")
+    missing = [
+        path
+        for path in [cmake_file, cpm_file, deps_file, options_file, cpm_cache_keep]
+        if not path.exists()
+    ]
+    if missing:
+        print("[ERROR] Missing required CMake/CPM layout")
         print("=" * 50)
-        print("CRITICAL: NEVER install C++ libraries system-wide")
-        print("          (apt, yum, brew, or manual installation)")
+        print("CMake owns the native build graph and CPM owns lightweight C++ dependencies.")
         print()
-        print("Please set up a package manager first:")
+        print("Missing:")
+        for path in missing:
+            print(f"  - {path.relative_to(manager.repo_root)}")
         print()
-        print("Option 1: Conan (Recommended)")
-        print("  1. Install Conan: pip install conan")
-        print("  2. Create conanfile.txt:")
-        print("     [requires]")
-        print()
-        print("     [generators]")
-        print("     CMakeDeps")
-        print("     CMakeToolchain")
-        print()
-        print("Option 2: vcpkg")
-        print("  1. Install vcpkg: git clone https://github.com/microsoft/vcpkg")
-        print("  2. Create vcpkg.json:")
-        print("     {")
-        print('       "dependencies": []')
-        print("     }")
-        print()
-        print("Then run this command again.")
+        print("Create the standard layout before adding dependencies.")
         sys.exit(1)
 
-    # Use Conan if available
-    if conan_file.exists():
-        if manager.add_to_conanfile_txt(package, version):
-            print(f"[OK] Added {package} to conanfile.txt")
-        else:
-            print(f"[INFO] {package} already in conanfile.txt")
+    if "/" not in package:
+        print("[ERROR] C++ dependencies must be provided as a GitHub repository")
+        print()
+        print("Usage:")
+        print("  .ai/bin/agent-dependency add fmtlib/fmt 10.2.1")
+        print()
+        print("Then edit cmake/Dependencies.cmake to fill in reason, target, license, and scope.")
+        sys.exit(1)
 
-        # Run conan install
-        print(f"\nInstalling {package} via Conan...")
-        returncode, stdout, stderr = manager.run_command(
-            ["conan", "install", ".", "--build=missing"]
-        )
-        if returncode == 0:
-            print("[OK] Conan install successful")
-        else:
-            print("[ERROR] Conan install failed")
-            print(f"Error: {stderr}")
-            print("\nIf Conan is not installed:")
-            print("  pip install conan")
-            sys.exit(1)
+    if not version:
+        print("[ERROR] CPM dependencies must be pinned by tag or commit")
+        print()
+        print("Usage:")
+        print(f"  .ai/bin/agent-dependency add {package} <tag-or-commit>")
+        sys.exit(1)
 
-    # Use vcpkg if available (and Conan is not)
-    elif vcpkg_file.exists():
-        print("[INFO] Using vcpkg for dependency management")
-        print(f"[ACTION] Please add {package} to vcpkg.json manually")
-        print("         Then run: vcpkg install")
+    if version in {"main", "master", "develop"}:
+        print("[ERROR] Floating branches are forbidden for CPM dependencies")
+        print("Use an immutable tag, commit SHA, or release archive hash.")
+        sys.exit(1)
 
-    # Add to CMakeLists.txt
-    if cmake_file.exists():
-        if manager.add_to_cmake(package, version):
-            print(f"[OK] Added find_package({package}) to CMakeLists.txt")
-        else:
-            print(f"[INFO] {package} already in CMakeLists.txt")
+    name = package.rsplit("/", 1)[-1].replace("-", "_")
+    if manager.add_to_cpm_dependencies(name=name, repository=package, tag=version):
+        print(f"[OK] Added pinned CPM dependency {name} ({package}@{version})")
+    else:
+        print(f"[INFO] {package} already appears in cmake/Dependencies.cmake")
+
+    print()
+    print("IMPORTANT: Complete the metadata comments in cmake/Dependencies.cmake:")
+    print("  - reason for inclusion")
+    print("  - linked CMake target")
+    print("  - license note")
+    print("  - runtime/build-time/test-only/benchmark-only scope")
+
+    print()
+    print("Validate native build first:")
+    print("  cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo")
+    print("  cmake --build build -j")
+    print("  ctest --test-dir build --output-on-failure")
 
     # Remind about README
     readme_path = manager.repo_root / "README.md"
@@ -378,10 +375,48 @@ def add_cpp_dependency_cmake(
         print()
         print(f"REMINDER: Update README.md to document {package}")
         print("Add to Dependencies section:")
-        if version:
-            print(f"  - {package} >= {version}")
-        else:
-            print(f"  - {package}")
+        print(f"  - {package} ({version}) via CPM: [description]")
+
+
+def _format_python_dependency(package: str, version: str | None) -> str:
+    """Return a PEP 508-ish dependency string for pyproject.toml."""
+    if not version:
+        return package
+
+    if version.startswith((">", "<", "=", "!", "~", "^")):
+        return f"{package}{version}"
+
+    return f"{package}>={version}"
+
+
+def _find_section(lines: list[str], section: str) -> tuple[int, int]:
+    """Return [start, end) line bounds for a TOML section."""
+    start = -1
+    for index, line in enumerate(lines):
+        if line.strip() == section:
+            start = index
+            break
+
+    if start < 0:
+        return -1, -1
+
+    end = len(lines)
+    for index in range(start + 1, len(lines)):
+        stripped = lines[index].strip()
+        if stripped.startswith("[") and stripped.endswith("]"):
+            end = index
+            break
+
+    return start, end
+
+
+def _insert_array_entry(lines: list[str], start: int, dep_string: str) -> bool:
+    """Insert a TOML array entry before the closing bracket."""
+    for index in range(start + 1, len(lines)):
+        if lines[index].strip() == "]":
+            lines.insert(index, f'  "{dep_string}",\n')
+            return True
+    return False
 
 
 def add_dependency_scikit_build(
@@ -403,69 +438,81 @@ def add_dependency_scikit_build(
         print("scikit-build-core projects require pyproject.toml")
         sys.exit(1)
 
-    # Construct dependency string
-    if version:
-        dep_string = f'"{package}>={version}"'
-    else:
-        dep_string = f'"{package}"'
+    dep_string = _format_python_dependency(package, version)
 
-    # Read the file
     with open(pyproject_path, "r") as f:
         lines = f.readlines()
 
-    # Find the appropriate section and add dependency
-    modified = False
-    in_dependencies = False
-    in_optional_dev = False
-    dependencies_line = -1
-    optional_dev_line = -1
-
-    for i, line in enumerate(lines):
-        if line.strip() == "dependencies = [":
-            in_dependencies = True
-            dependencies_line = i
-        elif line.strip() == "[project.optional-dependencies]":
-            in_optional_dev = False
-        elif line.strip() == "dev = [":
-            in_optional_dev = True
-            optional_dev_line = i
-        elif line.strip().startswith("[") and (in_dependencies or in_optional_dev):
-            in_dependencies = False
-            in_optional_dev = False
-
-    if not dev and dependencies_line >= 0:
-        # Add to dependencies
-        # Find the closing bracket
-        for i in range(dependencies_line + 1, len(lines)):
-            if "]" in lines[i]:
-                # Insert before the closing bracket
-                indent = "    "
-                lines.insert(i, f"{indent}{dep_string},\n")
-                modified = True
-                print(f"[OK] Added {package} to [project.dependencies]")
-                break
-    elif dev and optional_dev_line >= 0:
-        # Add to optional-dependencies.dev
-        for i in range(optional_dev_line + 1, len(lines)):
-            if "]" in lines[i]:
-                indent = "    "
-                lines.insert(i, f"{indent}{dep_string},\n")
-                modified = True
-                print(f"[OK] Added {package} to [project.optional-dependencies.dev]")
-                break
-    else:
-        print("[ERROR] Could not find appropriate section in pyproject.toml")
-        print()
-        print("Please add manually:")
-        if dev:
-            print("  [project.optional-dependencies]")
-            print(f'  dev = ["{package}"]')
-        else:
-            print(f'  dependencies = ["{package}"]')
+    if any(f'"{dep_string}"' in line or f"'{dep_string}'" in line for line in lines):
+        print(f"[INFO] {dep_string} already appears in pyproject.toml")
         sys.exit(1)
 
+    modified = False
+    if not dev:
+        dependencies_line = next(
+            (
+                index
+                for index, line in enumerate(lines)
+                if line.strip() == "dependencies = ["
+            ),
+            -1,
+        )
+        if dependencies_line >= 0:
+            modified = _insert_array_entry(lines, dependencies_line, dep_string)
+        else:
+            project_start, project_end = _find_section(lines, "[project]")
+            if project_start < 0:
+                print("[ERROR] Could not find [project] in pyproject.toml")
+                sys.exit(1)
+            insertion = [
+                "dependencies = [\n",
+                f'  "{dep_string}",\n',
+                "]\n",
+            ]
+            insert_at = project_end
+            for index in range(project_start + 1, project_end):
+                if lines[index].strip().startswith("requires-python"):
+                    insert_at = index + 1
+                    break
+            lines[insert_at:insert_at] = insertion
+            modified = True
+        if modified:
+            print(f"[OK] Added {dep_string} to [project.dependencies]")
+    else:
+        optional_start, optional_end = _find_section(
+            lines, "[project.optional-dependencies]"
+        )
+        if optional_start < 0:
+            if lines and lines[-1].strip():
+                lines.append("\n")
+            lines.extend(
+                [
+                    "[project.optional-dependencies]\n",
+                    "dev = [\n",
+                    f'  "{dep_string}",\n',
+                    "]\n",
+                ]
+            )
+            modified = True
+        else:
+            dev_line = -1
+            for index in range(optional_start + 1, optional_end):
+                if lines[index].strip() == "dev = [":
+                    dev_line = index
+                    break
+            if dev_line >= 0:
+                modified = _insert_array_entry(lines, dev_line, dep_string)
+            else:
+                lines[optional_end:optional_end] = [
+                    "dev = [\n",
+                    f'  "{dep_string}",\n',
+                    "]\n",
+                ]
+                modified = True
+        if modified:
+            print(f"[OK] Added {dep_string} to [project.optional-dependencies.dev]")
+
     if modified:
-        # Write back
         with open(pyproject_path, "w") as f:
             f.writelines(lines)
 
@@ -476,32 +523,10 @@ def add_dependency_scikit_build(
         print("  git add pyproject.toml")
         print()
         print("To install the dependency:")
-        print("  pip install -e .")
+        print("  poetry run pip install -e . --no-build-isolation")
     else:
         print(f"[INFO] {package} may already be present or section not found")
         sys.exit(1)
-
-
-def add_dependency_scikit_build_stub(package: str) -> None:
-    """Stub for scikit-build dependency management (not yet implemented)."""
-    print("[ERROR] scikit-build dependency management not yet implemented")
-    print("=" * 50)
-    print()
-    print("scikit-build projects use a hybrid Python/C++ dependency model:")
-    print("  - Python dependencies: managed via Poetry/pip")
-    print("  - C++ dependencies: managed via CMake/Conan")
-    print()
-    print("This build system is not implemented in this template yet.")
-    print()
-    print("For now, please add dependencies manually:")
-    print("  - Python packages: edit pyproject.toml")
-    print("  - C++ libraries: edit conanfile.txt or CMakeLists.txt")
-    print()
-    print("See: docs/architecture/decisions/002-six-axis-project-profile.md")
-    print(
-        "Create a temporary roadmap under agent_roadmaps/ if multi-session coordination is needed."
-    )
-    sys.exit(1)
 
 
 def add_dependency_bazel_stub(package: str) -> None:
@@ -535,7 +560,7 @@ def add_dependency_mixed_stub(package: str) -> None:
     print()
     print("For now, please add dependencies manually to the appropriate file:")
     print("  - Python: pyproject.toml or requirements.txt")
-    print("  - C++: conanfile.txt or CMakeLists.txt")
+    print("  - C++: cmake/Dependencies.cmake and CMakeLists.txt")
     print("  - System: document in README.md")
     print()
     print("See: docs/architecture/decisions/002-six-axis-project-profile.md")
@@ -617,9 +642,14 @@ def main():
         add_cpp_dependency_cmake(manager, package, version)
 
     elif build_system in (BuildSystem.SCIKIT_BUILD, BuildSystem.SCIKIT_BUILD_CORE):
-        if dev:
-            print("[INFO] Adding to dev dependencies")
-        add_dependency_scikit_build(manager, package, version, dev)
+        if "/" in package:
+            if dev:
+                print("[WARNING] --dev flag ignored for C++ dependencies")
+            add_cpp_dependency_cmake(manager, package, version)
+        else:
+            if dev:
+                print("[INFO] Adding to dev dependencies")
+            add_dependency_scikit_build(manager, package, version, dev)
 
     elif build_system == BuildSystem.BAZEL:
         add_dependency_bazel_stub(package)
@@ -644,7 +674,8 @@ def main():
         print()
         print("For C++/CUDA projects, ensure you have:")
         print("  - CMakeLists.txt")
-        print("  - conanfile.txt or vcpkg.json")
+        print("  - cmake/CPM.cmake, cmake/Dependencies.cmake, cmake/Options.cmake")
+        print("  - 3rdparty/cpm-cache/.gitkeep")
         sys.exit(1)
 
     print()

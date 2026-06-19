@@ -93,8 +93,8 @@ def test_agents_cpp_critical_rules_parity() -> None:
         "secret",
         "AI attribution",
         "capability audit",
-        "Conan",
-        "vcpkg",
+        "CMake",
+        "CPM",
         "smart pointer",
         "static_cast",
         "CUDA",
@@ -121,8 +121,8 @@ def test_agents_entrypoints_have_procedures_table() -> None:
         body = _read(name)
         assert "Procedures and Wrappers" in body
         assert "| Procedure |" in body
-        assert "bin/agent-init --platform" in body
-        assert "bin/agent-precommit" in body
+        assert ".ai/bin/agent-init --platform" in body
+        assert ".ai/bin/agent-precommit" in body
 
 
 def test_codex_axis_files_are_gone() -> None:

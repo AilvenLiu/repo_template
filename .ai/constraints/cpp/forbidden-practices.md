@@ -330,8 +330,8 @@ target_compile_options(mylib PRIVATE -Wall -Wextra -Wpedantic -Werror)
 
 # Third-party headers marked as SYSTEM (warnings suppressed)
 target_include_directories(mylib SYSTEM PRIVATE
-    ${CMAKE_SOURCE_DIR}/third_party/cutlass/include
-    ${CMAKE_SOURCE_DIR}/third_party/thrust
+    ${CMAKE_SOURCE_DIR}/3rdparty/vendor/cutlass/include
+    ${CMAKE_SOURCE_DIR}/3rdparty/vendor/thrust
 )
 ```
 

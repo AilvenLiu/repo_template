@@ -38,9 +38,9 @@ Before session initialization (`session_state.json` does not exist):
 |---------|--------|--------|
 | Any `Write`/`Edit`/`MultiEdit` tool | BLOCK | No mutations before init |
 | Any `Bash` command that is not exactly the init invocation | BLOCK | Fail-closed before init |
-| `python3 bin/agent-init` | ALLOW | Exact init invocation |
-| `python3 bin/agent-init --verbose` | ALLOW | Exact init invocation with verbose |
-| `python bin/agent-init` (± `--verbose`) | ALLOW | Same, without the `3` suffix |
+| `.ai/bin/agent-init` | ALLOW | Exact init invocation |
+| `.ai/bin/agent-init --verbose` | ALLOW | Exact init invocation with verbose |
+| `.ai/bin/agent-init --platform claude` | ALLOW | Exact init invocation for Claude |
 
 **Security note**: The allowlist enforces a two-stage check:
 1. Reject any command containing shell metacharacters (`; & | < > $ \` \``)
@@ -49,7 +49,7 @@ Before session initialization (`session_state.json` does not exist):
 This prevents prefix-match bypass attacks such as:
 
 ```
-python3 bin/agent-init && echo hacked > .claude/session_state.json
+.ai/bin/agent-init && echo hacked > .claude/session_state.json
 ```
 
 The above is blocked by stage 1 (detects `&`).

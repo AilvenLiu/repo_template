@@ -94,10 +94,28 @@ algorithm, and data structure MUST be implemented in C++. There are no Python he
 no Python glue scripts, and no prototyping in Python. If a Python binding layer is
 ever added, follow the Hybrid project constraints (`hybrid/cpp-first.md`).
 
+Build ownership is CMake/CPM first:
+
+```text
+CMake owns the native build graph.
+CPM owns lightweight C++ dependency acquisition.
+Conan, vcpkg, Bazel, and git submodules require an ADR.
+```
+
+Required native validation:
+
+```bash
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo
+cmake --build build -j
+ctest --test-dir build --output-on-failure
+```
+
 ## Absolute Prohibitions
 
 - NEVER commit directly to `master`, `main`, `develop`, `release/*`, `hotfix/*`
-- NEVER install C++ libraries via system package managers — use documented mechanisms (Conan, vcpkg, FetchContent, CPM, git submodules); NVIDIA/AMD GPU libraries excepted
+- NEVER install C++ libraries via system package managers; NVIDIA/AMD GPU libraries and toolchains are discovered as external SDKs
+- NEVER add C++ dependencies outside `cmake/Dependencies.cmake` unless an ADR approves a system SDK or exceptional manager
+- NEVER use floating dependency branches such as `main`, `master`, or `develop`
 - NEVER use raw `new`/`delete` — use smart pointers and RAII
 - NEVER use C-style casts — use `static_cast`/`dynamic_cast`/`reinterpret_cast`
 - NEVER ignore CUDA API error codes
@@ -106,32 +124,32 @@ ever added, follow the Hybrid project constraints (`hybrid/cpp-first.md`).
 
 ## Required Workflow Commands
 
-These `bin/agent-*` commands are the canonical tool interface. Use them
+These `.ai/bin/agent-*` commands are the canonical tool interface. Use them
 directly whenever performing the corresponding workflow step:
 
-- Init: `bin/agent-init --platform claude`
-- Build orchestration: `bin/agent-build <setup|compile|test|full|doctor|clean>`
-- Constraint check: `bin/agent-check-constraints`
-- Pre-commit validation: `bin/agent-precommit`
-- Dependency add: `bin/agent-dependency add <package> [version]`
-- Roadmap workflow: `bin/agent-roadmap <check|create|status|update|handoff|complete|validate>`
-- Commit with policy guard: `bin/agent-commit -m "type(scope): description" <file1> [file2 ...]`
+- Init: `.ai/bin/agent-init --platform claude`
+- Build orchestration: `.ai/bin/agent-build <setup|compile|test|full|doctor|clean>`
+- Constraint check: `.ai/bin/agent-check-constraints`
+- Pre-commit validation: `.ai/bin/agent-precommit`
+- Dependency add: `.ai/bin/agent-dependency add <package> [version]`
+- Roadmap workflow: `.ai/bin/agent-roadmap <check|create|status|update|handoff|complete|validate>`
+- Commit with policy guard: `.ai/bin/agent-commit -m "type(scope): description" <file1> [file2 ...]`
 
 ## Claude Code Skill Mappings
 
-Skills are convenience wrappers around `bin/agent-*` commands.
+Skills are convenience wrappers around `.ai/bin/agent-*` commands.
 When a slash command is unavailable or you need finer control, call the
-`bin/agent-*` command directly.
+`.ai/bin/agent-*` command directly.
 
 | Procedure | Skill | Underlying command |
 |-----------|-------|--------------------|
-| Session init | `/init` | `bin/agent-init --platform claude` |
-| Build orchestration | `/build <cmd>` | `bin/agent-build <setup|compile|test|full|doctor|clean>` |
-| Pre-commit | `/pre-commit validate` | `bin/agent-precommit` |
-| Add dependency | `/dependency add <pkg> [ver]` | `bin/agent-dependency add <pkg> [ver]` |
-| Check constraints | `/check-constraints` | `bin/agent-check-constraints` |
-| Commit | *(use command directly)* | `bin/agent-commit -m "msg" <files...>` |
-| Roadmap management | `/roadmap <cmd>` | `bin/agent-roadmap <check|create|status|update|handoff|complete|validate>` |
+| Session init | `/init` | `.ai/bin/agent-init --platform claude` |
+| Build orchestration | `/build <cmd>` | `.ai/bin/agent-build <setup|compile|test|full|doctor|clean>` |
+| Pre-commit | `/pre-commit validate` | `.ai/bin/agent-precommit` |
+| Add dependency | `/dependency add <pkg> [ver]` | `.ai/bin/agent-dependency add <pkg> [ver]` |
+| Check constraints | `/check-constraints` | `.ai/bin/agent-check-constraints` |
+| Commit | *(use command directly)* | `.ai/bin/agent-commit -m "msg" <files...>` |
+| Roadmap management | `/roadmap <cmd>` | `.ai/bin/agent-roadmap <check|create|status|update|handoff|complete|validate>` |
 | Doc lookup | `/context7` | — |
 | Build project | `/build` | — |
 

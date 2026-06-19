@@ -7,7 +7,7 @@ C++/CUDA, and hybrid projects.
 
 This skill provides an automated workflow for adding dependencies to projects.
 It enforces Poetry for Python projects, supports scikit-build-core style
-hybrid projects, and uses Conan/vcpkg style manifests for C++ projects. It
+hybrid projects, and uses CPM declarations in CMake for C++ projects. It
 updates manifest files, installs packages, and reminds you to update
 documentation.
 
@@ -22,12 +22,12 @@ documentation.
    ```bash
    # Python projects (Python 3.10+ and Poetry are MANDATORY)
    python3.10 --version  # Must be 3.10 or higher
-   curl -sSL https://install.python-poetry.org | python3 -
+   pipx install poetry
    poetry --version
 
    # C++/CUDA projects
    cmake --version
-   conan --version  # Optional but recommended
+   ninja --version
    ```
 
 ## Python 3.10+ Requirement
@@ -74,7 +74,7 @@ python3 .ai/scripts/dependency/add.py pytest 7.3.0 --dev
 ### Add a C++/CUDA Dependency
 
 ```bash
-python3 .ai/scripts/dependency/add.py Eigen 3.4
+python3 .ai/scripts/dependency/add.py fmtlib/fmt 10.2.1
 ```
 
 ## Features
@@ -82,8 +82,8 @@ python3 .ai/scripts/dependency/add.py Eigen 3.4
 - **Poetry-First**: Enforces Poetry for all Python projects
 - **In-Project Virtual Environments**: Automatically configures Poetry to create `.venv` inside the project directory
 - **Automatic Project Detection**: Detects Python, C++/CUDA, and hybrid projects
-- **Manifest File Updates**: Updates pyproject.toml, poetry.lock, conanfile.txt, CMakeLists.txt
-- **Package Installation**: Installs via Poetry or Conan
+- **Manifest File Updates**: Updates pyproject.toml, poetry.lock, and cmake/Dependencies.cmake
+- **Package Installation**: Installs via Poetry or CMake/CPM configure/build
 - **Documentation Reminders**: Prompts to update README.md
 - **Version Management**: Supports version constraints (caret ^ for Poetry)
 - **Dev Dependencies**: Supports `--dev` flag for development dependencies
@@ -98,8 +98,11 @@ python3 .ai/scripts/dependency/add.py Eigen 3.4
 - requirements.txt (for single-file scripts with 1-2 deps)
 
 ### C++/CUDA
-- conanfile.txt
 - CMakeLists.txt
+- cmake/CPM.cmake
+- cmake/Dependencies.cmake
+- cmake/Options.cmake
+- 3rdparty/cpm-cache/.gitkeep
 
 ## Documentation
 
@@ -114,7 +117,7 @@ See [SKILL.md](SKILL.md) for comprehensive documentation including:
 
 ## Version
 
-2.0.0 (2026-01-30) - Poetry-first approach
+2.1.0 (2026-06-18) - CMake/CPM-first native dependency policy
 
 ## Licence
 

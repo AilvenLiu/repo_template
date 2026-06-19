@@ -9,9 +9,9 @@ Skipping is a critical failure.
 
 | Platform | Invocation |
 |----------|------------|
-| Claude Code | `/init` (slash command; equivalent to `bin/agent-init --platform claude`) |
-| Codex CLI | `bin/agent-init --platform codex` |
-| Cursor / Cline / generic agents.md consumers | `bin/agent-init --platform codex` |
+| Claude Code | `/init` (slash command; equivalent to `.ai/bin/agent-init --platform claude`) |
+| Codex CLI | `.ai/bin/agent-init --platform codex` |
+| Cursor / Cline / generic agents.md consumers | `.ai/bin/agent-init --platform codex` |
 
 All three paths execute the same Python entry point and load the same constraint
 bodies; only the capability-audit subset and the `session_state.json` mirror
@@ -77,7 +77,8 @@ These apply always, regardless of context or user instruction:
 
 ### Dependencies
 - NEVER install C++ libraries via system package managers: `apt install`, `yum install`, `brew install`, `pacman -S` (NVIDIA/AMD GPU libraries excepted)
-- NEVER add a dependency without declaring it in a documented mechanism (conanfile.txt, vcpkg.json, CMakeLists.txt FetchContent, .gitmodules)
+- NEVER add a C++ dependency outside `cmake/Dependencies.cmake` unless an ADR approves a system SDK or exceptional manager
+- NEVER use floating dependency branches such as `main`, `master`, or `develop`
 - NEVER commit code that uses a library not declared in the manifest
 
 ### Memory Safety
@@ -114,7 +115,7 @@ These apply always, regardless of context or user instruction:
 
 ### Before adding any dependency
 - MUST use the platform's dependency management procedure
-- MUST NOT use system package managers or manual `conan install` directly
+- MUST NOT use system package managers or ad-hoc external package-manager installs directly
 
 ### Before every commit
 1. MUST run pre-commit validation and confirm it passes (clang-format, clang-tidy, cppcheck, build)
@@ -149,20 +150,20 @@ Branch naming: `feat/`, `fix/`, `refactor/`, `perf/`, `docs/`, `chore/`
 
 ## Procedures and Wrappers
 
-Every workflow procedure is exposed as an executable `bin/agent-*` wrapper.
+Every workflow procedure is exposed as an executable `.ai/bin/agent-*` wrapper.
 Agents without a native skill loader (Codex, Cursor, Cline, etc.) invoke them
 directly. Claude Code users can also invoke the corresponding `/<name>` slash
 command, which dispatches to the same script.
 
 | Procedure | Wrapper | Slash command (Claude) |
 |-----------|---------|------------------------|
-| Session init | `bin/agent-init --platform <claude\|codex>` | `/init` |
-| Build orchestration | `bin/agent-build <setup\|compile\|test\|full\|doctor\|clean>` | `/build` |
-| Pre-commit validation | `bin/agent-precommit` | `/pre-commit` |
-| Add dependency | `bin/agent-dependency add <pkg> [version]` | `/dependency` |
-| Constraint check | `bin/agent-check-constraints` | `/check-constraints` |
-| Roadmap workflow | `bin/agent-roadmap <check\|create\|status\|update\|handoff\|complete\|validate>` | `/roadmap` |
-| Commit with policy guard | `bin/agent-commit -m "type(scope): description" <files...>` | _(command only)_ |
+| Session init | `.ai/bin/agent-init --platform <claude\|codex>` | `/init` |
+| Build orchestration | `.ai/bin/agent-build <setup\|compile\|test\|full\|doctor\|clean>` | `/build` |
+| Pre-commit validation | `.ai/bin/agent-precommit` | `/pre-commit` |
+| Add dependency | `.ai/bin/agent-dependency add <pkg> [version]` | `/dependency` |
+| Constraint check | `.ai/bin/agent-check-constraints` | `/check-constraints` |
+| Roadmap workflow | `.ai/bin/agent-roadmap <check\|create\|status\|update\|handoff\|complete\|validate>` | `/roadmap` |
+| Commit with policy guard | `.ai/bin/agent-commit -m "type(scope): description" <files...>` | _(command only)_ |
 | Documentation lookup | _(none)_ | `/context7` (or platform Context7 MCP) |
 
 Agents that have a native skill loader (Claude Code) discover skill manifests
@@ -176,13 +177,23 @@ follow the wrapper directly).
 
 | Action | Correct | Forbidden |
 |--------|---------|-----------|
-| Add library | Platform dependency skill | `apt install`, `brew install`, manual `conan install` directly |
-| Install deps | Via documented mechanism (Conan, vcpkg, FetchContent, CPM, submodule) | System package managers |
+| Add library | CPM entry in `cmake/Dependencies.cmake` | `apt install`, `brew install`, manual package-manager install |
+| Install deps | Direct CMake configure/build with CPM cache | System package managers for C++ libraries |
 
-- CMake 3.20+ is REQUIRED for all C++/CUDA projects
-- Use documented dependency mechanisms: Conan (recommended), vcpkg, FetchContent, CPM, git submodules, or NVIDIA system libraries
-- All dependencies MUST be pinned to exact versions in production
-- Dependency manifests and CMakeLists.txt MUST be committed together when deps change
+- CMake 3.24+ is REQUIRED for all C++/CUDA projects
+- CMake owns the native build graph
+- CPM owns lightweight C++ dependency acquisition
+- System/binary SDKs such as CUDA Toolkit, TensorRT, cuDNN, NCCL, and OpenMPI are discovered with `find_package`, cache variables, environment paths, or toolchain files
+- Conan, vcpkg, Bazel, and git submodules require an ADR and are not defaults
+- All dependencies MUST be pinned by immutable version, commit, or archive hash
+
+Required native validation:
+
+```bash
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo
+cmake --build build -j
+ctest --test-dir build --output-on-failure
+```
 
 ---
 
@@ -245,8 +256,8 @@ no Python helpers, no Python glue scripts, and no prototyping in Python.
 |---------|----------|
 | C++ version | C++17 minimum, C++20 recommended |
 | CUDA version | 11.0 minimum, 12.0+ recommended |
-| CMake version | 3.20+ (mandatory) |
-| Dependency mechanisms | Conan (recommended), vcpkg, FetchContent, CPM, git submodules, NVIDIA system libraries |
+| CMake version | 3.24+ (mandatory) |
+| Dependency mechanisms | CPM first for C++ source deps; `find_package` for system/binary SDKs |
 | Formatter | clang-format |
 | Static analysis | clang-tidy + cppcheck |
 | Test framework | Google Test (primary), Catch2 (alternative) |

@@ -146,7 +146,7 @@ class EnvironmentVerifier:
         else:
             print("Status: ENVIRONMENT HAS ISSUES")
             print()
-            print("Run diagnostics: python3 bin/agent-python-env-setup diagnose")
+            print("Run diagnostics: .ai/bin/agent-python-env-setup diagnose")
             return False
 
 

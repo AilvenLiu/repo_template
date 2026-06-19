@@ -6,7 +6,16 @@ set -euo pipefail
 agent_repo_root() {
   local script_dir
   script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-  cd "$script_dir/.." && pwd
+
+  local candidate
+  for candidate in "$script_dir" "$script_dir/.." "$script_dir/../.."; do
+    if [[ -d "$candidate/.ai" ]]; then
+      cd "$candidate" && pwd
+      return
+    fi
+  done
+
+  cd "$script_dir/../.." && pwd
 }
 
 has_poetry_project() {

@@ -32,10 +32,10 @@ def test_bash_preinit_allows_only_init() -> None:
     with tempfile.TemporaryDirectory() as tmp:
         repo = Path(tmp)
 
-        allowed, _ = policy_gate.gate_bash(repo, {"command": "bin/agent-init"})
+        allowed, _ = policy_gate.gate_bash(repo, {"command": ".ai/bin/agent-init"})
         assert allowed
 
-        allowed, _ = policy_gate.gate_bash(repo, {"command": "bin/agent-init --platform claude"})
+        allowed, _ = policy_gate.gate_bash(repo, {"command": ".ai/bin/agent-init --platform claude"})
         assert allowed
 
         allowed, _ = policy_gate.gate_bash(repo, {"command": "ls -la"})

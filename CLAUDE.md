@@ -52,3 +52,25 @@ When a real project is generated via `/create-project`, the appropriate
 `templates/<language>/` overlay is copied to the project root, so each file
 arrives with its generic name (`CLAUDE.md`, `AGENTS.md`, `CONTRIBUTING.md`,
 `.gitignore`, `.ai/project.yml`).
+
+## C++/CUDA and Hybrid Build Policy Summary
+
+Pure Python templates remain Poetry first.
+
+Pure C++/CUDA templates are CMake first and CPM first. CMake owns the native
+build graph, CPM owns lightweight C++ dependency acquisition, and direct native
+validation is:
+
+```bash
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo
+cmake --build build -j
+ctest --test-dir build --output-on-failure
+```
+
+C++/Python hybrid templates are CMake first, CPM first, scikit-build-core bridge.
+scikit-build-core bridges CMake into Python packaging only; Poetry owns Python
+virtualenv and Python dependencies only. `pip install -e .` is not the
+authoritative C++ build command and may be used via Poetry only after direct
+CMake validation passes.
+
+Conan, vcpkg, Bazel, and git submodules are exceptional choices and require an ADR.

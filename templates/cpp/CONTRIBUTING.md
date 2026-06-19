@@ -33,7 +33,7 @@ This repository uses a modular constraint system. Instead of duplicating all tec
 ### C++/CUDA-Specific Constraints
 - `cpp/testing.md` - Google Test, Catch2, coverage (70%+)
 - `cpp/formatting.md` - clang-format, naming conventions
-- `cpp/cmake.md` - CMake 3.20+, modern target-based approach
+- `cpp/cmake.md` - CMake 3.24+, modern target-based approach
 - `cpp/cuda.md` - CUDA 11.0+, memory management, error checking
 - `cpp/memory-safety.md` - RAII (mandatory), smart pointers, ownership
 - `cpp/static-analysis.md` - clang-tidy, cppcheck
@@ -224,8 +224,8 @@ For detailed requirements, see `.ai/constraints/cpp/` and run `/init`.
 - **Compute Capability**: 7.0+ (Volta and newer)
 
 ### Build System
-- **CMake**: 3.20+ (minimum), 3.25+ (recommended)
-- **Dependency Management**: Conan (primary), vcpkg (alternative)
+- **CMake**: 3.24+ (minimum), 3.25+ (recommended)
+- **Dependency Management**: CPM first through CMake; external SDKs via `find_package`
 - **Build Type**: Debug for development, Release for production
 
 ### Code Quality Tools

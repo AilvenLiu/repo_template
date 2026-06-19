@@ -9,7 +9,7 @@ Automates Bazel build workflows for hybrid Python/C++/CUDA projects.
 ## Execution
 
 ```bash
-bin/agent-bazel <build|test|run|clean|query>
+.ai/bin/agent-bazel <build|test|run|clean|query>
 ```
 
 ## Subcommands
@@ -39,7 +39,7 @@ bin/agent-bazel <build|test|run|clean|query>
 The `build` subcommand is fully implemented:
 
 ```bash
-bin/agent-bazel build [--config=<config>] [targets...]
+.ai/bin/agent-bazel build [--config=<config>] [targets...]
 ```
 
 ### Default Behaviour
@@ -63,19 +63,19 @@ Common configurations via `--config` flag:
 
 ```bash
 # Build all targets
-bin/agent-bazel build
+.ai/bin/agent-bazel build
 
 # Build specific target
-bin/agent-bazel build //src/kernels:flash_attention
+.ai/bin/agent-bazel build //src/kernels:flash_attention
 
 # Build with CUDA configuration
-bin/agent-bazel build --config=cuda //src/kernels:all
+.ai/bin/agent-bazel build --config=cuda //src/kernels:all
 
 # Build optimized release
-bin/agent-bazel build --config=opt //...
+.ai/bin/agent-bazel build --config=opt //...
 
 # Build with multiple configs
-bin/agent-bazel build --config=cuda --config=opt //src:all
+.ai/bin/agent-bazel build --config=cuda --config=opt //src:all
 ```
 
 ### CUDA Integration
@@ -98,7 +98,7 @@ When building CUDA targets, the wrapper:
 ## Test Subcommand
 
 ```bash
-bin/agent-bazel test [--config=<config>] [targets...]
+.ai/bin/agent-bazel test [--config=<config>] [targets...]
 ```
 
 Default behaviour: runs `bazel test //...` when no targets are specified.
@@ -106,7 +106,7 @@ Default behaviour: runs `bazel test //...` when no targets are specified.
 ## Run Subcommand
 
 ```bash
-bin/agent-bazel run [--config=<config>] <target> [-- <args>...]
+.ai/bin/agent-bazel run [--config=<config>] <target> [-- <args>...]
 ```
 
 Default behaviour: requires an explicit runnable target and forwards all args.
@@ -114,7 +114,7 @@ Default behaviour: requires an explicit runnable target and forwards all args.
 ## Clean Subcommand
 
 ```bash
-bin/agent-bazel clean [--expunge]
+.ai/bin/agent-bazel clean [--expunge]
 ```
 
 Default behaviour: forwards directly to `bazel clean`.
@@ -122,7 +122,7 @@ Default behaviour: forwards directly to `bazel clean`.
 ## Query Subcommand
 
 ```bash
-bin/agent-bazel query <query-expression>
+.ai/bin/agent-bazel query <query-expression>
 ```
 
 Default behaviour: requires an explicit query expression and forwards it.
@@ -147,13 +147,13 @@ The generic `/build` skill delegates to `/bazel` when `build_system=bazel`.
 
 ### With /pre-commit
 
-Pre-commit hooks can invoke `bin/agent-bazel build` for validation.
+Pre-commit hooks can invoke `.ai/bin/agent-bazel build` for validation.
 
 ## Bazel Version Requirements
 
 - Minimum Bazel version: 6.0.0
-- Recommended: Bazel 7.0.0+ for improved CUDA support
-- Bazelisk recommended for version management
+- Bazel 7.0.0+ improves CUDA support for Bazel-first projects
+- Bazelisk can manage per-project Bazel versions
 
 ## Common Pitfalls
 
@@ -165,7 +165,7 @@ Pre-commit hooks can invoke `bin/agent-bazel build` for validation.
 
 ```bash
 export CUDA_HOME=/usr/local/cuda
-bin/agent-bazel build --config=cuda
+.ai/bin/agent-bazel build --config=cuda
 ```
 
 ### Incompatible CUDA Architecture
@@ -176,7 +176,7 @@ bin/agent-bazel build --config=cuda
 
 ```bash
 export TORCH_CUDA_ARCH_LIST="8.0;8.6;8.9;9.0"
-bin/agent-bazel build --config=cuda
+.ai/bin/agent-bazel build --config=cuda
 ```
 
 ### Remote Cache Misconfiguration

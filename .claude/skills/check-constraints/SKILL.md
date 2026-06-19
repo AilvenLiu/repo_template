@@ -11,7 +11,7 @@ does not require running the full test suite.
 ## Execution
 
 ```bash
-bin/agent-check-constraints
+.ai/bin/agent-check-constraints
 ```
 
 Exit `0` = no critical violations. Exit `1` = violations found.

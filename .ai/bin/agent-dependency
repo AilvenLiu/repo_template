@@ -7,7 +7,7 @@ source "$SCRIPT_DIR/_agent_common.sh"
 REPO_ROOT="$(agent_repo_root)"
 
 if [[ $# -lt 1 ]]; then
-  echo "Usage: bin/agent-dependency add <package> [version] [--dev]" >&2
+  echo "Usage: .ai/bin/agent-dependency add <package> [version] [--dev]" >&2
   exit 1
 fi
 

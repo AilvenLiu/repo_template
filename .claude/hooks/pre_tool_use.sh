@@ -52,9 +52,10 @@ print(d.get('tool_input', {}).get('command', ''))
 
             # ALLOWLIST: Only permit the canonical session-init wrapper.
             # Allowed forms:
-            #   bin/agent-init
-            #   bin/agent-init --platform claude
-            #   bin/agent-init --platform codex
+            #   .ai/bin/agent-init
+            #   .ai/bin/agent-init --platform claude
+            #   .ai/bin/agent-init --platform codex
+            #   .ai/bin/agent-init --verbose
             #
             # First, reject any command containing shell metacharacters that could
             # be used for command chaining, injection, or redirection.
@@ -65,7 +66,7 @@ print(d.get('tool_input', {}).get('command', ''))
             fi
 
             # Validate against exact allowed pattern (entire command must match)
-            if echo "$COMMAND" | grep -qE '^\s*bin/agent-init(\s+--platform\s+(claude|codex))?\s*$'; then
+            if echo "$COMMAND" | grep -qE '^\s*\.ai/bin/agent-init(\s+--platform\s+(claude|codex))?(\s+--verbose)?\s*$'; then
                 exit 0
             fi
 

@@ -2,13 +2,13 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 source "$SCRIPT_DIR/_agent_common.sh"
+REPO_ROOT="$(agent_repo_root)"
 
 usage() {
   cat <<'EOF'
-Usage: bin/agent-build <setup|compile|test|full|doctor|clean>
+Usage: .ai/bin/agent-build <setup|compile|test|full|doctor|clean>
 EOF
 }
 
@@ -75,18 +75,15 @@ poetry_doctor() {
     echo "No Poetry project detected. Python environment doctor is limited."
   fi
 
-  echo "Run 'bin/agent-python-env-setup diagnose' for deeper environment checks."
+  echo "Run '.ai/bin/agent-python-env-setup diagnose' for deeper environment checks."
 }
 
 cmake_setup() {
-  if [[ -f "$REPO_ROOT/conanfile.txt" || -f "$REPO_ROOT/conanfile.py" ]]; then
-    (cd "$REPO_ROOT" && conan install . --build=missing -of build)
-  fi
-  (cd "$REPO_ROOT" && cmake -S . -B build)
+  (cd "$REPO_ROOT" && cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo)
 }
 
 cmake_compile() {
-  (cd "$REPO_ROOT" && cmake --build build)
+  (cd "$REPO_ROOT" && cmake --build build -j)
 }
 
 cmake_test() {
@@ -95,13 +92,15 @@ cmake_test() {
 
 cmake_doctor() {
   (cd "$REPO_ROOT" && cmake --version)
-  if command -v conan >/dev/null 2>&1; then
-    conan --version
+  if command -v ninja >/dev/null 2>&1; then
+    ninja --version
+  else
+    echo "ninja not found"
   fi
   if [[ -d "$REPO_ROOT/build" ]]; then
     echo "Build directory present: $REPO_ROOT/build"
   else
-    echo "Build directory missing. Run 'bin/agent-build setup' first."
+    echo "Build directory missing. Run '.ai/bin/agent-build setup' first."
   fi
 }
 
@@ -116,18 +115,19 @@ scikit_build_setup() {
     exit 1
   fi
 
-  # Install in editable mode with scikit-build-core
-  (cd "$REPO_ROOT" && pip install -e . --no-build-isolation)
+  (cd "$REPO_ROOT" && cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DPROJECT_ENABLE_PYTHON=ON)
+  (cd "$REPO_ROOT" && cmake --build build -j)
+  (cd "$REPO_ROOT" && poetry run pip install -e . --no-build-isolation)
 }
 
 scikit_build_compile() {
-  echo "scikit-build-core handles compilation during pip install."
-  echo "Run 'bin/agent-build setup' to trigger a rebuild."
+  (cd "$REPO_ROOT" && cmake --build build -j)
 }
 
 scikit_build_test() {
   if [[ -f "$REPO_ROOT/pyproject.toml" ]]; then
-    (cd "$REPO_ROOT" && python -m pytest)
+    (cd "$REPO_ROOT" && ctest --test-dir build --output-on-failure)
+    (cd "$REPO_ROOT" && poetry run pytest tests/python)
     return
   fi
 
@@ -137,9 +137,15 @@ scikit_build_test() {
 
 scikit_build_doctor() {
   echo "=== scikit-build-core Environment ==="
-  python --version
-  pip show scikit-build-core 2>/dev/null || echo "scikit-build-core not installed"
-  pip show nanobind 2>/dev/null || echo "nanobind not installed"
+  if [[ ! -f "$REPO_ROOT/pyproject.toml" ]]; then
+    echo "No pyproject.toml found. Python packaging doctor is limited."
+  elif command -v poetry >/dev/null 2>&1; then
+    poetry run python --version || echo "Poetry Python environment not ready"
+    poetry run pip show scikit-build-core 2>/dev/null || echo "scikit-build-core not installed"
+    poetry run pip show pybind11 2>/dev/null || echo "pybind11 not installed"
+  else
+    echo "poetry not found"
+  fi
 
   if command -v cmake >/dev/null 2>&1; then
     cmake --version | head -1
@@ -196,7 +202,7 @@ bazel_clean() {
 
 mixed_stub() {
   cat >&2 <<'EOF'
-Mixed build system support is not implemented in this template yet.
+Mixed build system support is not yet implemented in this template.
 
 For now, you can:
 - Use Poetry for pure Python projects

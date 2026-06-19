@@ -96,42 +96,42 @@ For details, see `.ai/adr/0001-project-profile.md`.
 - Poetry MUST be installed via pipx at `~/.local/bin/poetry`
 - `poetry.toml` MUST exist in the project with `in-project = true`
 - `pyproject.toml` MUST configure TUNA as primary PyPI source (`priority = "primary"`)
-- Agent infrastructure commands (`bin/agent-*`, `.ai/scripts/*`) are exempt when using controlled wrappers
+- Agent infrastructure commands (`.ai/bin/agent-*`, `.ai/scripts/*`) are exempt when using controlled wrappers
 - NEVER commit without running `/pre-commit validate` first
 - NEVER hardcode secrets, credentials, or API keys
 - NEVER use bare `except:`, mutable default arguments, or `eval()`/`exec()`
 
 ## Required Workflow Commands
 
-These `bin/agent-*` commands are the canonical tool interface. Use them
+These `.ai/bin/agent-*` commands are the canonical tool interface. Use them
 directly whenever performing the corresponding workflow step:
 
-- Init: `bin/agent-init --platform claude`
-- Build orchestration: `bin/agent-build <setup|compile|test|full|doctor|clean>`
-- Constraint check: `bin/agent-check-constraints`
-- Pre-commit validation: `bin/agent-precommit`
-- Dependency add: `bin/agent-dependency add <package> [version] [--dev]`
-- Python env recovery: `bin/agent-python-env-setup <diagnose|fix|verify>`
-- Roadmap workflow: `bin/agent-roadmap <check|create|status|update|handoff|complete|validate>`
-- Commit with policy guard: `bin/agent-commit -m "type(scope): description" <file1> [file2 ...]`
+- Init: `.ai/bin/agent-init --platform claude`
+- Build orchestration: `.ai/bin/agent-build <setup|compile|test|full|doctor|clean>`
+- Constraint check: `.ai/bin/agent-check-constraints`
+- Pre-commit validation: `.ai/bin/agent-precommit`
+- Dependency add: `.ai/bin/agent-dependency add <package> [version] [--dev]`
+- Python env recovery: `.ai/bin/agent-python-env-setup <diagnose|fix|verify>`
+- Roadmap workflow: `.ai/bin/agent-roadmap <check|create|status|update|handoff|complete|validate>`
+- Commit with policy guard: `.ai/bin/agent-commit -m "type(scope): description" <file1> [file2 ...]`
 
 ## Claude Code Skill Mappings
 
-Skills are convenience wrappers around `bin/agent-*` commands.
+Skills are convenience wrappers around `.ai/bin/agent-*` commands.
 When a slash command is unavailable or you need finer control, call the
-`bin/agent-*` command directly.
+`.ai/bin/agent-*` command directly.
 
 | Procedure | Skill | Underlying command |
 |-----------|-------|--------------------|
-| Session init | `/init` | `bin/agent-init --platform claude` |
-| Build orchestration | `/build <cmd>` | `bin/agent-build <setup|compile|test|full|doctor|clean>` |
-| Pre-commit | `/pre-commit validate` | `bin/agent-precommit` |
-| Add dependency | `/dependency add <pkg> [ver] [--dev]` | `bin/agent-dependency add <pkg> [ver] [--dev]` |
-| Check constraints | `/check-constraints` | `bin/agent-check-constraints` |
-| Commit | *(use command directly)* | `bin/agent-commit -m "msg" <files...>` |
-| Roadmap management | `/roadmap <cmd>` | `bin/agent-roadmap <check|create|status|update|handoff|complete|validate>` |
+| Session init | `/init` | `.ai/bin/agent-init --platform claude` |
+| Build orchestration | `/build <cmd>` | `.ai/bin/agent-build <setup|compile|test|full|doctor|clean>` |
+| Pre-commit | `/pre-commit validate` | `.ai/bin/agent-precommit` |
+| Add dependency | `/dependency add <pkg> [ver] [--dev]` | `.ai/bin/agent-dependency add <pkg> [ver] [--dev]` |
+| Check constraints | `/check-constraints` | `.ai/bin/agent-check-constraints` |
+| Commit | *(use command directly)* | `.ai/bin/agent-commit -m "msg" <files...>` |
+| Roadmap management | `/roadmap <cmd>` | `.ai/bin/agent-roadmap <check|create|status|update|handoff|complete|validate>` |
 | Doc lookup | `/context7` | — |
-| Python env fix | `/python-env-setup` | `bin/agent-python-env-setup <diagnose|fix|verify>` |
+| Python env fix | `/python-env-setup` | `.ai/bin/agent-python-env-setup <diagnose|fix|verify>` |
 
 ## Vendor-Neutral Constraints
 

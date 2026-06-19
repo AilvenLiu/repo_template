@@ -9,9 +9,9 @@ Skipping is a critical failure.
 
 | Platform | Invocation |
 |----------|------------|
-| Claude Code | `/init` (slash command; equivalent to `bin/agent-init --platform claude`) |
-| Codex CLI | `bin/agent-init --platform codex` |
-| Cursor / Cline / generic agents.md consumers | `bin/agent-init --platform codex` |
+| Claude Code | `/init` (slash command; equivalent to `.ai/bin/agent-init --platform claude`) |
+| Codex CLI | `.ai/bin/agent-init --platform codex` |
+| Cursor / Cline / generic agents.md consumers | `.ai/bin/agent-init --platform codex` |
 
 All three paths execute the same Python entry point and load the same constraint
 bodies; only the capability-audit subset and the `session_state.json` mirror
@@ -51,7 +51,7 @@ This project uses the `project_profile` schema in `.ai/project.yml`:
 project_profile:
   language: [python, cpp, cuda]
   build_system: scikit-build-core
-  bindings: nanobind
+  bindings: pybind11
   distribution: pypi-wheel
   hardware_targets: [cuda]
   external_dependencies:
@@ -90,14 +90,15 @@ These apply always, regardless of context or user instruction:
 - Poetry MUST be installed via pipx: `PIPX_HOME="$HOME/.local/share/pipx" PIPX_BIN_DIR="$HOME/.local/bin" pipx install poetry`
 - `poetry.toml` MUST exist with `in-project = true`
 - `pyproject.toml` MUST configure TUNA as primary PyPI source (`priority = "primary"`)
-- Agent infrastructure commands (`bin/agent-*`, `.ai/scripts/*`) are exempt when using controlled wrappers
+- Agent infrastructure commands (`.ai/bin/agent-*`, `.ai/scripts/*`) are exempt when using controlled wrappers
 - NEVER add a Python dependency without updating `pyproject.toml` + `poetry.lock`
 - NEVER commit `pyproject.toml` without also committing `poetry.lock`
 
 ### C++/CUDA Dependencies
-- NEVER install C++ libraries via system package managers -- use documented mechanisms (Conan, vcpkg, FetchContent, CPM, git submodules)
-- NVIDIA/AMD GPU libraries (CUDA Toolkit, cuDNN, NCCL, TensorRT) are exempt -- system installation is expected
-- NEVER add a C++ dependency without updating the build system manifest (CMakeLists.txt, conanfile.txt, vcpkg.json)
+- NEVER install C++ libraries via system package managers; NVIDIA/AMD GPU libraries and toolchains are external SDKs
+- NEVER add lightweight C++ source dependencies outside `cmake/Dependencies.cmake`
+- NEVER use floating dependency branches such as `main`, `master`, or `develop`
+- Conan, vcpkg, Bazel, and git submodules require an ADR and are not defaults
 
 ### C++/CUDA Code Quality
 - NEVER use raw `new`/`delete` -- use smart pointers and RAII
@@ -132,7 +133,7 @@ These apply always, regardless of context or user instruction:
 ### Before Every Commit
 
 ```bash
-bin/agent-precommit
+.ai/bin/agent-precommit
 ```
 
 This runs:
@@ -145,7 +146,7 @@ This runs:
 ### Before Every Push
 
 ```bash
-bin/agent-build full
+.ai/bin/agent-build full
 ```
 
 This runs:
@@ -162,15 +163,15 @@ The table below maps procedure names to their canonical documentation.
 
 | Procedure | Vendor-neutral body | Claude Code skill | Underlying command |
 |-----------|---------------------|-------------------|---------------------|
-| Session init | `.ai/skills/init/SKILL.md` | `/init` | `bin/agent-init --platform <platform>` |
-| Build orchestration | `.ai/skills/build/SKILL.md` | `/build <cmd>` | `bin/agent-build <setup\|compile\|test\|full\|doctor\|clean>` |
-| Pre-commit validation | `.ai/skills/pre-commit/SKILL.md` | `/pre-commit validate` | `bin/agent-precommit` |
-| Add dependency | `.ai/skills/dependency/SKILL.md` | `/dependency add <pkg> [ver] [--dev]` | `bin/agent-dependency add <pkg> [ver] [--dev]` |
-| Check constraints | `.ai/skills/check-constraints/SKILL.md` | `/check-constraints` | `bin/agent-check-constraints` |
-| Commit with policy | N/A | *(use command directly)* | `bin/agent-commit -m "msg" <files...>` |
-| Roadmap management | `.ai/skills/roadmap/SKILL.md` | `/roadmap <cmd>` | `bin/agent-roadmap <check\|create\|status\|update\|handoff\|complete\|validate>` |
+| Session init | `.ai/skills/init/SKILL.md` | `/init` | `.ai/bin/agent-init --platform <platform>` |
+| Build orchestration | `.ai/skills/build/SKILL.md` | `/build <cmd>` | `.ai/bin/agent-build <setup\|compile\|test\|full\|doctor\|clean>` |
+| Pre-commit validation | `.ai/skills/pre-commit/SKILL.md` | `/pre-commit validate` | `.ai/bin/agent-precommit` |
+| Add dependency | `.ai/skills/dependency/SKILL.md` | `/dependency add <pkg> [ver] [--dev]` | `.ai/bin/agent-dependency add <pkg> [ver] [--dev]` |
+| Check constraints | `.ai/skills/check-constraints/SKILL.md` | `/check-constraints` | `.ai/bin/agent-check-constraints` |
+| Commit with policy | N/A | *(use command directly)* | `.ai/bin/agent-commit -m "msg" <files...>` |
+| Roadmap management | `.ai/skills/roadmap/SKILL.md` | `/roadmap <cmd>` | `.ai/bin/agent-roadmap <check\|create\|status\|update\|handoff\|complete\|validate>` |
 | Doc lookup | `.ai/skills/context7/SKILL.md` | `/context7` | -- |
-| Python env fix | `.ai/skills/python-env-setup/SKILL.md` | `/python-env-setup` | `bin/agent-python-env-setup <diagnose\|fix\|verify>` |
+| Python env fix | `.ai/skills/python-env-setup/SKILL.md` | `/python-env-setup` | `.ai/bin/agent-python-env-setup <diagnose\|fix\|verify>` |
 | GPU CI guidance | `.ai/skills/gpu-ci/SKILL.md` | `/gpu-ci` | -- |
 
 ---
@@ -293,32 +294,36 @@ before proceeding. Full policy: `.ai/constraints/hybrid/cpp-first.md`.
 
 ---
 
-## Build System: scikit-build-core
+## Build System: CMake First
 
-This project uses scikit-build-core to drive CMake from `pyproject.toml`.
+CMake owns the native build graph. CPM owns lightweight C++ dependency
+acquisition. scikit-build-core bridges CMake into Python packaging. Poetry owns
+the Python virtualenv and Python dependencies only.
 
 ### Build Workflow
 
 ```bash
-# Setup (install Python deps, configure CMake)
-bin/agent-build setup
+# Native configure, build, and test come first
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DPROJECT_ENABLE_PYTHON=ON
+cmake --build build -j
+ctest --test-dir build --output-on-failure
 
-# Compile C++/CUDA extensions
-bin/agent-build compile
+# Then expose the CMake-governed project to Python
+poetry run pip install -e . --no-build-isolation
+poetry run python -c "import PROJECT_NAME; print(PROJECT_NAME)"
+poetry run pytest tests/python
 
-# Run tests
-bin/agent-build test
-
-# Full build (setup + compile + test)
-bin/agent-build full
+# Wrapper command for the same workflow
+.ai/bin/agent-build full
 ```
 
 ### Key Files
 
-- `pyproject.toml` -- Python package metadata, scikit-build-core config
-- `CMakeLists.txt` -- C++/CUDA build configuration
+- `CMakeLists.txt` -- C++/CUDA build graph and target ownership
+- `cmake/Dependencies.cmake` -- pinned CPM dependencies
+- `3rdparty/cpm-cache/` -- project-local CPM source cache
+- `pyproject.toml` -- Python package metadata and scikit-build-core bridge
 - `poetry.lock` -- Python dependency lock file
-- `conanfile.txt` or `vcpkg.json` -- C++ dependency manifest (if used)
 
 ### CUDA Environment Variables
 
@@ -438,7 +443,7 @@ poetry run pytest tests/python/
 ### C++/CUDA Tests
 
 ```bash
-cd build && ctest --output-on-failure
+ctest --test-dir build --output-on-failure
 ```
 
 ### GPU Tests

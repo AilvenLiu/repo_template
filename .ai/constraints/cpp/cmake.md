@@ -6,13 +6,13 @@
 ## 1. CMake Version Requirements
 
 ### 1.1 Version Standards
-- **Minimum Version**: CMake 3.20 (required for cross-compilation and CUDA support)
+- **Minimum Version**: CMake 3.24 (required for template CMake/CPM workflows)
 - **Preferred Version**: CMake 3.25+ (for improved CUDA cross-compilation)
 - **Rationale**: Modern CMake features, better CUDA support, improved toolchain handling
 
 ### 1.2 Version Declaration
 ```cmake
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.24)
 # Or for newer features
 cmake_minimum_required(VERSION 3.25)
 ```
@@ -21,7 +21,7 @@ cmake_minimum_required(VERSION 3.25)
 
 ### 2.1 Project Declaration
 ```cmake
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.24)
 project(ProjectName VERSION 1.0.0 LANGUAGES CXX CUDA)
 ```
 
@@ -82,8 +82,8 @@ target_compile_options(mylib PRIVATE
 
 # Mark third-party headers as SYSTEM to suppress their warnings
 target_include_directories(mylib SYSTEM PRIVATE
-    ${CMAKE_SOURCE_DIR}/third_party/cutlass/include
-    ${CMAKE_SOURCE_DIR}/third_party/thrust
+    ${CMAKE_SOURCE_DIR}/3rdparty/vendor/cutlass/include
+    ${CMAKE_SOURCE_DIR}/3rdparty/vendor/thrust
 )
 ```
 
@@ -192,151 +192,78 @@ target_compile_options(mylib PRIVATE
 
 ## 6. Dependency Management
 
-### 6.1 Dependency Management Priority
+### 6.1 CMake Owns the Native Build Graph
 
-**CRITICAL: NEVER install libraries system-wide (apt/yum/brew)**
+CMake is the source of truth for all native build behaviour. It must define
+C++/CUDA targets, pybind11/nanobind modules, compiler features, compile and
+link options, CUDA architectures, native tests, benchmarks, install rules, and
+export rules.
 
-System-wide installation breaks reproducibility, cross-platform compatibility, and version control. Always use a package manager.
+Python packaging tools must not replace this graph. For hybrid projects,
+scikit-build-core only bridges Python packaging into CMake.
 
-**Preferred Methods** (in priority order):
+### 6.2 CPM First for C++ Source Dependencies
 
-1. **Conan** (STRONGLY RECOMMENDED - use this by default)
-   - **This is the mandatory first choice for all C++/CUDA projects**
-   - Best for complex dependency graphs
-   - Excellent cross-platform support (Linux, Windows, macOS, embedded)
-   - Superior version pinning and conflict resolution
-   - Active community and extensive package repository
-   - Use `conanfile.txt` or `conanfile.py`
-   - **Only consider alternatives if Conan genuinely cannot meet your needs**
+Include dependencies explicitly from the root project:
 
-2. **vcpkg** (alternative - only if Conan is unsuitable)
-   - Microsoft-maintained package manager
-   - Good Windows support
-   - Use `vcpkg.json` manifest mode
-   - **Use only if**: Package not available in Conan, or Windows-specific requirements
-
-3. `FetchContent` - Only for header-only or small libraries
-   - Downloads source at configure time
-   - Good for libraries without complex dependencies
-   - Example: nlohmann/json, spdlog
-
-4. Git submodules - Only for vendored dependencies
-   - When you need to track specific commits
-   - For libraries you may need to modify
-   - Requires manual updates
-
-5. `find_package()` - Only AFTER package manager installation
-   - Used to locate dependencies installed by Conan/vcpkg
-   - NOT a method to find system-installed libraries
-   - Always specify version requirements
-
-**Important**: `find_package()` should only be used to locate dependencies that were installed via Conan, vcpkg, or FetchContent. It is NOT a method to use system-installed libraries.
-
-### 6.2 Using find_package()
 ```cmake
-# Find packages (installed via Conan/vcpkg/FetchContent)
-find_package(CUDAToolkit REQUIRED)
-find_package(Eigen3 REQUIRED)
-find_package(OpenCV REQUIRED)
+include(cmake/Options.cmake)
+include(cmake/CPM.cmake)
+include(cmake/Dependencies.cmake)
+```
 
-# Link to targets
+`cmake/Dependencies.cmake` must set the project-local CPM source cache and
+declare pinned `CPMAddPackage` entries:
+
+```cmake
+set(CPM_SOURCE_CACHE
+    "${CMAKE_SOURCE_DIR}/3rdparty/cpm-cache"
+    CACHE PATH "CPM source cache")
+
+CPMAddPackage(
+  NAME fmt
+  GITHUB_REPOSITORY fmtlib/fmt
+  GIT_TAG 10.2.1
+)
+```
+
+Conan, vcpkg, Bazel, and git submodules are exceptional choices that require an
+ADR. FetchContent should not be introduced as a parallel default when CPM is
+available.
+
+### 6.3 System and SDK Dependencies
+
+Use `find_package` or documented cache variables for binary/system dependencies:
+
+```cmake
+find_package(CUDAToolkit REQUIRED)
+
 target_link_libraries(mylib PUBLIC
     CUDA::cudart
-    Eigen3::Eigen
-    opencv_core
 )
 ```
 
-### 6.3 Using FetchContent
-```cmake
-include(FetchContent)
+This applies to CUDA Toolkit, cuDNN, NCCL, TensorRT, OpenMPI/HPC modules,
+proprietary SDKs, compiler toolchains, system drivers, and platform runtime
+libraries.
 
-# Fetch header-only library
-FetchContent_Declare(
-    json
-    GIT_REPOSITORY https://github.com/nlohmann/json.git
-    GIT_TAG v3.11.2
-)
-FetchContent_MakeAvailable(json)
+### 6.4 Version Pinning
 
-# Link to target
-target_link_libraries(mylib PRIVATE nlohmann_json::nlohmann_json)
-```
-
-### 6.4 Conan Integration (Primary)
-```cmake
-# Include Conan-generated files
-include(${CMAKE_BINARY_DIR}/conan_toolchain.cmake)
-
-# Find packages installed by Conan
-find_package(Boost REQUIRED)
-find_package(Eigen3 REQUIRED)
-
-# Link to targets
-target_link_libraries(mylib PUBLIC
-    Boost::boost
-    Eigen3::Eigen
-)
-```
-
-Corresponding `conanfile.txt`:
-```ini
-[requires]
-boost/1.82.0
-eigen/3.4.0
-opencv/4.5.0
-
-[generators]
-CMakeDeps
-CMakeToolchain
-
-[options]
-opencv:shared=True
-```
-
-### 6.5 Version Pinning
-**Always specify version requirements**:
-```cmake
-find_package(Eigen3 3.4 REQUIRED)
-find_package(OpenCV 4.5 REQUIRED)
-```
+Every CPM dependency must be pinned by immutable tag, commit SHA, or archive
+hash. Floating branches such as `main`, `master`, and `develop` are forbidden.
 
 ## 7. Complete CMakeLists.txt Example
 
 ### 7.1 Root CMakeLists.txt
 ```cmake
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.24)
 project(ProjectName VERSION 1.0.0 LANGUAGES CXX CUDA)
 
-# C++ standard
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
+include(cmake/Options.cmake)
+include(cmake/CPM.cmake)
+include(cmake/Dependencies.cmake)
 
-# CUDA standard and architectures
-set(CMAKE_CUDA_STANDARD 17)
-set(CMAKE_CUDA_STANDARD_REQUIRED ON)
-set(CMAKE_CUDA_ARCHITECTURES native)  # Auto-detect (or specify: 70 75 80 86 87 89 90 100)
-
-# Compiler warnings
-if(MSVC)
-    add_compile_options(/W4)
-else()
-    add_compile_options(-Wall -Wextra -Wpedantic)
-endif()
-
-# Apply -Werror per-target for first-party code
-target_compile_options(mylib PRIVATE -Werror)
-target_compile_options(myapp PRIVATE -Werror)
-
-# Build type
-if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE Release)
-endif()
-
-# Dependencies
 find_package(CUDAToolkit REQUIRED)
-find_package(Eigen3 REQUIRED)
 
 # Library target
 add_library(mylib
@@ -353,7 +280,6 @@ target_include_directories(mylib PUBLIC
 
 target_link_libraries(mylib PUBLIC
     CUDA::cudart
-    Eigen3::Eigen
 )
 
 # Executable target
@@ -484,9 +410,8 @@ install(FILES
 **Always use out-of-source builds**:
 ```bash
 # Good
-mkdir build && cd build
-cmake ..
-cmake --build .
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo
+cmake --build build -j
 
 # Bad - in-source build
 cmake .
@@ -495,14 +420,9 @@ make
 
 ### 10.2 Build Commands
 ```bash
-# Configure
-cmake -B build -DCMAKE_BUILD_TYPE=Release
-
-# Build
-cmake --build build -j$(nproc)
-
-# Test
-cd build && ctest --output-on-failure
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo
+cmake --build build -j
+ctest --test-dir build --output-on-failure
 
 # Install
 cmake --install build --prefix /usr/local
@@ -555,7 +475,7 @@ When adding ANY dependency, the agent MUST:
 ## Dependencies
 
 ### Build Requirements
-- CMake 3.20 or later
+- CMake 3.24 or later
 - C++17 compatible compiler (GCC 9.0+, Clang 10.0+, MSVC 2019+)
 - CUDA Toolkit 11.0+ (for CUDA features)
 
@@ -579,19 +499,9 @@ Before EVERY commit operation, the agent MUST:
 
 ### 13.2 Build Verification
 ```bash
-# Clean build
-rm -rf build
-mkdir build && cd build
-
-# Configure with strict warnings for first-party code
-cmake .. -DCMAKE_BUILD_TYPE=Debug \
-         -DCMAKE_CXX_FLAGS="-Wall -Wextra -Wpedantic"
-
-# Build (per-target -Werror is set in CMakeLists.txt)
-cmake --build .
-
-# Test
-ctest --output-on-failure
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo
+cmake --build build -j
+ctest --test-dir build --output-on-failure
 ```
 
 **Note**: Global `-Werror` is not recommended as it breaks builds when third-party

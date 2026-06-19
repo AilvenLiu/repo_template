@@ -38,7 +38,9 @@ class ConstraintViolation:
         )
 
 
-def check_python_dependency_constraints(profile: ProjectProfile | None = None) -> List[ConstraintViolation]:
+def check_python_dependency_constraints(
+    profile: ProjectProfile | None = None,
+) -> List[ConstraintViolation]:
     """Check Python dependency management constraints."""
     violations = []
     pyproject_exists = os.path.exists('pyproject.toml')
@@ -56,7 +58,10 @@ def check_python_dependency_constraints(profile: ProjectProfile | None = None) -
             severity='CRITICAL',
             message='No managed Python environment detected',
             detail='System Python usage is FORBIDDEN',
-            remediation='Run: poetry install, pip install -e ., or create .venv'
+            remediation=(
+                "Run: poetry install, poetry run pip install -e . "
+                "--no-build-isolation, or create .venv"
+            )
         ))
 
     # Check 2: Poetry lock file exists if pyproject.toml exists

@@ -314,7 +314,7 @@ All PRs MUST pass CI checks:
 ### 10.2 Example CI Test Configuration
 ```yaml
 - name: Test
-  run: cd build && ctest --output-on-failure
+  run: ctest --test-dir build --output-on-failure
 
 - name: Coverage
   run: |

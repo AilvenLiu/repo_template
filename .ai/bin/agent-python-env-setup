@@ -2,13 +2,13 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 source "$SCRIPT_DIR/_agent_common.sh"
+REPO_ROOT="$(agent_repo_root)"
 
 usage() {
   cat <<'EOF'
-Usage: bin/agent-python-env-setup <diagnose|fix|verify> [extra args]
+Usage: .ai/bin/agent-python-env-setup <diagnose|fix|verify> [extra args]
 EOF
 }
 

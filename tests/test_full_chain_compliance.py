@@ -3,11 +3,11 @@
 
 For each (platform, project_type) combination this suite exercises:
   - skill-presence parity vs the canonical capability manifest
-  - bin/agent-* wrapper presence + executability
+  - .ai/bin/agent-* wrapper presence + executability
   - constraint hit rate during /init (printed-body coverage)
   - full roadmap lifecycle (create -> set-focus -> complete-task -> handoff -> complete)
   - structural validator (positive + negative cases)
-  - protected-branch detection by bin/agent-check-constraints
+  - protected-branch detection by .ai/bin/agent-check-constraints
 
 Hit-rate thresholds (computed against the manifest, not hardcoded counts) are
 asserted so future drift between manifest and template is caught immediately.
@@ -85,7 +85,7 @@ def _make_project(tmp_path: Path, project_type: str) -> Path:
 
 
 def _init(project_root: Path, platform: str) -> subprocess.CompletedProcess:
-    return _run(["bash", "bin/agent-init", "--platform", platform], project_root)
+    return _run(["bash", ".ai/bin/agent-init", "--platform", platform], project_root)
 
 
 def _manifest() -> dict:
@@ -206,7 +206,7 @@ def test_all_required_wrappers_present_and_executable(
     manifest = _manifest()
     expected = _expected_wrappers(manifest, project)
 
-    bin_dir = project / "bin"
+    bin_dir = project / ".ai" / "bin"
     found = {
         p.name for p in bin_dir.iterdir() if p.is_file() and p.name.startswith("agent-")
     }
@@ -335,7 +335,7 @@ def test_full_roadmap_lifecycle(
     create = _run(
         [
             "bash",
-            "bin/agent-roadmap",
+            ".ai/bin/agent-roadmap",
             "create",
             "lifecycle",
             "--steps",
@@ -354,25 +354,25 @@ def test_full_roadmap_lifecycle(
 
     _run(["git", "checkout", "-b", f"roadmap/{step}", "-q"], project)
 
-    validate = _run(["bash", "bin/agent-roadmap", "validate", step], project)
+    validate = _run(["bash", ".ai/bin/agent-roadmap", "validate", step], project)
     assert validate.returncode == 0, validate.stdout + validate.stderr
 
-    check = _run(["bash", "bin/agent-roadmap", "check"], project)
+    check = _run(["bash", ".ai/bin/agent-roadmap", "check"], project)
     assert check.returncode == 0, check.stdout + check.stderr
 
-    status = _run(["bash", "bin/agent-roadmap", "status"], project)
+    status = _run(["bash", ".ai/bin/agent-roadmap", "status"], project)
     assert status.returncode == 0, status.stdout + status.stderr
     assert step in status.stdout
 
     # Complete the first two tasks; step remains active.
     for _ in range(2):
-        comp = _run(["bash", "bin/agent-roadmap", "update", "complete-task"], project)
+        comp = _run(["bash", ".ai/bin/agent-roadmap", "update", "complete-task"], project)
         assert comp.returncode == 0, comp.stdout + comp.stderr
 
     handoff = _run(
         [
             "bash",
-            "bin/agent-roadmap",
+            ".ai/bin/agent-roadmap",
             "handoff",
             "--non-interactive",
             "--work",
@@ -387,7 +387,7 @@ def test_full_roadmap_lifecycle(
     assert sessions, "handoff did not produce a session file"
 
     # Complete the last task — this auto-marks the step completed.
-    final = _run(["bash", "bin/agent-roadmap", "update", "complete-task"], project)
+    final = _run(["bash", ".ai/bin/agent-roadmap", "update", "complete-task"], project)
     assert final.returncode == 0, final.stdout + final.stderr
 
     assert not step_dir.exists(), (
@@ -412,7 +412,7 @@ def test_validator_flags_each_missing_required_file(
     _run(
         [
             "bash",
-            "bin/agent-roadmap",
+            ".ai/bin/agent-roadmap",
             "create",
             "neg",
             "--steps",
@@ -425,7 +425,7 @@ def test_validator_flags_each_missing_required_file(
     target = project / "agent_roadmaps" / "step-0-core" / missing_file
     target.unlink()
 
-    res = _run(["bash", "bin/agent-roadmap", "validate", "step-0-core"], project)
+    res = _run(["bash", ".ai/bin/agent-roadmap", "validate", "step-0-core"], project)
     assert res.returncode != 0
     assert missing_file in res.stdout
     assert "Missing required step file" in res.stdout or "Step Structure" in res.stdout
@@ -437,7 +437,7 @@ def test_validator_flags_authority_order_strip(tmp_path: Path, victim: str) -> N
     _run(
         [
             "bash",
-            "bin/agent-roadmap",
+            ".ai/bin/agent-roadmap",
             "create",
             "neg",
             "--steps",
@@ -449,7 +449,7 @@ def test_validator_flags_authority_order_strip(tmp_path: Path, victim: str) -> N
     )
     target = project / "agent_roadmaps" / "step-0-core" / victim
     target.write_text("Just plain prose with no authority order anywhere.\n")
-    res = _run(["bash", "bin/agent-roadmap", "validate", "step-0-core"], project)
+    res = _run(["bash", ".ai/bin/agent-roadmap", "validate", "step-0-core"], project)
     assert res.returncode != 0
     assert "Authority Order" in res.stdout
 
@@ -469,7 +469,7 @@ def test_check_constraints_flags_protected_branch(
     r = _run(["git", "checkout", "main", "-q"], project)
     if r.returncode != 0:
         _run(["git", "checkout", "master", "-q"], project)
-    res = _run(["bash", "bin/agent-check-constraints"], project)
+    res = _run(["bash", ".ai/bin/agent-check-constraints"], project)
     assert res.returncode != 0
     assert "protected branch" in (res.stdout + res.stderr).lower()
 
@@ -479,7 +479,7 @@ def test_check_constraints_passes_on_feature_branch(
     tmp_path: Path, project_type: str
 ) -> None:
     project = _make_project(tmp_path, project_type)
-    res = _run(["bash", "bin/agent-check-constraints"], project)
+    res = _run(["bash", ".ai/bin/agent-check-constraints"], project)
     assert res.returncode == 0, res.stdout + res.stderr
 
 

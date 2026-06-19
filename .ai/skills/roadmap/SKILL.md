@@ -12,7 +12,7 @@ project artefacts.
 ## Execution
 
 ```bash
-bin/agent-roadmap <subcommand> [args...]
+.ai/bin/agent-roadmap <subcommand> [args...]
 ```
 
 ## Subcommands

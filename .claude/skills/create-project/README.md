@@ -32,7 +32,7 @@ The script will:
 - `.ai/` directory (constraints and tools)
 - `.claude/` directory (all skills)
 - `agent_roadmaps/` directory
-- `bin/` directory (workflow wrappers)
+- `.ai/bin/` directory (workflow wrappers)
 - `poetry.toml` (Poetry configuration)
 - Python-specific template overlay from `templates/python/`
 
@@ -40,18 +40,20 @@ The script will:
 - `.ai/` directory (constraints and tools)
 - `.claude/` directory (C++-relevant skills only, python-env-setup removed)
 - `agent_roadmaps/` directory
-- `bin/` directory (workflow wrappers, agent-python-env-setup removed)
-- `CMakeLists.txt` (basic template)
-- `conanfile.txt` (Conan configuration)
+- `.ai/bin/` directory (workflow wrappers, agent-python-env-setup removed)
+- `CMakeLists.txt` (CMake-first native build graph)
+- `cmake/` (CPM.cmake, Dependencies.cmake, Options.cmake, Toolchains/)
+- `3rdparty/` (CPM cache root, patches, licences)
 - C++-specific template overlay from `templates/cpp/`
 
 ### For Hybrid Projects
 - `.ai/` directory (constraints and tools)
 - `.claude/` directory (all skills, both Python and C++ needed)
 - `agent_roadmaps/` directory
-- `bin/` directory (all workflow wrappers)
-- `pyproject.toml` (scikit-build-core configuration)
-- `CMakeLists.txt` (hybrid build template with CUDA support)
+- `.ai/bin/` directory (all workflow wrappers)
+- `pyproject.toml` (scikit-build-core bridge to CMake)
+- `CMakeLists.txt` (CMake-first native build graph)
+- `cmake/`, `3rdparty/`, `cpp/`, `cuda/`, `bindings/python/`, `python/myproject/`
 - Hybrid-specific template overlay from `templates/hybrid/`
 
 ## Directory Structure Created
@@ -60,9 +62,9 @@ The script will:
 ```
 project/
 |-- .ai/
+|   `-- bin/
 |-- .claude/
 |-- agent_roadmaps/
-|-- bin/
 |-- src/
 |-- tests/
 |-- CLAUDE.md
@@ -77,18 +79,29 @@ project/
 ```
 project/
 |-- .ai/
+|   `-- bin/
 |-- .claude/
 |-- agent_roadmaps/
-|-- bin/
-|-- src/
-|-- include/
+|-- cmake/
+|   |-- CPM.cmake
+|   |-- Dependencies.cmake
+|   |-- Options.cmake
+|   `-- Toolchains/
+|-- 3rdparty/
+|   `-- cpm-cache/
+|-- cpp/
+|   |-- include/
+|   `-- src/
+|-- cuda/
+|   |-- include/
+|   `-- src/
 |-- tests/
+|-- benchmarks/
 |-- CLAUDE.md
 |-- AGENTS.md
 |-- CONTRIBUTING.md
 |-- .gitignore
 |-- CMakeLists.txt
-|-- conanfile.txt
 `-- README.md
 ```
 
@@ -96,12 +109,25 @@ project/
 ```
 project/
 |-- .ai/
+|   `-- bin/
 |-- .claude/
 |-- agent_roadmaps/
-|-- bin/
-|-- src/
-|-- include/
+|-- cmake/
+|-- 3rdparty/
+|-- cpp/
+|   |-- include/
+|   `-- src/
+|-- cuda/
+|   |-- include/
+|   `-- src/
+|-- bindings/
+|   `-- python/
+|-- python/
+|   `-- myproject/
 |-- tests/
+|   |-- cpp/
+|   `-- python/
+|-- benchmarks/
 |-- CLAUDE.md
 |-- AGENTS.md
 |-- CONTRIBUTING.md
@@ -113,7 +139,7 @@ project/
 
 ## Version
 
-1.1.0 (2026-05-12) - Added hybrid project support
+1.2.0 (2026-06-18) - CMake/CPM-first C++ and hybrid project layout
 
 ## License
 
