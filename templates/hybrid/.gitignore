@@ -55,6 +55,8 @@ ipython_config.py
 cython_debug/
 
 # C++/CUDA Build directories
+!.ai/skills/build/
+!.claude/skills/build/
 build/
 cmake-build-*/
 out/
