@@ -49,6 +49,9 @@ def _assert_common_generated_assets(target: Path, project_type: str) -> None:
     assert (target / ".ai" / "scripts" / "session_init.py").exists()
     # .codex/ has been deleted; codex consumes AGENTS.md + .ai/skills/ instead.
     assert not (target / ".codex").exists()
+    assert not (target / ".ai" / "skills" / "bazel").exists()
+    assert not (target / ".claude" / "skills" / "bazel").exists()
+    assert not (target / ".ai" / "bin" / "agent-bazel").exists()
     # Canonical skill bodies live under .ai/skills/<name>/SKILL.md.
     assert (target / ".ai" / "skills" / "build" / "SKILL.md").exists()
     assert (target / ".ai" / "skills" / "init" / "SKILL.md").exists()

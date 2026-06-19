@@ -5,7 +5,7 @@ description: "Orchestrate build workflows. Environment setup, compilation, and t
 
 # /build
 
-Build orchestration for Python, C++/CUDA, hybrid (scikit-build-core), and Bazel projects.
+Build orchestration for Python, C++/CUDA, and hybrid (scikit-build-core) projects.
 
 ## Execution
 
@@ -30,7 +30,6 @@ Build orchestration for Python, C++/CUDA, hybrid (scikit-build-core), and Bazel 
 2. **Python**: `poetry install --with dev`, then `poetry run pytest`.
 3. **C++**: `cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo`, `cmake --build build -j`, `ctest --test-dir build --output-on-failure`.
 4. **Hybrid** (scikit-build-core): direct CMake configure/build/test first, then `poetry run pip install -e . --no-build-isolation`, then `poetry run pytest tests/python`.
-5. **Bazel**: `bazel build //...`, `bazel test //...` (delegates to `/bazel`).
 
 ## Behaviour (best-effort)
 

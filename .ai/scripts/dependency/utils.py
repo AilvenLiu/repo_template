@@ -40,7 +40,7 @@ class DependencyManager:
         # Map profile to legacy ProjectType for backward compatibility
         if profile.build_system == BuildSystem.POETRY:
             return ProjectType.PYTHON
-        elif profile.build_system in (BuildSystem.CMAKE, BuildSystem.BAZEL):
+        elif profile.build_system == BuildSystem.CMAKE:
             return ProjectType.CPP
         elif profile.build_system in (BuildSystem.SCIKIT_BUILD, BuildSystem.SCIKIT_BUILD_CORE):
             return ProjectType.PYTHON  # Hybrid, but Python-primary

@@ -529,26 +529,6 @@ def add_dependency_scikit_build(
         sys.exit(1)
 
 
-def add_dependency_bazel_stub(package: str) -> None:
-    """Stub for Bazel dependency management (not yet implemented)."""
-    print("[ERROR] Bazel dependency management not yet implemented")
-    print("=" * 50)
-    print()
-    print("Bazel projects use WORKSPACE and BUILD files for dependencies.")
-    print()
-    print("This build system is not implemented in this template yet.")
-    print()
-    print("For now, please add dependencies manually:")
-    print("  - Edit WORKSPACE file")
-    print("  - Add http_archive or git_repository rules")
-    print()
-    print("See: docs/architecture/decisions/002-six-axis-project-profile.md")
-    print(
-        "Create a temporary roadmap under agent_roadmaps/ if multi-session coordination is needed."
-    )
-    sys.exit(1)
-
-
 def add_dependency_mixed_stub(package: str) -> None:
     """Stub for mixed build system dependency management (not yet implemented)."""
     print("[ERROR] Mixed build system dependency management not yet implemented")
@@ -651,9 +631,6 @@ def main():
                 print("[INFO] Adding to dev dependencies")
             add_dependency_scikit_build(manager, package, version, dev)
 
-    elif build_system == BuildSystem.BAZEL:
-        add_dependency_bazel_stub(package)
-
     elif build_system == BuildSystem.MIXED:
         add_dependency_mixed_stub(package)
 
@@ -665,7 +642,6 @@ def main():
         print("  - poetry (Python with Poetry)")
         print("  - cmake (C++/CUDA with CMake)")
         print("  - scikit-build (Python/C++ hybrid)")
-        print("  - bazel (Bazel build system)")
         print("  - mixed (multiple build systems)")
         print()
         print("For Python projects, ensure you have:")

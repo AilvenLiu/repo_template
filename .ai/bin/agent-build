@@ -165,41 +165,6 @@ scikit_build_clean() {
   echo "Removed build artifacts (build/, _skbuild/, dist/, *.egg-info)."
 }
 
-bazel_setup() {
-  "$SCRIPT_DIR/agent-bazel" query //... >/dev/null
-  echo "Bazel workspace and toolchain checks passed."
-}
-
-bazel_compile() {
-  "$SCRIPT_DIR/agent-bazel" build //...
-}
-
-bazel_test() {
-  "$SCRIPT_DIR/agent-bazel" test //...
-}
-
-bazel_doctor() {
-  if command -v bazel >/dev/null 2>&1; then
-    bazel --version
-  elif command -v bazelisk >/dev/null 2>&1; then
-    bazelisk --version
-  else
-    echo "bazel not found"
-    return 1
-  fi
-
-  if [[ -f "$REPO_ROOT/WORKSPACE" || -f "$REPO_ROOT/WORKSPACE.bazel" || -f "$REPO_ROOT/MODULE.bazel" ]]; then
-    echo "Bazel workspace detected."
-  else
-    echo "Bazel workspace not detected."
-    return 1
-  fi
-}
-
-bazel_clean() {
-  "$SCRIPT_DIR/agent-bazel" clean
-}
-
 mixed_stub() {
   cat >&2 <<'EOF'
 Mixed build system support is not yet implemented in this template.
@@ -251,17 +216,6 @@ main() {
         full) scikit_build_setup; scikit_build_test ;;
         doctor) scikit_build_doctor ;;
         clean) scikit_build_clean ;;
-        *) usage; exit 1 ;;
-      esac
-      ;;
-    bazel)
-      case "$command" in
-        setup) bazel_setup ;;
-        compile) bazel_compile ;;
-        test) bazel_test ;;
-        full) bazel_compile; bazel_test ;;
-        doctor) bazel_doctor ;;
-        clean) bazel_clean ;;
         *) usage; exit 1 ;;
       esac
       ;;

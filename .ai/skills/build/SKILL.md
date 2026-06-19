@@ -4,7 +4,7 @@
 > body via the stub at `.claude/skills/build/SKILL.md`. Codex / Cursor / Cline
 > consult this file directly via the AGENTS.md procedures table.
 
-Automates the full build lifecycle for Python, C++/CUDA, hybrid, and Bazel-approved projects.
+Automates the full build lifecycle for Python, C++/CUDA, and hybrid projects.
 
 ## Execution
 
@@ -27,7 +27,6 @@ Automates the full build lifecycle for Python, C++/CUDA, hybrid, and Bazel-appro
 2. Python: Poetry install, pytest.
 3. C++: direct CMake configure with Ninja, build, then `ctest`.
 4. Hybrid: direct CMake configure/build/test first, then scikit-build-core editable install through Poetry.
-5. Bazel: only for Bazel-first projects with an ADR; workspace/toolchain doctor, `bazel build`, `bazel test`, `bazel clean`.
 
 ## Behaviour (best-effort)
 
