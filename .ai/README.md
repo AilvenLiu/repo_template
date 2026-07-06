@@ -125,6 +125,7 @@ The constraint files describe **what** must be done; the wrappers implement
 ### Common (all languages)
 - **git-workflow.md** - Branch policy, commit conventions, protected branches
 - **session-discipline.md** - Session continuity, decision hygiene
+- **closure-discipline.md** - Review, validation, and evidence required before closure
 - **roadmap-awareness.md** - Multi-session task management
 - **ascii-only.md** - ASCII-only identifiers in source code
 - **mcp-integration.md** - External documentation lookup requirements

@@ -16,7 +16,7 @@ class RoadmapManager:
 
     TASK_STATUSES = {"pending", "active", "completed", "blocked"}
     EFFORT_VALUES = {"low", "medium", "high"}
-    STEP_FOLDER_PATTERN = re.compile(r"^step-\d+-[a-z0-9]+(?:-[a-z0-9]+)*$")
+    PHASE_FOLDER_PATTERN = re.compile(r"^phase-\d+-[a-z0-9]+(?:-[a-z0-9]+)*$")
     DATE_PATTERN = re.compile(r"^\d{4}-\d{2}-\d{2}$")
     PLACEHOLDER_README = """# Agent Roadmaps
 
@@ -29,9 +29,9 @@ No roadmap is active in this repository.
 ## Rules
 
 - Roadmap files under `agent_roadmaps/` are operational state, not durable project documentation.
-- Durable files outside `agent_roadmaps/` MUST NOT include roadmap-step identifiers such as `step-*`, `roadmap/step-*`, or prose like "this will be done in Step N".
-- A roadmap may keep completed steps while later steps are still in flight.
-- Once every step in the active roadmap is completed, delete the entire temporary roadmap workspace and return this directory to its empty placeholder state.
+- Durable files outside `agent_roadmaps/` MUST NOT include roadmap-phase identifiers such as `phase-*`, `roadmap/phase-*`, or prose like "this will be done in Phase N".
+- A roadmap may keep completed phases while later phases are still in flight.
+- Once every phase in the active roadmap is completed, delete the entire temporary roadmap workspace and return this directory to its empty placeholder state.
 - If no roadmap is active, proceed without roadmap-specific authority files.
 """
 
@@ -39,23 +39,23 @@ No roadmap is active in this repository.
         self.repo_root = repo_root or Path.cwd()
         self.roadmaps_dir = self.repo_root / "agent_roadmaps"
 
-    def _iter_step_dirs(self):
+    def _iter_phase_dirs(self):
         if not self.roadmaps_dir.exists():
             return
-        for step_dir in sorted(self.roadmaps_dir.iterdir()):
-            if not step_dir.is_dir():
+        for phase_dir in sorted(self.roadmaps_dir.iterdir()):
+            if not phase_dir.is_dir():
                 continue
-            if step_dir.name in {"template", "archive"}:
+            if phase_dir.name in {"template", "archive"}:
                 continue
-            if not step_dir.name.startswith("step-"):
+            if not phase_dir.name.startswith("phase-"):
                 continue
-            if not (step_dir / "roadmap.yml").exists():
+            if not (phase_dir / "roadmap.yml").exists():
                 continue
-            yield step_dir
+            yield phase_dir
 
     @staticmethod
-    def derive_branch_name(step_folder_name: str) -> str:
-        return f"roadmap/{step_folder_name}"
+    def derive_branch_name(phase_folder_name: str) -> str:
+        return f"roadmap/{phase_folder_name}"
 
     def parse_roadmap_yml(self, roadmap_path: Path) -> Dict[str, Any]:
         try:
@@ -87,53 +87,61 @@ No roadmap is active in this repository.
                 temp_path.unlink()
             raise ValueError(f"Error updating {roadmap_path}: {exc}") from exc
 
+    def find_active_phases(self) -> List[Dict[str, Any]]:
+        phases = self.find_all_phases()
+        return [phase for phase in phases if phase["status"] == "active"]
+
     def find_active_roadmaps(self) -> List[Dict[str, Any]]:
-        steps = self.find_all_steps()
-        return [step for step in steps if step["status"] == "active"]
+        """Backward-compatible alias for callers migrating from step wording."""
+        return self.find_active_phases()
 
     def find_active_roadmap(self) -> Optional[Dict[str, Any]]:
-        active = self.find_active_roadmaps()
+        active = self.find_active_phases()
         return active[0] if active else None
 
-    def find_all_steps(self) -> List[Dict[str, Any]]:
+    def find_all_phases(self) -> List[Dict[str, Any]]:
         loaded: List[Tuple[Path, Dict[str, Any]]] = []
-        for step_dir in self._iter_step_dirs() or []:
+        for phase_dir in self._iter_phase_dirs() or []:
             try:
-                data = self.parse_roadmap_yml(step_dir / "roadmap.yml")
+                data = self.parse_roadmap_yml(phase_dir / "roadmap.yml")
             except ValueError:
                 continue
-            loaded.append((step_dir, data))
+            loaded.append((phase_dir, data))
 
         completion_map: Dict[str, bool] = {}
-        for step_dir, data in loaded:
-            completion_map[step_dir.name] = self.is_step_completed(data)
+        for phase_dir, data in loaded:
+            completion_map[phase_dir.name] = self.is_phase_completed(data)
 
-        steps: List[Dict[str, Any]] = []
-        for step_dir, data in loaded:
-            deps = self.get_step_dependencies(data)
+        phases: List[Dict[str, Any]] = []
+        for phase_dir, data in loaded:
+            deps = self.get_phase_dependencies(data)
             unresolved = [dep for dep in deps if not completion_map.get(dep, False)]
-            metadata = self._build_step_metadata(step_dir, data)
-            metadata["depends_on_steps"] = deps
-            metadata["unresolved_step_dependencies"] = unresolved
+            metadata = self._build_phase_metadata(phase_dir, data)
+            metadata["depends_on_phases"] = deps
+            metadata["unresolved_phase_dependencies"] = unresolved
             metadata["ready"] = len(unresolved) == 0
-            steps.append(metadata)
+            phases.append(metadata)
 
-        steps.sort(key=lambda item: item["step_number"])
-        return steps
+        phases.sort(key=lambda item: item["phase_number"])
+        return phases
+
+    def find_all_steps(self) -> List[Dict[str, Any]]:
+        """Backward-compatible alias for callers migrating from step wording."""
+        return self.find_all_phases()
 
     def all_roadmaps_completed(self) -> bool:
-        steps = self.find_all_steps()
-        return bool(steps) and all(step["status"] == "completed" for step in steps)
+        phases = self.find_all_phases()
+        return bool(phases) and all(phase["status"] == "completed" for phase in phases)
 
     def restore_placeholder_workspace(self) -> None:
         self.roadmaps_dir.mkdir(parents=True, exist_ok=True)
-        for step_dir in list(self._iter_step_dirs() or []):
-            shutil.rmtree(step_dir)
+        for phase_dir in list(self._iter_phase_dirs() or []):
+            shutil.rmtree(phase_dir)
         readme = self.roadmaps_dir / "README.md"
         readme.write_text(self.PLACEHOLDER_README, encoding="utf-8")
 
-    def get_step_dependencies(self, roadmap_data: Dict[str, Any]) -> List[str]:
-        deps = roadmap_data.get("depends_on_steps", [])
+    def get_phase_dependencies(self, roadmap_data: Dict[str, Any]) -> List[str]:
+        deps = roadmap_data.get("depends_on_phases", [])
         if not isinstance(deps, list):
             return []
         result: List[str] = []
@@ -141,6 +149,10 @@ No roadmap is active in this repository.
             if isinstance(dep, str) and dep.strip():
                 result.append(dep.strip())
         return result
+
+    def get_step_dependencies(self, roadmap_data: Dict[str, Any]) -> List[str]:
+        """Backward-compatible alias for callers migrating from step wording."""
+        return self.get_phase_dependencies(roadmap_data)
 
     def get_task_map(self, roadmap_data: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
         task_map: Dict[str, Dict[str, Any]] = {}
@@ -165,7 +177,7 @@ No roadmap is active in this repository.
                 return value
         return self.get_active_task_id(roadmap_data)
 
-    def is_step_completed(self, roadmap_data: Dict[str, Any]) -> bool:
+    def is_phase_completed(self, roadmap_data: Dict[str, Any]) -> bool:
         status = roadmap_data.get("status", {})
         if isinstance(status, dict):
             completed_at = status.get("completed_at")
@@ -178,6 +190,10 @@ No roadmap is active in this repository.
             isinstance(task, dict) and task.get("status") == "completed"
             for task in tasks
         )
+
+    def is_step_completed(self, roadmap_data: Dict[str, Any]) -> bool:
+        """Backward-compatible alias for callers migrating from step wording."""
+        return self.is_phase_completed(roadmap_data)
 
     def get_ready_task_ids(self, roadmap_data: Dict[str, Any]) -> List[str]:
         task_map = self.get_task_map(roadmap_data)
@@ -230,8 +246,8 @@ No roadmap is active in this repository.
 
         return errors
 
-    def _build_step_metadata(
-        self, step_dir: Path, data: Dict[str, Any]
+    def _build_phase_metadata(
+        self, phase_dir: Path, data: Dict[str, Any]
     ) -> Dict[str, Any]:
         status_section = (
             data.get("status", {}) if isinstance(data.get("status", {}), dict) else {}
@@ -240,13 +256,13 @@ No roadmap is active in this repository.
         blocked = bool(status_section.get("blocked", False))
 
         if active:
-            step_status = "active"
-        elif self.is_step_completed(data):
-            step_status = "completed"
+            phase_status = "active"
+        elif self.is_phase_completed(data):
+            phase_status = "completed"
         elif blocked:
-            step_status = "blocked"
+            phase_status = "blocked"
         else:
-            step_status = "pending"
+            phase_status = "pending"
 
         task_count = 0
         completed_count = 0
@@ -258,22 +274,22 @@ No roadmap is active in this repository.
                 completed_count += 1
 
         return {
-            "name": step_dir.name,
-            "display_name": data.get("name", step_dir.name),
-            "path": str(step_dir.relative_to(self.repo_root)),
-            "status": step_status,
-            "step_number": self._extract_step_number(step_dir.name),
-            "roadmap_dir": step_dir,
-            "step_id": data.get("step"),
+            "name": phase_dir.name,
+            "display_name": data.get("name", phase_dir.name),
+            "path": str(phase_dir.relative_to(self.repo_root)),
+            "status": phase_status,
+            "phase_number": self._extract_phase_number(phase_dir.name),
+            "roadmap_dir": phase_dir,
+            "phase_id": data.get("phase"),
             "current_task": self.get_current_task_id(data),
-            "expected_branch": self.derive_branch_name(step_dir.name),
+            "expected_branch": self.derive_branch_name(phase_dir.name),
             "tasks_total": task_count,
             "tasks_completed": completed_count,
             "started_at": status_section.get("started_at"),
             "completed_at": status_section.get("completed_at"),
         }
 
-    def _extract_step_number(self, folder_name: str) -> int:
+    def _extract_phase_number(self, folder_name: str) -> int:
         parts = folder_name.split("-")
         if len(parts) < 2:
             return 10**9
@@ -298,7 +314,7 @@ No roadmap is active in this repository.
         return merged
 
     def _validate_roadmap_data(self, data: Dict[str, Any]) -> None:
-        required_top = {"step", "name", "status", "depends_on_steps", "tasks", "focus"}
+        required_top = {"phase", "name", "status", "depends_on_phases", "tasks", "focus"}
         missing = [key for key in required_top if key not in data]
         if missing:
             raise ValueError(f"Missing required top-level keys: {', '.join(missing)}")
@@ -307,22 +323,22 @@ No roadmap is active in this repository.
         if extra:
             raise ValueError(f"Unknown top-level keys: {', '.join(sorted(extra))}")
 
-        self._validate_step_id(data["step"])
+        self._validate_phase_id(data["phase"])
 
         if not isinstance(data["name"], str) or not data["name"].strip():
             raise ValueError("'name' must be a non-empty string")
 
         self._validate_status(data["status"])
-        self._validate_step_dependencies(data["depends_on_steps"])
+        self._validate_phase_dependencies(data["depends_on_phases"])
         self._validate_tasks(data["tasks"])
         self._validate_focus(data["focus"], data)
 
-    def _validate_step_id(self, step_value: Any) -> None:
-        if isinstance(step_value, int):
-            if step_value < 0:
-                raise ValueError("'step' must be >= 0")
+    def _validate_phase_id(self, phase_value: Any) -> None:
+        if isinstance(phase_value, int):
+            if phase_value < 0:
+                raise ValueError("'phase' must be >= 0")
             return
-        raise ValueError("'step' must be an integer (e.g., 7)")
+        raise ValueError("'phase' must be an integer (e.g., 7)")
 
     def _validate_status(self, status: Any) -> None:
         if not isinstance(status, dict):
@@ -345,22 +361,22 @@ No roadmap is active in this repository.
             if isinstance(value, str) and not self.DATE_PATTERN.match(value):
                 raise ValueError(f"'status.{key}' must match YYYY-MM-DD")
 
-    def _validate_step_dependencies(self, deps: Any) -> None:
+    def _validate_phase_dependencies(self, deps: Any) -> None:
         if not isinstance(deps, list):
-            raise ValueError("'depends_on_steps' must be a list")
+            raise ValueError("'depends_on_phases' must be a list")
 
         seen: Set[str] = set()
         for dep in deps:
             if not isinstance(dep, str) or not dep.strip():
-                raise ValueError("'depends_on_steps' entries must be non-empty strings")
+                raise ValueError("'depends_on_phases' entries must be non-empty strings")
             dep_name = dep.strip()
-            if not self.STEP_FOLDER_PATTERN.match(dep_name):
+            if not self.PHASE_FOLDER_PATTERN.match(dep_name):
                 raise ValueError(
-                    "Step dependency must use folder format 'step-N-name' "
+                    "Phase dependency must use folder format 'phase-N-name' "
                     f"(got '{dep_name}')"
                 )
             if dep_name in seen:
-                raise ValueError(f"Duplicate step dependency: '{dep_name}'")
+                raise ValueError(f"Duplicate phase dependency: '{dep_name}'")
             seen.add(dep_name)
 
     def _validate_tasks(self, tasks: Any) -> None:
@@ -529,33 +545,33 @@ No roadmap is active in this repository.
         if active_step and not blocked_step:
             if not current_task:
                 raise ValueError(
-                    "Active and unblocked step requires focus.current_task"
+                    "Active and unblocked phase requires focus.current_task"
                 )
             if current_task and task_map[current_task].get("status") != "active":
                 raise ValueError("focus.current_task must point to the active task")
             if len(active_task_ids) != 1:
                 raise ValueError(
-                    "Active and unblocked step requires exactly one active task"
+                    "Active and unblocked phase requires exactly one active task"
                 )
         elif active_step and blocked_step:
             if len(active_task_ids) > 1:
-                raise ValueError("Blocked step must not have multiple active tasks")
+                raise ValueError("Blocked phase must not have multiple active tasks")
             if current_task and task_map[current_task].get("status") not in {
                 "blocked",
                 "active",
             }:
                 raise ValueError(
-                    "Blocked step focus.current_task must point to blocked/active task"
+                    "Blocked phase focus.current_task must point to blocked/active task"
                 )
         else:
             if active_task_ids:
-                raise ValueError("Inactive step cannot have active tasks")
+                raise ValueError("Inactive phase cannot have active tasks")
 
         completed_at = status.get("completed_at") if isinstance(status, dict) else None
         if completed_at is not None:
-            if not self.is_step_completed(roadmap):
+            if not self.is_phase_completed(roadmap):
                 raise ValueError(
                     "status.completed_at set but not all tasks are completed"
                 )
             if active_step:
-                raise ValueError("Completed step cannot be marked active")
+                raise ValueError("Completed phase cannot be marked active")

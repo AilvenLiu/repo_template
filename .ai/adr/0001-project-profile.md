@@ -31,7 +31,7 @@ project_profile:
 - Hybrid repositories need both Python and C++/CUDA constraints at the same time.
 - Build-system selection is independent from language selection.
 - Capability audit should enable only the skills a generated project actually needs.
-- Durable project files must stay free of temporary roadmap-step identifiers.
+- Durable project files must stay free of temporary roadmap phase identifiers.
 
 ## Loader Behaviour
 

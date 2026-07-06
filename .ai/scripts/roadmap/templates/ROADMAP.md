@@ -1,6 +1,6 @@
-# ROADMAP -- Step Execution Guide (Template)
+# ROADMAP -- Phase Execution Guide (Template)
 
-> This document describes the step `<STEP_FOLDER_NAME>`.
+> This document describes the phase `<PHASE_FOLDER_NAME>`.
 > It should be explicit enough for a fresh session with zero prior context.
 
 ## 0. Authority Order
@@ -17,15 +17,15 @@ If this file conflicts with `INVARIANTS.md`, follow `INVARIANTS.md` and ask the 
 
 ## 1. Goal
 
-Describe exactly what this step must deliver and why it matters.
+Describe exactly what this phase must deliver and why it matters.
 
 ## 2. Upstream Dependencies
 
-List explicit prerequisite steps from `depends_on_steps` and what each one
-must provide before this step starts.
+List explicit prerequisite phases from `depends_on_phases` and what each one
+must provide before this phase starts.
 
-- Dependency: `<step-folder>`
-- Required outputs consumed in this step
+- Dependency: `<phase-folder>`
+- Required outputs consumed in this phase
 - Verification method for dependency completion
 
 ## 3. Scope and Non-Goals
@@ -54,11 +54,11 @@ Map each task in `roadmap.yml` to execution intent, including dependency order.
 
 ## 6. Exit Criteria
 
-This step is complete only when:
+This phase is complete only when:
 - Every task in `roadmap.yml` is `completed`
 - `status.completed_at` is set
 - Final handoff exists in `sessions/`
-- PR/MR from `roadmap/<STEP_FOLDER_NAME>` is ready
+- PR/MR from `roadmap/<PHASE_FOLDER_NAME>` is ready
 
 ## 7. Risks and Rollback
 

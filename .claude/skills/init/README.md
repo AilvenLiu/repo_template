@@ -114,6 +114,7 @@ Constraints are organized by topic in `.ai/constraints/`:
 - `common/mcp-integration.md` - Context7 MCP for external documentation
 - `common/roadmap-awareness.md` - Roadmap execution discipline
 - `common/session-discipline.md` - Session continuity, decision hygiene
+- `common/closure-discipline.md` - Rigorous review and evidence before closure
 
 ## How It Works
 
@@ -178,6 +179,10 @@ NEXT STEPS:
 ### `/karpathy-guidelines` Skill
 - The behavioural guidance is bundled locally in the template and copied into real projects
 - `/init` always loads the matching common constraint so the same guidance is active even without an explicit skill invocation
+
+### Closure Discipline
+- `/init` always loads `common/closure-discipline.md`
+- Before closing any task, session, commit, or roadmap phase, review the request and constraints, inspect the result critically, run the strongest relevant validation available, and report residual risk honestly
 
 ### `/roadmap` Skill
 - `/init` checks for active roadmaps

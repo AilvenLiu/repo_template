@@ -120,11 +120,15 @@ This template is designed to work with multiple AI agent platforms:
   `.ai/bin/agent-*` wrapper, with the canonical procedure descriptions in
   `.ai/skills/<name>/SKILL.md`.
 
-Both platforms inherit the bundled `karpathy-guidelines` behaviour:
+Both platforms inherit the bundled `karpathy-guidelines` behaviour and shared
+closure discipline:
 - via the matching skill manifest under `.ai/skills/karpathy-guidelines/`
   (with a Claude stub at `.claude/skills/karpathy-guidelines/`)
 - via `.ai/constraints/common/karpathy-guidelines.md`, which `init` loads
   automatically into the active session
+- via `.ai/constraints/common/closure-discipline.md`, which requires rigorous
+  review, strongest relevant validation, and explicit residual-risk reporting
+  before session, task, commit, or roadmap phase closure
 
 Capability audit requirements are filtered by the generated project's
 language, so copied C++ repos do not require Python-only support skills

@@ -41,6 +41,7 @@ Read/Glob/Grep are always permitted for exploration.
 
 - `common/git-workflow` — protected branches, commit attribution
 - `common/session-discipline` — session lifecycle rules
+- `common/closure-discipline` — rigorous review and evidence before closure
 - `common/karpathy-guidelines` — behavioural guardrails
 - `common/mcp-integration` — Context7 mandatory usage
 - `common/ascii-only` — identifier encoding

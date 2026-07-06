@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Mark active step as completed and print dependency-safe next steps."""
+"""Mark active phase as completed and print dependency-safe next steps."""
 
 from __future__ import annotations
 
@@ -21,20 +21,20 @@ def complete_roadmap() -> None:
     check_session_initialized("roadmap")
 
     manager = RoadmapManager(Path.cwd())
-    active_steps = manager.find_active_roadmaps()
+    active_phases = manager.find_active_phases()
 
-    if not active_steps:
+    if not active_phases:
         print("ERROR: No active roadmap found")
         sys.exit(1)
 
-    if len(active_steps) > 1:
-        print("ERROR: Multiple active steps found")
-        for step in active_steps:
-            print(f"  - {step['name']}")
-        print("Fix roadmap.yml so only one step has status.active: true")
+    if len(active_phases) > 1:
+        print("ERROR: Multiple active phases found")
+        for phase in active_phases:
+            print(f"  - {phase['name']}")
+        print("Fix roadmap.yml so only one phase has status.active: true")
         sys.exit(2)
 
-    active = active_steps[0]
+    active = active_phases[0]
     roadmap_dir = active["roadmap_dir"]
     roadmap_yml = roadmap_dir / "roadmap.yml"
     data = manager.parse_roadmap_yml(roadmap_yml)
@@ -51,7 +51,7 @@ def complete_roadmap() -> None:
     ]
 
     if incomplete:
-        print("ERROR: Cannot complete step because not all tasks are completed:")
+        print("ERROR: Cannot complete phase because not all tasks are completed:")
         for item in incomplete:
             print(f"  - {item}")
         print()
@@ -65,22 +65,22 @@ def complete_roadmap() -> None:
 
     manager.update_roadmap_yml(roadmap_yml, data)
 
-    # Recompute step list to identify dependency-ready next steps.
-    all_steps = manager.find_all_steps()
+    # Recompute phase list to identify dependency-ready next phases.
+    all_phases = manager.find_all_phases()
     ready_next = [
-        step
-        for step in all_steps
-        if step["status"] == "pending" and step.get("ready", False)
+        phase
+        for phase in all_phases
+        if phase["status"] == "pending" and phase.get("ready", False)
     ]
 
-    step_folder = roadmap_dir.name
-    branch = RoadmapManager.derive_branch_name(step_folder)
+    phase_folder = roadmap_dir.name
+    branch = RoadmapManager.derive_branch_name(phase_folder)
 
     if manager.all_roadmaps_completed():
         manager.restore_placeholder_workspace()
         print("Roadmap Completed")
         print("=" * 50)
-        print(f"Final step folder: {step_folder}")
+        print(f"Final phase folder: {phase_folder}")
         print(f"Branch: {branch}")
         print(f"Tasks completed: {len(tasks)}/{len(tasks)}")
         print()
@@ -91,9 +91,9 @@ def complete_roadmap() -> None:
         print("3. Continue from the base branch without roadmap-specific files")
         return
 
-    print("Step Completed")
+    print("Phase Completed")
     print("=" * 50)
-    print(f"Step folder: {step_folder}")
+    print(f"Phase folder: {phase_folder}")
     print(f"Branch: {branch}")
     print(f"Tasks completed: {len(tasks)}/{len(tasks)}")
     print()
@@ -102,11 +102,11 @@ def complete_roadmap() -> None:
     print("2. Merge the PR/MR")
     print("3. Switch to base branch and pull latest")
     if ready_next:
-        print("4. Activate one dependency-ready next step:")
-        for step in ready_next:
-            print(f"   - {step['name']}")
+        print("4. Activate one dependency-ready next phase:")
+        for phase in ready_next:
+            print(f"   - {phase['name']}")
     else:
-        print("4. No dependency-ready pending step found (check depends_on_steps)")
+        print("4. No dependency-ready pending phase found (check depends_on_phases)")
 
 
 if __name__ == "__main__":

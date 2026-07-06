@@ -230,6 +230,7 @@ def _expected_constraints(project_type: str) -> set[str]:
     common = {
         "common/git-workflow",
         "common/session-discipline",
+        "common/closure-discipline",
         "common/karpathy-guidelines",
         "common/mcp-integration",
         "common/ascii-only",
@@ -297,6 +298,39 @@ def test_constraint_hit_rate_meets_100pct(
             assert f"[CONSTRAINT] {key}" in init.stdout, (
                 f"[claude/{project_type}] constraint {key} body not printed in /init output"
             )
+        assert "Before claiming any work is complete" in init.stdout
+
+
+@pytest.mark.parametrize("project_type", PROJECT_TYPES)
+def test_generated_entrypoints_expose_phase_and_closure_discipline(
+    tmp_path: Path, project_type: str
+) -> None:
+    project = _make_project(tmp_path, project_type)
+
+    agents = (project / "AGENTS.md").read_text()
+    claude = (project / "CLAUDE.md").read_text()
+
+    for name, text in {"AGENTS.md": agents, "CLAUDE.md": claude}.items():
+        assert "closure-discipline.md" in text, f"{name} missing closure discipline"
+        assert "roadmap phase" in text.lower(), f"{name} missing roadmap phase wording"
+        assert "agent_roadmaps/<phase>" in text, f"{name} uses stale roadmap path token"
+
+    roadmap_skill = (project / ".claude" / "skills" / "roadmap" / "SKILL.md").read_text()
+    roadmap_guide = (
+        project / ".claude" / "skills" / "roadmap" / "TEMPLATE_COMPLIANCE_GUIDE.md"
+    ).read_text()
+    init_skill = (project / ".claude" / "skills" / "init" / "SKILL.md").read_text()
+
+    for name, text in {
+        ".claude/skills/roadmap/SKILL.md": roadmap_skill,
+        ".claude/skills/roadmap/TEMPLATE_COMPLIANCE_GUIDE.md": roadmap_guide,
+    }.items():
+        assert "--phases" in text, f"{name} missing phase create flag"
+        assert "depends_on_phases" in text, f"{name} missing phase dependencies"
+        assert "depends_on_steps" not in text, f"{name} still references step schema"
+        assert "--steps" not in text, f"{name} still documents legacy create flag"
+
+    assert "common/closure-discipline" in init_skill
 
 
 @pytest.mark.parametrize("project_type", PROJECT_TYPES)
@@ -338,23 +372,28 @@ def test_full_roadmap_lifecycle(
             ".ai/bin/agent-roadmap",
             "create",
             "lifecycle",
-            "--steps",
+            "--phases",
             "1",
-            "--step-names",
+            "--phase-names",
             "core",
         ],
         project,
     )
     assert create.returncode == 0, create.stdout + create.stderr
 
-    step = "step-0-core"
-    step_dir = project / "agent_roadmaps" / step
+    phase = "phase-0-core"
+    phase_dir = project / "agent_roadmaps" / phase
     for name in ("INVARIANTS.md", "ROADMAP.md", "roadmap.yml", "prompt.md"):
-        assert (step_dir / name).exists()
+        assert (phase_dir / name).exists()
 
-    _run(["git", "checkout", "-b", f"roadmap/{step}", "-q"], project)
+    data = yaml.safe_load((phase_dir / "roadmap.yml").read_text())
+    assert data["phase"] == 0
+    assert "step" not in data
+    assert data["depends_on_phases"] == []
 
-    validate = _run(["bash", ".ai/bin/agent-roadmap", "validate", step], project)
+    _run(["git", "checkout", "-b", f"roadmap/{phase}", "-q"], project)
+
+    validate = _run(["bash", ".ai/bin/agent-roadmap", "validate", phase], project)
     assert validate.returncode == 0, validate.stdout + validate.stderr
 
     check = _run(["bash", ".ai/bin/agent-roadmap", "check"], project)
@@ -362,9 +401,9 @@ def test_full_roadmap_lifecycle(
 
     status = _run(["bash", ".ai/bin/agent-roadmap", "status"], project)
     assert status.returncode == 0, status.stdout + status.stderr
-    assert step in status.stdout
+    assert phase in status.stdout
 
-    # Complete the first two tasks; step remains active.
+    # Complete the first two tasks; phase remains active.
     for _ in range(2):
         comp = _run(["bash", ".ai/bin/agent-roadmap", "update", "complete-task"], project)
         assert comp.returncode == 0, comp.stdout + comp.stderr
@@ -383,15 +422,15 @@ def test_full_roadmap_lifecycle(
         project,
     )
     assert handoff.returncode == 0, handoff.stdout + handoff.stderr
-    sessions = list((step_dir / "sessions").glob("session-*.md"))
+    sessions = list((phase_dir / "sessions").glob("session-*.md"))
     assert sessions, "handoff did not produce a session file"
 
-    # Complete the last task — this auto-marks the step completed.
+    # Complete the last task — this auto-marks the phase completed.
     final = _run(["bash", ".ai/bin/agent-roadmap", "update", "complete-task"], project)
     assert final.returncode == 0, final.stdout + final.stderr
 
-    assert not step_dir.exists(), (
-        "Final roadmap step should be deleted after full roadmap completion"
+    assert not phase_dir.exists(), (
+        "Final roadmap phase should be deleted after full roadmap completion"
     )
     readme = (project / "agent_roadmaps" / "README.md").read_text()
     assert "No roadmap is active" in readme
@@ -415,20 +454,20 @@ def test_validator_flags_each_missing_required_file(
             ".ai/bin/agent-roadmap",
             "create",
             "neg",
-            "--steps",
+            "--phases",
             "1",
-            "--step-names",
+            "--phase-names",
             "core",
         ],
         project,
     )
-    target = project / "agent_roadmaps" / "step-0-core" / missing_file
+    target = project / "agent_roadmaps" / "phase-0-core" / missing_file
     target.unlink()
 
-    res = _run(["bash", ".ai/bin/agent-roadmap", "validate", "step-0-core"], project)
+    res = _run(["bash", ".ai/bin/agent-roadmap", "validate", "phase-0-core"], project)
     assert res.returncode != 0
     assert missing_file in res.stdout
-    assert "Missing required step file" in res.stdout or "Step Structure" in res.stdout
+    assert "Missing required phase file" in res.stdout or "Phase Structure" in res.stdout
 
 
 @pytest.mark.parametrize("victim", ["prompt.md", "INVARIANTS.md"])
@@ -440,16 +479,16 @@ def test_validator_flags_authority_order_strip(tmp_path: Path, victim: str) -> N
             ".ai/bin/agent-roadmap",
             "create",
             "neg",
-            "--steps",
+            "--phases",
             "1",
-            "--step-names",
+            "--phase-names",
             "core",
         ],
         project,
     )
-    target = project / "agent_roadmaps" / "step-0-core" / victim
+    target = project / "agent_roadmaps" / "phase-0-core" / victim
     target.write_text("Just plain prose with no authority order anywhere.\n")
-    res = _run(["bash", ".ai/bin/agent-roadmap", "validate", "step-0-core"], project)
+    res = _run(["bash", ".ai/bin/agent-roadmap", "validate", "phase-0-core"], project)
     assert res.returncode != 0
     assert "Authority Order" in res.stdout
 

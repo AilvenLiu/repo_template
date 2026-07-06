@@ -1,10 +1,10 @@
-# roadmap.yml -- Per-Step Execution State (Dependency-Aware Template)
+# roadmap.yml -- Per-Phase Execution State (Dependency-Aware Template)
 #
-# This file is the ONLY authoritative execution state for this step.
+# This file is the ONLY authoritative execution state for this phase.
 # Keep it machine-readable and deterministic.
 
-step: <STEP_NUMBER>
-name: <STEP_TITLE>
+phase: <PHASE_NUMBER>
+name: <PHASE_TITLE>
 
 status:
   active: true
@@ -12,15 +12,15 @@ status:
   started_at: null
   completed_at: null
 
-# Explicit upstream step dependencies by folder name.
-# Example: [upstream-roadmap-step]
-depends_on_steps: <STEP_DEPENDENCIES>
+# Explicit upstream phase dependencies by folder name.
+# Example: [upstream-roadmap-phase]
+depends_on_phases: <PHASE_DEPENDENCIES>
 
 tasks:
   - id: <TASK_PREFIX>-1
-    title: Define implementation baseline for <STEP_TITLE>
+    title: Define implementation baseline for <PHASE_TITLE>
     description: >
-      Clarify exact scope, constraints, and acceptance criteria for this step.
+      Clarify exact scope, constraints, and acceptance criteria for this phase.
       Confirm objective boundaries and identify files touched first.
     status: active
     effort: medium
@@ -30,9 +30,9 @@ tasks:
     depends_on: []
 
   - id: <TASK_PREFIX>-2
-    title: Implement dependency-safe core changes for <STEP_TITLE>
+    title: Implement dependency-safe core changes for <PHASE_TITLE>
     description: >
-      Implement the primary code changes for this step while preserving
+      Implement the primary code changes for this phase while preserving
       upstream invariants and compatibility guarantees.
     status: pending
     effort: medium
@@ -42,10 +42,10 @@ tasks:
       - <TASK_PREFIX>-1
 
   - id: <TASK_PREFIX>-3
-    title: Validate outcomes and prepare merge handoff
+    title: Validate phase result
     description: >
       Run required validation, document final state, and prepare branch merge
-      guidance for this step.
+      guidance for this phase.
     status: pending
     effort: low
     key_files:

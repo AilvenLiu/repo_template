@@ -107,6 +107,7 @@ def _expected_constraints(project_type: str) -> set[str]:
     common = {
         "common/git-workflow",
         "common/session-discipline",
+            "common/closure-discipline",
         "common/karpathy-guidelines",
         "common/mcp-integration",
         "common/ascii-only",

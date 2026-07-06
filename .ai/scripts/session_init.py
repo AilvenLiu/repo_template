@@ -130,6 +130,7 @@ def find_active_roadmap(repo_root: Path) -> Optional[Path]:
 _ALWAYS_COMMON = [
     "common/git-workflow",
     "common/session-discipline",
+    "common/closure-discipline",
     "common/karpathy-guidelines",
     "common/mcp-integration",
     "common/ascii-only",

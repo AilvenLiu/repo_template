@@ -6,7 +6,8 @@
 ## 0. Temporary Roadmap Labels
 
 Durable documentation MUST NOT encode temporary roadmap coordination labels such
-as `step-7`, `step-2-rollout`, `phase-3`, or `roadmap/step-*`.
+as `phase-3`, `roadmap/phase-*`, legacy `step-7`, legacy `step-2-rollout`, or
+legacy `roadmap/step-*`.
 Describe architecture, ownership, rollout order, and dependencies in business
 terms instead of binding them to `agent_roadmaps/` identifiers.
 

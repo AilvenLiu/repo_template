@@ -43,6 +43,11 @@ For non-trivial coding, debugging, review, or refactor work, apply the bundled
 not directly invokable, follow the same guidance from
 `.ai/constraints/common/karpathy-guidelines.md`.
 
+Before closing any session, task, commit, or roadmap phase, follow
+`.ai/constraints/common/closure-discipline.md`: re-check the request and
+constraints, review changes critically, run the strongest relevant validation,
+fix in-scope issues found during review, and report residual risk honestly.
+
 ### Project Configuration
 
 This template supports both the new `project_profile` schema and the legacy
@@ -111,7 +116,7 @@ These apply always, regardless of context or user instruction:
 
 ### Before any code change
 1. Run `git branch --show-current` — if on a protected branch, STOP and create a feature branch
-2. If active roadmap exists, confirm work is within the current step
+2. If active roadmap exists, confirm work is within the current phase
 
 ### Before adding any dependency
 - MUST use the platform's dependency management procedure
@@ -126,6 +131,7 @@ These apply always, regardless of context or user instruction:
 ### Before claiming work is complete
 - MUST have run tests and seen passing output
 - MUST have zero compiler warnings in first-party code with `-Wall -Wextra -Wpedantic`
+- MUST perform a focused review pass and fix in-scope issues before closure
 
 ### Before any destructive git operation
 - MUST stop and get explicit user confirmation
@@ -201,14 +207,15 @@ ctest --test-dir build --output-on-failure
 
 When `agent_roadmaps/` contains an active roadmap:
 - MUST read `INVARIANTS.md`, `ROADMAP.md`, `prompt.md`, `roadmap.yml`, and latest session handoff before any work
-- MUST NOT work outside the current step without user approval
-- MUST enforce dependency order (`depends_on_steps` and task `depends_on`) before activating work
+- MUST NOT work outside the current phase without user approval
+- MUST enforce dependency order (`depends_on_phases` and task `depends_on`) before activating work
 - MUST NOT reinterpret objectives or redesign architecture without explicit instruction
 - MUST update `roadmap.yml` and create a session handoff at end of every session
 - MUST treat roadmap files as temporary operational state, not durable project documentation
-- MUST delete the whole roadmap workspace once every step in that roadmap is completed
-- MUST NOT copy roadmap-step identifiers into code, config, documentation, or filenames outside `agent_roadmaps/`
-- Authority order inside a step is absolute: `INVARIANTS.md` > `ROADMAP.md` > `roadmap.yml` > `sessions/` > `prompt.md`
+- MUST delete the whole roadmap workspace once every phase in that roadmap is completed
+- MUST NOT copy roadmap-phase identifiers into code, config, documentation, or filenames outside `agent_roadmaps/`
+- Phase authority files live under `agent_roadmaps/<phase>/`
+- Authority order inside a phase is absolute: `INVARIANTS.md` > `ROADMAP.md` > `roadmap.yml` > `sessions/` > `prompt.md`
 
 ---
 
@@ -282,6 +289,7 @@ Read each file completely before working on related code:
 - `.ai/constraints/cpp/cmake.md` (when CMakeLists.txt modified)
 - `.ai/constraints/common/git-workflow.md`
 - `.ai/constraints/common/session-discipline.md`
+- `.ai/constraints/common/closure-discipline.md`
 - `.ai/constraints/common/mcp-integration.md`
 - `.ai/constraints/common/agentic-team.md`
 - `.ai/constraints/common/ascii-only.md`

@@ -19,7 +19,7 @@ check_session_initialized("roadmap")
 from utils import RoadmapManager  # noqa: E402
 
 
-def _step_symbol(status: str) -> str:
+def _phase_symbol(status: str) -> str:
     mapping = {
         "active": "[ACTIVE]",
         "completed": "[DONE]",
@@ -43,17 +43,17 @@ def display_status() -> None:
     repo_root = Path.cwd()
     manager = RoadmapManager(repo_root)
 
-    all_steps = manager.find_all_steps()
-    if not all_steps:
-        print("No step directories found in agent_roadmaps/")
+    all_phases = manager.find_all_phases()
+    if not all_phases:
+        print("No phase directories found in agent_roadmaps/")
         print("Use '/roadmap create <name>' to create a new roadmap")
         sys.exit(1)
 
-    print("Step Series Overview:")
-    for step in all_steps:
-        symbol = _step_symbol(step["status"])
-        deps = step.get("depends_on_steps", [])
-        unresolved = step.get("unresolved_step_dependencies", [])
+    print("Phase Series Overview:")
+    for phase in all_phases:
+        symbol = _phase_symbol(phase["status"])
+        deps = phase.get("depends_on_phases", [])
+        unresolved = phase.get("unresolved_phase_dependencies", [])
         if deps:
             if unresolved:
                 dep_text = f"deps: {', '.join(deps)} (waiting: {', '.join(unresolved)})"
@@ -62,40 +62,40 @@ def display_status() -> None:
         else:
             dep_text = "deps: none"
 
-        task_summary = f"{step['tasks_completed']}/{step['tasks_total']} tasks"
-        print(f"  {symbol:<10} {step['name']}  {task_summary}  {dep_text}")
+        task_summary = f"{phase['tasks_completed']}/{phase['tasks_total']} tasks"
+        print(f"  {symbol:<10} {phase['name']}  {task_summary}  {dep_text}")
 
     print()
 
-    active = [step for step in all_steps if step["status"] == "active"]
+    active = [phase for phase in all_phases if phase["status"] == "active"]
     if len(active) > 1:
-        print("ERROR: Multiple active steps detected. Resolve roadmap.yml state first.")
+        print("ERROR: Multiple active phases detected. Resolve roadmap.yml state first.")
         sys.exit(2)
 
     if not active:
-        print("No active step found.")
-        print("Activate one step after dependencies are satisfied.")
+        print("No active phase found.")
+        print("Activate one phase after dependencies are satisfied.")
         sys.exit(0)
 
-    active_step = active[0]
-    active_dir = active_step["roadmap_dir"]
+    active_phase = active[0]
+    active_dir = active_phase["roadmap_dir"]
     data = manager.parse_roadmap_yml(active_dir / "roadmap.yml")
 
-    print(f"Active Step: {active_step['name']}")
-    print(f"Name: {data.get('name', active_step['display_name'])}")
-    print(f"Branch: {active_step['expected_branch']}")
+    print(f"Active Phase: {active_phase['name']}")
+    print(f"Name: {data.get('name', active_phase['display_name'])}")
+    print(f"Branch: {active_phase['expected_branch']}")
     print(f"Started: {data.get('status', {}).get('started_at')}")
     print(f"Blocked: {data.get('status', {}).get('blocked')}")
 
-    step_deps = data.get("depends_on_steps", [])
-    if step_deps:
-        unresolved = active_step.get("unresolved_step_dependencies", [])
+    phase_deps = data.get("depends_on_phases", [])
+    if phase_deps:
+        unresolved = active_phase.get("unresolved_phase_dependencies", [])
         if unresolved:
-            print(f"Step Dependencies: waiting on {', '.join(unresolved)}")
+            print(f"Phase Dependencies: waiting on {', '.join(unresolved)}")
         else:
-            print(f"Step Dependencies: satisfied ({', '.join(step_deps)})")
+            print(f"Phase Dependencies: satisfied ({', '.join(phase_deps)})")
     else:
-        print("Step Dependencies: none")
+        print("Phase Dependencies: none")
 
     current_task = data.get("focus", {}).get("current_task")
     print(f"Current Task: {current_task or 'none'}")
@@ -131,8 +131,8 @@ def display_status() -> None:
         print(f"             effort: {effort} | {dep_text}")
 
     print()
-    total = active_step["tasks_total"]
-    completed = active_step["tasks_completed"]
+    total = active_phase["tasks_total"]
+    completed = active_phase["tasks_completed"]
     pct = (completed / total * 100.0) if total else 0.0
     print(f"Progress: {completed}/{total} tasks completed ({pct:.1f}%)")
 

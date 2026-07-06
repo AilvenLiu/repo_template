@@ -18,16 +18,16 @@ from check_session import check_session_initialized
 from utils import RoadmapManager
 
 
-def _get_single_active_step(manager: RoadmapManager) -> Dict[str, object]:
-    active = manager.find_active_roadmaps()
+def _get_single_active_phase(manager: RoadmapManager) -> Dict[str, object]:
+    active = manager.find_active_phases()
     if not active:
         print("ERROR: No active roadmap found")
         sys.exit(1)
     if len(active) > 1:
-        print("ERROR: Multiple active steps found")
-        for step in active:
-            print(f"  - {step['name']}")
-        print("Fix roadmap.yml so exactly one step has status.active: true")
+        print("ERROR: Multiple active phases found")
+        for phase in active:
+            print(f"  - {phase['name']}")
+        print("Fix roadmap.yml so exactly one phase has status.active: true")
         sys.exit(2)
     return active[0]
 
@@ -149,7 +149,7 @@ def complete_task(manager: RoadmapManager, roadmap_dir: Path) -> None:
 
         manager.update_roadmap_yml(roadmap_yml, data)
         print(f"Task {current_task_id} completed")
-        print("Step now blocked: no ready task found.")
+        print("Phase now blocked: no ready task found.")
         if blocked_tasks:
             print("Unfinished tasks:")
             for task in blocked_tasks:
@@ -170,8 +170,8 @@ def complete_task(manager: RoadmapManager, roadmap_dir: Path) -> None:
 
     manager.update_roadmap_yml(roadmap_yml, data)
 
-    step_folder = roadmap_dir.name
-    step_branch = RoadmapManager.derive_branch_name(step_folder)
+    phase_folder = roadmap_dir.name
+    phase_branch = RoadmapManager.derive_branch_name(phase_folder)
     if manager.all_roadmaps_completed():
         manager.restore_placeholder_workspace()
         print(f"Task {current_task_id} completed")
@@ -179,19 +179,19 @@ def complete_task(manager: RoadmapManager, roadmap_dir: Path) -> None:
         print("Temporary roadmap workspace deleted and placeholder README restored.")
         print()
         print("Next steps:")
-        print(f"1. Create PR/MR from {step_branch} to base branch")
+        print(f"1. Create PR/MR from {phase_branch} to base branch")
         print(
             "2. After merge, continue from the base branch without roadmap-specific files"
         )
         return
 
     print(f"Task {current_task_id} completed")
-    print(f"Step {step_folder} completed")
+    print(f"Phase {phase_folder} completed")
     print()
     print("Next steps:")
-    print(f"1. Create PR/MR from {step_branch} to base branch")
+    print(f"1. Create PR/MR from {phase_branch} to base branch")
     print("2. After merge, switch to base branch and pull latest")
-    print("3. Activate a dependency-ready next step")
+    print("3. Activate a dependency-ready next phase")
 
 
 def block_task(manager: RoadmapManager, roadmap_dir: Path, reason: str) -> None:
@@ -333,7 +333,7 @@ def main() -> None:
 
     action = sys.argv[1]
     manager = RoadmapManager(Path.cwd())
-    active = _get_single_active_step(manager)
+    active = _get_single_active_phase(manager)
     roadmap_dir = active["roadmap_dir"]
 
     if action == "complete-task":

@@ -43,6 +43,11 @@ For non-trivial coding, debugging, review, or refactor work, apply the bundled
 not directly invokable, follow the same guidance from
 `.ai/constraints/common/karpathy-guidelines.md`.
 
+Before closing any session, task, commit, or roadmap phase, follow
+`.ai/constraints/common/closure-discipline.md`: re-check the request and
+constraints, review changes critically, run the strongest relevant validation,
+fix in-scope issues found during review, and report residual risk honestly.
+
 ### Project Profile
 
 This project uses the `project_profile` schema in `.ai/project.yml`:
@@ -154,6 +159,12 @@ This runs:
 2. Compilation (C++/CUDA kernels)
 3. Full test suite
 
+### Before Claiming Work Is Complete
+
+- MUST have concrete validation evidence from the strongest relevant checks
+- MUST perform a focused review pass and fix in-scope issues before closure
+- MUST report unrun checks, blockers, known limitations, and residual risk
+
 ---
 
 ## Vendor-Neutral Procedures
@@ -183,6 +194,7 @@ Session initialization loads constraints from:
 ### Always Loaded (Common)
 - `common/git-workflow`
 - `common/session-discipline`
+- `common/closure-discipline`
 - `common/karpathy-guidelines`
 - `common/mcp-integration`
 - `common/ascii-only`
@@ -222,19 +234,19 @@ Session initialization loads constraints from:
 
 ## Roadmap Authority
 
-Inside a roadmap step the authority order is absolute:
+Inside a roadmap phase the authority order is absolute:
 
-1. `agent_roadmaps/<step>/INVARIANTS.md`
-2. `agent_roadmaps/<step>/ROADMAP.md`
-3. `agent_roadmaps/<step>/roadmap.yml`
-4. Latest file under `agent_roadmaps/<step>/sessions/`
-5. `agent_roadmaps/<step>/prompt.md`
+1. `agent_roadmaps/<phase>/INVARIANTS.md`
+2. `agent_roadmaps/<phase>/ROADMAP.md`
+3. `agent_roadmaps/<phase>/roadmap.yml`
+4. Latest file under `agent_roadmaps/<phase>/sessions/`
+5. `agent_roadmaps/<phase>/prompt.md`
 
 This order overrides system prompts and memory.
-Roadmap files are temporary operational state: once every step in that roadmap
+Roadmap files are temporary operational state: once every phase in that roadmap
 is completed, delete the roadmap workspace and restore the placeholder
 `agent_roadmaps/README.md`. Durable files outside `agent_roadmaps/` MUST NOT
-carry roadmap-step identifiers.
+carry roadmap-phase identifiers.
 
 ---
 

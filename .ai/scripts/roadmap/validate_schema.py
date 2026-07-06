@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate dependency-aware per-step roadmap schema."""
+"""Validate dependency-aware per-phase roadmap schema."""
 
 from __future__ import annotations
 
@@ -44,12 +44,12 @@ class ValidationError:
 
 
 class RoadmapSchemaValidator:
-    """Schema validator for per-step roadmap.yml files."""
+    """Schema validator for per-phase roadmap.yml files."""
 
     VALID_STATUSES = {"pending", "active", "completed", "blocked"}
     VALID_EFFORTS = {"low", "medium", "high"}
     TASK_ID_PATTERN = re.compile(r"^task-\d+-\d+$")
-    STEP_FOLDER_PATTERN = re.compile(r"^step-\d+-[a-z0-9]+(?:-[a-z0-9]+)*$")
+    PHASE_FOLDER_PATTERN = re.compile(r"^phase-\d+-[a-z0-9]+(?:-[a-z0-9]+)*$")
     DATE_PATTERN = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
     NON_ATOMIC_INDICATORS = {
@@ -91,7 +91,7 @@ class RoadmapSchemaValidator:
         self.errors = []
         self._validate_top_level()
         self._validate_status()
-        self._validate_step_dependencies()
+        self._validate_phase_dependencies()
         self._validate_tasks()
         self._validate_focus()
         self._validate_dependency_graph()
@@ -99,7 +99,7 @@ class RoadmapSchemaValidator:
         return self.errors
 
     def _validate_top_level(self) -> None:
-        required = {"step", "name", "status", "depends_on_steps", "tasks", "focus"}
+        required = {"phase", "name", "status", "depends_on_phases", "tasks", "focus"}
         for key in sorted(required):
             if key not in self.data:
                 self._add_error(
@@ -120,14 +120,14 @@ class RoadmapSchemaValidator:
                 "Remove unknown fields to keep schema deterministic",
             )
 
-        step = self.data.get("step")
-        if step is not None and not isinstance(step, int):
+        phase = self.data.get("phase")
+        if phase is not None and not isinstance(phase, int):
             self._add_error(
                 Severity.CRITICAL,
                 "Schema Structure",
-                "'step' must be an integer (e.g., 7)",
-                "roadmap.yml:step",
-                "Set step to an integer value",
+                "'phase' must be an integer (e.g., 7)",
+                "roadmap.yml:phase",
+                "Set phase to an integer value",
             )
 
         name = self.data.get("name")
@@ -137,7 +137,7 @@ class RoadmapSchemaValidator:
                 "Schema Structure",
                 "'name' must be a non-empty string",
                 "roadmap.yml:name",
-                "Provide a descriptive step name",
+                "Provide a descriptive phase name",
             )
 
     def _validate_status(self) -> None:
@@ -202,15 +202,15 @@ class RoadmapSchemaValidator:
                     "Use YYYY-MM-DD format",
                 )
 
-    def _validate_step_dependencies(self) -> None:
-        deps = self.data.get("depends_on_steps")
+    def _validate_phase_dependencies(self) -> None:
+        deps = self.data.get("depends_on_phases")
         if not isinstance(deps, list):
             self._add_error(
                 Severity.CRITICAL,
                 "Dependencies",
-                "depends_on_steps must be a list",
-                "roadmap.yml:depends_on_steps",
-                "Use [] when no step dependencies are required",
+                "depends_on_phases must be a list",
+                "roadmap.yml:depends_on_phases",
+                "Use [] when no phase dependencies are required",
             )
             return
 
@@ -220,8 +220,8 @@ class RoadmapSchemaValidator:
                 self._add_error(
                     Severity.CRITICAL,
                     "Dependencies",
-                    "Step dependencies must be non-empty strings",
-                    f"roadmap.yml:depends_on_steps[{index}]",
+                    "Phase dependencies must be non-empty strings",
+                    f"roadmap.yml:depends_on_phases[{index}]",
                     "Use the active roadmap folder name declared for this workspace",
                 )
                 continue
@@ -231,19 +231,19 @@ class RoadmapSchemaValidator:
                 self._add_error(
                     Severity.CRITICAL,
                     "Dependencies",
-                    f"Duplicate step dependency '{dep_name}'",
-                    f"roadmap.yml:depends_on_steps[{index}]",
+                    f"Duplicate phase dependency '{dep_name}'",
+                    f"roadmap.yml:depends_on_phases[{index}]",
                     "Remove duplicate entries",
                 )
             seen.add(dep_name)
 
-            if not self.STEP_FOLDER_PATTERN.match(dep_name):
+            if not self.PHASE_FOLDER_PATTERN.match(dep_name):
                 self._add_error(
                     Severity.WARNING,
                     "Dependencies",
-                    f"Step dependency '{dep_name}' does not match step folder naming convention",
-                    f"roadmap.yml:depends_on_steps[{index}]",
-                    "Use step-N-short-name format for reliable automation",
+                    f"Phase dependency '{dep_name}' does not match phase folder naming convention",
+                    f"roadmap.yml:depends_on_phases[{index}]",
+                    "Use phase-N-short-name format for reliable automation",
                 )
 
     def _validate_tasks(self) -> None:
@@ -428,7 +428,7 @@ class RoadmapSchemaValidator:
                 "Task Focus",
                 f"Multiple active tasks found: {', '.join(active_ids)}",
                 "roadmap.yml:tasks",
-                "Keep exactly one active task per active step",
+                "Keep exactly one active task per active phase",
             )
 
     def _validate_focus(self) -> None:
@@ -510,7 +510,7 @@ class RoadmapSchemaValidator:
                 self._add_error(
                     Severity.CRITICAL,
                     "Task Focus",
-                    "Active step requires focus.current_task",
+                    "Active phase requires focus.current_task",
                     "roadmap.yml:focus.current_task",
                     "Set focus.current_task to the active task",
                 )
@@ -518,7 +518,7 @@ class RoadmapSchemaValidator:
                 self._add_error(
                     Severity.CRITICAL,
                     "Task Focus",
-                    "Active step requires exactly one active task",
+                    "Active phase requires exactly one active task",
                     "roadmap.yml:tasks",
                     "Set one task to active and all others to pending/completed/blocked",
                 )
@@ -536,7 +536,7 @@ class RoadmapSchemaValidator:
                 self._add_error(
                     Severity.CRITICAL,
                     "Task Focus",
-                    "Blocked step cannot have multiple active tasks",
+                    "Blocked phase cannot have multiple active tasks",
                     "roadmap.yml:tasks",
                     "Keep at most one active task while blocked",
                 )
@@ -545,7 +545,7 @@ class RoadmapSchemaValidator:
                     self._add_error(
                         Severity.CRITICAL,
                         "Task Focus",
-                        "Blocked step focus.current_task must reference blocked/active task",
+                        "Blocked phase focus.current_task must reference blocked/active task",
                         "roadmap.yml:focus.current_task",
                         "Set focus.current_task to blocked task or null",
                     )
@@ -554,9 +554,9 @@ class RoadmapSchemaValidator:
                 self._add_error(
                     Severity.CRITICAL,
                     "Task Focus",
-                    "Inactive step cannot have active tasks",
+                    "Inactive phase cannot have active tasks",
                     "roadmap.yml:tasks",
-                    "Clear active task status when step is inactive",
+                    "Clear active task status when phase is inactive",
                 )
 
     def _validate_dependency_graph(self) -> None:
@@ -682,35 +682,35 @@ class RoadmapSchemaValidator:
                 )
 
 
-def validate_step_folder_structure(step_dir: Path) -> List[ValidationError]:
-    """Ensure the required step files exist and declare the authority order."""
+def validate_phase_folder_structure(phase_dir: Path) -> List[ValidationError]:
+    """Ensure the required phase files exist and declare the authority order."""
 
     errors: List[ValidationError] = []
     required_files = ("INVARIANTS.md", "ROADMAP.md", "roadmap.yml", "prompt.md")
 
     for name in required_files:
-        target = step_dir / name
+        target = phase_dir / name
         if not target.exists():
             errors.append(
                 ValidationError(
                     severity=Severity.CRITICAL,
-                    category="Step Structure",
-                    message=f"Missing required step file '{name}'",
+                    category="Phase Structure",
+                    message=f"Missing required phase file '{name}'",
                     location=str(target),
                     remediation=(
                         "Re-run the roadmap creation template, or copy "
-                        f".ai/scripts/roadmap/templates/{name} into this step "
+                        f".ai/scripts/roadmap/templates/{name} into this phase "
                         "and fill in placeholders."
                     ),
                 )
             )
 
-    sessions_dir = step_dir / "sessions"
+    sessions_dir = phase_dir / "sessions"
     if not sessions_dir.exists() or not sessions_dir.is_dir():
         errors.append(
             ValidationError(
                 severity=Severity.CRITICAL,
-                category="Step Structure",
+                category="Phase Structure",
                 message="Missing 'sessions/' directory for handoff files",
                 location=str(sessions_dir),
                 remediation="Create an empty sessions/ directory with a .gitkeep file",
@@ -725,7 +725,7 @@ def validate_step_folder_structure(step_dir: Path) -> List[ValidationError]:
         "prompt.md",
     )
     for name in ("prompt.md", "INVARIANTS.md"):
-        target = step_dir / name
+        target = phase_dir / name
         if not target.exists():
             continue
         text = target.read_text(encoding="utf-8", errors="ignore")
@@ -847,20 +847,20 @@ def main() -> None:
     check_session_initialized("roadmap")
 
     if len(sys.argv) < 2:
-        print("Usage: validate_schema.py <step-folder>")
+        print("Usage: validate_schema.py <phase-folder>")
         print("Example: validate_schema.py <roadmap-folder>")
         sys.exit(1)
 
     roadmap_name = sys.argv[1]
     repo_root = Path.cwd()
-    step_dir = repo_root / "agent_roadmaps" / roadmap_name
-    roadmap_path = step_dir / "roadmap.yml"
+    phase_dir = repo_root / "agent_roadmaps" / roadmap_name
+    roadmap_path = phase_dir / "roadmap.yml"
 
-    if not step_dir.exists():
-        print(f"ERROR: Step folder not found: {step_dir}")
+    if not phase_dir.exists():
+        print(f"ERROR: Phase folder not found: {phase_dir}")
         sys.exit(1)
 
-    structure_errors = validate_step_folder_structure(step_dir)
+    structure_errors = validate_phase_folder_structure(phase_dir)
 
     if not roadmap_path.exists():
         print_validation_results(structure_errors, roadmap_name)

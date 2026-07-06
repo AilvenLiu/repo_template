@@ -4,23 +4,23 @@ Quick checklist for dependency-aware roadmap files.
 
 ## Mandatory Checklist
 
-- [ ] Step folder is `agent_roadmaps/step-N-name/`
-- [ ] `roadmap.yml` has keys: `step`, `name`, `status`, `depends_on_steps`, `tasks`, `focus`
+- [ ] Phase folder is `agent_roadmaps/phase-N-name/`
+- [ ] `roadmap.yml` has keys: `phase`, `name`, `status`, `depends_on_phases`, `tasks`, `focus`
 - [ ] `status` includes: `active`, `blocked`, `started_at`, `completed_at`
-- [ ] `depends_on_steps` explicitly lists upstream step folder names (or `[]`)
+- [ ] `depends_on_phases` explicitly lists upstream phase folder names (or `[]`)
 - [ ] Every task includes: `id`, `title`, `description`, `status`, `effort`, `key_files`, `depends_on`
 - [ ] Task IDs use `task-N-M` format
 - [ ] Task dependencies reference valid task IDs
 - [ ] Dependency graph has no cycles
-- [ ] Active step has exactly one active task and matching `focus.current_task`
-- [ ] Validation passes: `python3 .ai/scripts/roadmap/validate_schema.py <step-folder>`
-- [ ] Durable files outside `agent_roadmaps/` do not mention roadmap-stage identifiers
-- [ ] Full roadmap series is deleted once every step is completed
+- [ ] Active phase has exactly one active task and matching `focus.current_task`
+- [ ] Validation passes: `python3 .ai/scripts/roadmap/validate_schema.py <phase-folder>`
+- [ ] Durable files outside `agent_roadmaps/` do not mention roadmap-phase identifiers
+- [ ] Full roadmap series is deleted once every phase is completed
 
 ## Minimal Schema
 
 ```yaml
-step: 7
+phase: 7
 name: Close the Operational Loop
 
 status:
@@ -29,8 +29,8 @@ status:
   started_at: "2026-04-17"
   completed_at: null
 
-depends_on_steps:
-  - upstream-roadmap-step
+depends_on_phases:
+  - phase-6-upstream
 
 tasks:
   - id: task-7-1
@@ -49,7 +49,7 @@ focus:
 
 ## Common Violations
 
-- Missing or empty `depends_on_steps`
+- Missing or malformed `depends_on_phases`
 - Missing `depends_on` on tasks
 - Unknown task IDs in `depends_on`
 - Multiple active tasks
@@ -58,8 +58,8 @@ focus:
 
 ## Validation Workflow
 
-1. Create step folders with `create.py`
+1. Create phase folders with `create.py --phases <N> --phase-names <names...>`
 2. Fill `INVARIANTS.md`, `ROADMAP.md`, `roadmap.yml`, `prompt.md`
 3. Validate with `validate_schema.py`
 4. Fix critical errors and re-run validation
-5. Activate only dependency-ready step/task work
+5. Activate only dependency-ready phase/task work

@@ -1,4 +1,4 @@
-# Agent Roadmaps - Dependency-Aware Step Series
+# Agent Roadmaps - Dependency-Aware Phase Series
 
 **This document is authoritative for all AI agents operating in this repository.**
 Any violation of the rules defined here is a critical failure.
@@ -12,39 +12,39 @@ Read this file at the start of every session.
 - **Description**:
   <ROADMAP_DESCRIPTION>
 
-## 2. Step Series Status
+## 2. Phase Series Status
 
-At most one step may be active at any time.
+At most one phase may be active at any time.
 
-| Step | Folder | Status | Depends On |
+| Phase | Folder | Status | Depends On |
 |-------|--------|--------|------------|
-<STEP_TABLE_ROWS>
+<PHASE_TABLE_ROWS>
 
-**Active step**: `<ACTIVE_STEP_FOLDER>`
+**Active phase**: `<ACTIVE_PHASE_FOLDER>`
 
 ## 3. Dependency Graph
 
 ```text
-<STEP_DEP_GRAPH>
+<PHASE_DEP_GRAPH>
 ```
 
 Rules:
-- A step may be activated only when every `depends_on_steps` entry is completed.
-- The step branch MUST be `roadmap/<step-folder-name>`.
-- Next step activation is blocked until previous step PR/MR is merged.
+- A phase may be activated only when every `depends_on_phases` entry is completed.
+- The phase branch MUST be `roadmap/<phase-folder-name>`.
+- Next phase activation is blocked until previous phase PR/MR is merged.
 
 ## 4. Branching Protocol
 
-Each step has a dedicated git branch:
-- Branch name: `roadmap/<step-folder-name>`
+Each phase has a dedicated git branch:
+- Branch name: `roadmap/<phase-folder-name>`
 - Created from: base branch (`main`, `master`, or project default)
-- Merged via: PR/MR after step completion
+- Merged via: PR/MR after phase completion
 
-## 5. Per-Step Folder Structure
+## 5. Per-Phase Folder Structure
 
 ```text
 agent_roadmaps/
-  <step-folder-name>/
+  <phase-folder-name>/
     INVARIANTS.md
     ROADMAP.md
     roadmap.yml
@@ -56,10 +56,10 @@ agent_roadmaps/
 
 At every session start:
 1. Read this file.
-2. Identify the active step.
-3. Read active step `INVARIANTS.md`, `ROADMAP.md`, `roadmap.yml`, and latest session handoff.
-4. Confirm branch is `roadmap/<active-step-folder-name>`.
-5. Confirm active step dependencies are satisfied before implementation.
+2. Identify the active phase.
+3. Read active phase `INVARIANTS.md`, `ROADMAP.md`, `roadmap.yml`, and latest session handoff.
+4. Confirm branch is `roadmap/<active-phase-folder-name>`.
+5. Confirm active phase dependencies are satisfied before implementation.
 
 ## 7. Session Handoff Rules
 

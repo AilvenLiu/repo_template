@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Create new dependency-aware per-step roadmap structure from template."""
+"""Create new dependency-aware per-phase roadmap structure from template."""
 
 from __future__ import annotations
 
@@ -39,22 +39,22 @@ def _serialise_dependency_inline(deps: List[str]) -> str:
     return "[" + ", ".join(deps) + "]"
 
 
-def _make_step_table_rows(step_names: List[str]) -> str:
+def _make_phase_table_rows(phase_names: List[str]) -> str:
     rows: List[str] = []
-    for index, suffix in enumerate(step_names):
-        folder = f"step-{index}-{suffix}"
+    for index, suffix in enumerate(phase_names):
+        folder = f"phase-{index}-{suffix}"
         status = "active" if index == 0 else "pending"
         dependency = (
-            "none" if index == 0 else f"step-{index - 1}-{step_names[index - 1]}"
+            "none" if index == 0 else f"phase-{index - 1}-{phase_names[index - 1]}"
         )
         rows.append(f"| {index} | `{folder}` | {status} | `{dependency}` |")
     return "\n".join(rows)
 
 
-def _make_dependency_graph(step_names: List[str]) -> str:
-    if not step_names:
+def _make_dependency_graph(phase_names: List[str]) -> str:
+    if not phase_names:
         return "(none)"
-    chain = [f"step-{idx}-{suffix}" for idx, suffix in enumerate(step_names)]
+    chain = [f"phase-{idx}-{suffix}" for idx, suffix in enumerate(phase_names)]
     if len(chain) == 1:
         return chain[0]
     return " -> ".join(chain)
@@ -65,7 +65,7 @@ def _write_series_readme(
     templates_dir: Path,
     roadmap_name: str,
     description: str,
-    step_names: List[str],
+    phase_names: List[str],
     repo_root: Path,
 ) -> None:
     template_path = templates_dir / "README.md"
@@ -87,9 +87,9 @@ def _write_series_readme(
         "<ROADMAP_TITLE>": roadmap_name.replace("-", " ").title(),
         "<ROADMAP_SLUG>": roadmap_name,
         "<ROADMAP_DESCRIPTION>": description_block,
-        "<STEP_TABLE_ROWS>": _make_step_table_rows(step_names),
-        "<ACTIVE_STEP_FOLDER>": f"step-0-{step_names[0]}",
-        "<STEP_DEP_GRAPH>": _make_dependency_graph(step_names),
+        "<PHASE_TABLE_ROWS>": _make_phase_table_rows(phase_names),
+        "<ACTIVE_PHASE_FOLDER>": f"phase-0-{phase_names[0]}",
+        "<PHASE_DEP_GRAPH>": _make_dependency_graph(phase_names),
     }
 
     content = _replace_placeholders(
@@ -99,35 +99,35 @@ def _write_series_readme(
     print(f"Created: {output_path.relative_to(repo_root)}")
 
 
-def _create_step_folder(
-    step_folder_name: str,
-    step_number: int,
-    step_title: str,
+def _create_phase_folder(
+    phase_folder_name: str,
+    phase_number: int,
+    phase_title: str,
     task_prefix: str,
     is_active: bool,
-    step_dependencies: List[str],
+    phase_dependencies: List[str],
     roadmaps_dir: Path,
     templates_dir: Path,
     repo_root: Path,
 ) -> None:
-    step_dir = roadmaps_dir / step_folder_name
-    if step_dir.exists():
-        print(f"ERROR: Step directory already exists: {step_dir}")
+    phase_dir = roadmaps_dir / phase_folder_name
+    if phase_dir.exists():
+        print(f"ERROR: Phase directory already exists: {phase_dir}")
         sys.exit(1)
 
-    step_dir.mkdir(parents=True, exist_ok=False)
+    phase_dir.mkdir(parents=True, exist_ok=False)
 
     replacements = {
-        "<STEP_FOLDER_NAME>": step_folder_name,
-        "<STEP_NUMBER>": str(step_number),
-        "<STEP_TITLE>": step_title,
+        "<PHASE_FOLDER_NAME>": phase_folder_name,
+        "<PHASE_NUMBER>": str(phase_number),
+        "<PHASE_TITLE>": phase_title,
         "<TASK_PREFIX>": task_prefix,
-        "<STEP_DEPENDENCIES>": _serialise_dependency_inline(step_dependencies),
+        "<PHASE_DEPENDENCIES>": _serialise_dependency_inline(phase_dependencies),
     }
 
     for template_file in ["INVARIANTS.md", "ROADMAP.md", "roadmap.yml", "prompt.md"]:
         source = templates_dir / template_file
-        destination = step_dir / template_file
+        destination = phase_dir / template_file
 
         if not source.exists():
             print(f"  WARNING: Template not found: {template_file}")
@@ -158,16 +158,16 @@ def _create_step_folder(
         else:
             destination.write_text(content, encoding="utf-8")
 
-    (step_dir / "sessions").mkdir(exist_ok=True)
-    (step_dir / "sessions" / ".gitkeep").write_text("", encoding="utf-8")
+    (phase_dir / "sessions").mkdir(exist_ok=True)
+    (phase_dir / "sessions" / ".gitkeep").write_text("", encoding="utf-8")
 
-    rel = step_dir.relative_to(repo_root)
+    rel = phase_dir.relative_to(repo_root)
     label = "active" if is_active else "pending"
-    print(f"  Created step folder: {rel}/ ({label})")
+    print(f"  Created phase folder: {rel}/ ({label})")
 
 
 def create_roadmap(
-    name: str, steps: int, step_names: List[str], description: str = ""
+    name: str, phases: int, phase_names: List[str], description: str = ""
 ) -> None:
     repo_root = Path.cwd()
     manager = RoadmapManager(repo_root)
@@ -176,7 +176,7 @@ def create_roadmap(
 
     active = manager.find_active_roadmap()
     if active:
-        print(f"ERROR: Step '{active['name']}' is already active")
+        print(f"ERROR: Phase '{active['name']}' is already active")
         print("You must complete or deactivate it before creating a new roadmap")
         print(f"Active roadmap path: {active['path']}")
         sys.exit(1)
@@ -186,10 +186,10 @@ def create_roadmap(
         print("Name must be lowercase with hyphens (e.g., strategy-validation)")
         sys.exit(1)
 
-    for suffix in step_names:
+    for suffix in phase_names:
         if not validate_roadmap_name(suffix):
-            print(f"ERROR: Invalid step name '{suffix}'")
-            print("Step names must be lowercase with hyphens (e.g., baseline)")
+            print(f"ERROR: Invalid phase name '{suffix}'")
+            print("Phase names must be lowercase with hyphens (e.g., baseline)")
             sys.exit(1)
 
     roadmaps_dir.mkdir(parents=True, exist_ok=True)
@@ -199,67 +199,67 @@ def create_roadmap(
         templates_dir=templates_dir,
         roadmap_name=name,
         description=description,
-        step_names=step_names,
+        phase_names=phase_names,
         repo_root=repo_root,
     )
 
-    created_steps: List[Tuple[str, bool]] = []
+    created_phases: List[Tuple[str, bool]] = []
 
     try:
-        for index, suffix in enumerate(step_names):
-            folder_name = f"step-{index}-{suffix}"
-            step_title = suffix.replace("-", " ").title()
+        for index, suffix in enumerate(phase_names):
+            folder_name = f"phase-{index}-{suffix}"
+            phase_title = suffix.replace("-", " ").title()
             task_prefix = f"task-{index}"
             is_active = index == 0
             dependencies = (
-                [] if index == 0 else [f"step-{index - 1}-{step_names[index - 1]}"]
+                [] if index == 0 else [f"phase-{index - 1}-{phase_names[index - 1]}"]
             )
 
-            _create_step_folder(
-                step_folder_name=folder_name,
-                step_number=index,
-                step_title=step_title,
+            _create_phase_folder(
+                phase_folder_name=folder_name,
+                phase_number=index,
+                phase_title=phase_title,
                 task_prefix=task_prefix,
                 is_active=is_active,
-                step_dependencies=dependencies,
+                phase_dependencies=dependencies,
                 roadmaps_dir=roadmaps_dir,
                 templates_dir=templates_dir,
                 repo_root=repo_root,
             )
-            created_steps.append((folder_name, is_active))
+            created_phases.append((folder_name, is_active))
 
     except SystemExit:
         raise
     except Exception as exc:
-        print(f"ERROR: Failed during step creation: {exc}")
-        for folder_name, _ in created_steps:
-            step_dir = roadmaps_dir / folder_name
-            if step_dir.exists():
-                shutil.rmtree(step_dir)
+        print(f"ERROR: Failed during phase creation: {exc}")
+        for folder_name, _ in created_phases:
+            phase_dir = roadmaps_dir / folder_name
+            if phase_dir.exists():
+                shutil.rmtree(phase_dir)
         sys.exit(1)
 
-    print(f"\nRoadmap created with {len(created_steps)} step(s):")
-    for folder_name, is_active in created_steps:
+    print(f"\nRoadmap created with {len(created_phases)} phase(s):")
+    for folder_name, is_active in created_phases:
         status = "(active)" if is_active else "(pending)"
         print(f"  {folder_name}/  {status}")
 
-    first_folder = created_steps[0][0]
+    first_folder = created_phases[0][0]
     print("\nNext steps:")
-    print("1. Edit each step's INVARIANTS.md, ROADMAP.md, roadmap.yml, and prompt.md")
-    print("2. Confirm or adjust depends_on_steps and task-level depends_on values")
+    print("1. Edit each phase's INVARIANTS.md, ROADMAP.md, roadmap.yml, and prompt.md")
+    print("2. Confirm or adjust depends_on_phases and task-level depends_on values")
     print(f"3. Create branch: git checkout -b roadmap/{first_folder}")
     print(f"4. Validate: python3 .ai/scripts/roadmap/validate_schema.py {first_folder}")
 
 
 def _parse_args(argv=None):
     parser = argparse.ArgumentParser(
-        description="Create a dependency-aware roadmap step series.",
+        description="Create a dependency-aware roadmap phase series.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=(
             "Examples:\n"
             "  create.py strategy-rebuild\n"
-            "  create.py strategy-rebuild --steps 3 --step-names baseline refactor rollout\n"
-            "  create.py strategy-rebuild 'Quant stack overhaul' --steps 2 --step-names core hardening\n"
+            "  create.py strategy-rebuild --phases 3 --phase-names baseline refactor rollout\n"
+            "  create.py strategy-rebuild 'Quant stack overhaul' --phases 2 --phase-names core hardening\n"
         ),
     )
     parser.add_argument("name", help="Roadmap slug (lowercase-hyphen format)")
@@ -267,16 +267,34 @@ def _parse_args(argv=None):
         "description", nargs="?", default="", help="Optional roadmap description"
     )
     parser.add_argument(
-        "--steps", type=int, default=1, metavar="N", help="Number of step folders"
+        "--phases",
+        type=int,
+        default=1,
+        metavar="N",
+        help="Number of phase folders",
     )
     parser.add_argument(
-        "--step-names",
+        "--steps",
+        dest="phases",
+        type=int,
+        metavar="N",
+        help=argparse.SUPPRESS,
+    )
+    parser.add_argument(
+        "--phase-names",
         nargs="+",
         metavar="NAME",
         help=(
-            "Suffix for each step folder. Must match --steps count. "
-            "If omitted: single step uses roadmap name; multi-step uses todo placeholders."
+            "Suffix for each phase folder. Must match --phases count. "
+            "If omitted: single phase uses roadmap name; multi-phase uses todo placeholders."
         ),
+    )
+    parser.add_argument(
+        "--step-names",
+        dest="phase_names",
+        nargs="+",
+        metavar="NAME",
+        help=argparse.SUPPRESS,
     )
     return parser.parse_args(argv)
 
@@ -286,28 +304,28 @@ def main(argv=None) -> None:
 
     args = _parse_args(argv)
 
-    if args.steps < 1:
-        print("ERROR: --steps must be >= 1")
+    if args.phases < 1:
+        print("ERROR: --phases must be >= 1")
         sys.exit(1)
 
-    if args.step_names:
-        if len(args.step_names) != args.steps:
+    if args.phase_names:
+        if len(args.phase_names) != args.phases:
             print(
-                f"ERROR: --step-names count ({len(args.step_names)}) "
-                f"does not match --steps {args.steps}"
+                f"ERROR: --phase-names count ({len(args.phase_names)}) "
+                f"does not match --phases {args.phases}"
             )
             sys.exit(1)
-        step_names = args.step_names
+        phase_names = args.phase_names
     else:
-        if args.steps == 1:
-            step_names = [args.name]
+        if args.phases == 1:
+            phase_names = [args.name]
         else:
-            step_names = [f"todo-{idx}" for idx in range(args.steps)]
+            phase_names = [f"todo-{idx}" for idx in range(args.phases)]
 
     create_roadmap(
         name=args.name,
-        steps=args.steps,
-        step_names=step_names,
+        phases=args.phases,
+        phase_names=phase_names,
         description=args.description,
     )
 

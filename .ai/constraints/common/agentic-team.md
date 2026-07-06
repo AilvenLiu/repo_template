@@ -28,7 +28,7 @@ when ALL of the following hold:
    - Sub-tasks each exceed ~3 tool calls.
    - Running sub-tasks sequentially in the main context would exceed
      ~50% of remaining context budget.
-4. The active roadmap step (if any) permits it — the single-active-task
+4. The active roadmap phase (if any) permits it — the single-active-task
    rule is never violated by parallel sub-agents; only one authoritative
    task is still `focus.current_task`.
 
@@ -45,7 +45,7 @@ The agent MUST NOT launch an agentic team when:
 - Sub-tasks share write targets (risk of conflicting edits).
 - The decision depends on synchronous user confirmation.
 - The remaining work fits in one or two direct tool calls.
-- The active roadmap step has only a single atomic task in progress.
+- The active roadmap phase has only a single atomic task in progress.
 - Sub-agents would need the user to arbitrate between conflicting outputs
   (prefer a sequential plan and single decision point instead).
 

@@ -81,13 +81,13 @@ def test_find_active_roadmap_detects_new_schema() -> None:
     with tempfile.TemporaryDirectory() as tmp_dir:
         repo = Path(tmp_dir)
         roadmaps = repo / "agent_roadmaps"
-        inactive = roadmaps / "step-0-base"
-        active = roadmaps / "step-1-next"
+        inactive = roadmaps / "phase-0-base"
+        active = roadmaps / "phase-1-next"
         inactive.mkdir(parents=True)
         active.mkdir(parents=True)
 
         inactive_data = {
-            "step": 0,
+            "phase": 0,
             "name": "Base",
             "status": {
                 "active": False,
@@ -95,12 +95,12 @@ def test_find_active_roadmap_detects_new_schema() -> None:
                 "started_at": None,
                 "completed_at": None,
             },
-            "depends_on_steps": [],
+            "depends_on_phases": [],
             "tasks": [],
             "focus": {"current_task": None, "notes": ""},
         }
         active_data = {
-            "step": 1,
+            "phase": 1,
             "name": "Next",
             "status": {
                 "active": True,
@@ -108,7 +108,7 @@ def test_find_active_roadmap_detects_new_schema() -> None:
                 "started_at": "2026-04-17",
                 "completed_at": None,
             },
-            "depends_on_steps": ["step-0-base"],
+            "depends_on_phases": ["phase-0-base"],
             "tasks": [],
             "focus": {"current_task": None, "notes": ""},
         }
@@ -122,4 +122,4 @@ def test_find_active_roadmap_detects_new_schema() -> None:
 
         detected = find_active_roadmap(repo)
         assert detected is not None
-        assert detected.name == "step-1-next"
+        assert detected.name == "phase-1-next"

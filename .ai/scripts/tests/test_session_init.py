@@ -32,6 +32,7 @@ class TestConstraintLoadingRoundTrip:
         expected = [
             "common/git-workflow",
             "common/session-discipline",
+            "common/closure-discipline",
             "common/karpathy-guidelines",
             "common/mcp-integration",
             "common/ascii-only",
@@ -57,6 +58,7 @@ class TestConstraintLoadingRoundTrip:
         expected = [
             "common/git-workflow",
             "common/session-discipline",
+            "common/closure-discipline",
             "common/karpathy-guidelines",
             "common/mcp-integration",
             "common/ascii-only",
@@ -84,6 +86,7 @@ class TestConstraintLoadingRoundTrip:
         expected = [
             "common/git-workflow",
             "common/session-discipline",
+            "common/closure-discipline",
             "common/karpathy-guidelines",
             "common/mcp-integration",
             "common/ascii-only",
@@ -109,6 +112,7 @@ class TestConstraintLoadingRoundTrip:
         expected = [
             "common/git-workflow",
             "common/session-discipline",
+            "common/closure-discipline",
             "common/karpathy-guidelines",
             "common/mcp-integration",
             "common/ascii-only",
@@ -133,6 +137,7 @@ class TestConstraintLoadingRoundTrip:
         expected = [
             "common/git-workflow",
             "common/session-discipline",
+            "common/closure-discipline",
             "common/karpathy-guidelines",
             "common/mcp-integration",
             "common/ascii-only",
@@ -160,6 +165,7 @@ class TestConstraintLoadingRoundTrip:
         expected = [
             "common/git-workflow",
             "common/session-discipline",
+            "common/closure-discipline",
             "common/karpathy-guidelines",
             "common/mcp-integration",
             "common/ascii-only",
