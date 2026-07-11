@@ -7,6 +7,10 @@ skill support across Claude Code and Codex-style `agents.md` consumers.
 
 ## Overview
 
+See [Agent instruction compatibility](docs/agent-instruction-compatibility.md)
+for the cross-platform hierarchy model, validation procedure, and migration
+guidance for previously generated repositories.
+
 Language-specific source files live under `templates/<language>/` with their
 generic names (`CLAUDE.md`, `AGENTS.md`, `CONTRIBUTING.md`, `.gitignore`,
 `project.yml`). The `/create-project` skill copies the shared template tree

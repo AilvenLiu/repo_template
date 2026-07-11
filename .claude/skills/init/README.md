@@ -1,10 +1,13 @@
 # Session Initialization Skill
 
-Intelligent, context-aware session initialization for Claude Code that automatically loads relevant constraints based on your current work.
+Intelligent, context-aware session initialization for Claude Code that selects
+relevant constraints based on your current work.
 
 ## Overview
 
-The `/init` skill solves the problem of loading large constraint files (2000+ lines) at every session start by intelligently detecting your context and loading only the relevant sections you need (typically 500-1000 lines).
+The `/init` skill avoids injecting large constraint bodies at every session
+start. It detects the current context and prints a bounded manifest of the
+constraint files that must be read for the work at hand.
 
 ## Quick Start
 
@@ -20,7 +23,7 @@ That's it! The skill will:
 - Run the capability audit from `.ai/capabilities.yml`
 - Filter capability requirements that are specific to the detected project type
 - Analyze your git status
-- Print the full text of the relevant constraints based on what you're working on
+- Print a bounded manifest of the relevant constraints based on what you're working on
 
 ## Features
 
@@ -35,7 +38,7 @@ Detects whether you're working on Python, C++/CUDA, or hybrid projects by analyz
 
 Loads constraints based on:
 - **Project profile**: Python, C++/CUDA, and hybrid-specific constraints
-- **Modified files**: Only loads constraints for file types you're actually working on
+- **Modified files**: Selects constraints for file types you're actually working on
 - **File intent**: Documentation, test, and CMake-related constraints load only when matching files changed
 - **Git context**: Warns about protected branches, analyzes changes
 - **Active roadmaps**: Loads roadmap discipline if roadmap is active
@@ -65,7 +68,7 @@ The audit will block the session until they are available. The main setup comman
 claude plugin install context7@claude-plugins-official
 # Fallback method (manual MCP server):
 claude mcp add --transport http context7 https://mcp.context7.com/mcp \
-  --header "CONTEXT7_API_KEY: ctx7sk-0eaf81b0-48fa-418f-9e7f-181103e50665"
+  --header "CONTEXT7_API_KEY: <your-context7-api-key>"
 ```
 
 ## Usage
@@ -78,8 +81,9 @@ claude mcp add --transport http context7 https://mcp.context7.com/mcp \
 
 ### Direct Invocation
 
-Normal `/init` already prints the selected constraint bodies. If you need to
-run the adapter directly while debugging the skill path, you can still invoke:
+Normal `/init` prints selected constraint paths. Read those source files before
+the work to which they apply. For an operator-only body dump while debugging
+the skill path, invoke:
 
 ```bash
 .ai/bin/agent-init --platform claude --verbose
@@ -122,7 +126,7 @@ Constraints are organized by topic in `.ai/constraints/`:
 2. **Git Analysis**: Checks current branch and modified files
 3. **Roadmap Check**: Looks for active roadmaps using `/roadmap` skill
 4. **Context Analysis**: Determines which constraints are needed based on modified files
-5. **Constraint Loading**: Selects and prints the relevant constraint files
+5. **Constraint Manifest**: Selects and prints the relevant constraint paths
 6. **Guidance**: Provides next steps for the session
 
 Hybrid projects load:
@@ -149,36 +153,28 @@ SESSION INITIALIZATION
 LOADED CONSTRAINTS
 ======================================================================
 
-[CONSTRAINT] common/git-workflow
-   # Git Workflow Constraints
-
-[CONSTRAINT] common/roadmap-awareness
-   # Roadmap Awareness and Execution Discipline
-
-[CONSTRAINT] python/formatting
-   # Python Code Style and Formatting Constraints
-
-[CONSTRAINT] python/type-checking
-   # Python Type Hints and Static Type Checking Constraints
-
-[CONSTRAINT] python/testing
-   # Python Testing Requirements
+[READ] .ai/constraints/common/git-workflow.md
+[READ] .ai/constraints/common/roadmap-awareness.md
+[READ] .ai/constraints/python/formatting.md
+[READ] .ai/constraints/python/type-checking.md
+[READ] .ai/constraints/python/testing.md
 
 ======================================================================
 Total constraints loaded: 5
 ======================================================================
 
 NEXT STEPS:
-1. Review the loaded constraints above
+1. Read the constraint files in the manifest above
 2. If working on a roadmap, read roadmap files in authority order
-3. Proceed with your work following the loaded constraints
+3. Read the listed sources, then proceed with their applicable constraints
 ```
 
 ## Integration with Other Skills
 
 ### `/karpathy-guidelines` Skill
 - The behavioural guidance is bundled locally in the template and copied into real projects
-- `/init` always loads the matching common constraint so the same guidance is active even without an explicit skill invocation
+- `/init` always selects the matching common constraint so the canonical
+  guidance is discoverable even without an explicit skill invocation
 
 ### Closure Discipline
 - `/init` always loads `common/closure-discipline.md`
@@ -190,11 +186,12 @@ NEXT STEPS:
 - Reminds you to read roadmap files in authority order
 
 ### `/pre-commit` Skill
-- Use `/pre-commit` before committing to validate against loaded constraints
+- Use `/pre-commit` before committing to validate the applicable constraints
 - Ensures code meets formatting, linting, type checking, and testing requirements
 
 ### `/dependency` Skill
-- When you add dependencies with `/dependency`, next `/init` will load dependency constraints
+- When you add dependencies with `/dependency`, the next `/init` will select
+  the relevant dependency constraints
 - Ensures you follow proper dependency management practices
 
 ## Benefits

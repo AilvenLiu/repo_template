@@ -74,14 +74,18 @@ After sub-agents return:
 3. Resolve conflicts between sub-agent reports explicitly, citing the
    source files rather than the sub-agent output.
 
-## 5. Authority Interaction
+## 5. Repository-Local Precedence
 
-Agentic-team use is subordinate to:
+Within repository-controlled guidance, agentic-team use is subordinate to:
 
-- Roadmap authority order:
-  `INVARIANTS.md` > `ROADMAP.md` > `roadmap.yml` > `sessions/` > `prompt.md`
+- Active-roadmap precedence:
+  `INVARIANTS.md` > `roadmap.yml` > `ROADMAP.md` > `sessions/` > `prompt.md`
 - `.ai/constraints/common/*.md`
 - Platform-specific entrypoint (`CLAUDE.md` for Claude Code; `AGENTS.md` for Codex / Cursor / Cline / generic agents.md consumers)
+
+This local ordering does not supersede higher-priority platform or tool
+requirements. Session reports are evidence, not a replacement for current
+repository state.
 
 Parallel execution MUST NOT be used to bypass capability-audit failures,
 protected-branch rules, dependency order, or pre-commit validation.

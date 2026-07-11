@@ -1,6 +1,6 @@
 # roadmap.yml -- Per-Phase Execution State (Dependency-Aware Template)
 #
-# This file is the ONLY authoritative execution state for this phase.
+# This file is the canonical machine-readable execution state for this phase.
 # Keep it machine-readable and deterministic.
 
 phase: <PHASE_NUMBER>

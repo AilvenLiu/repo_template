@@ -105,6 +105,7 @@ def _expected_wrappers(manifest: dict, project_root: Path) -> set[str]:
 
 def _expected_constraints(project_type: str) -> set[str]:
     common = {
+        "common/instruction-hierarchy",
         "common/git-workflow",
         "common/session-discipline",
             "common/closure-discipline",
@@ -202,14 +203,12 @@ def compliance(tmp_path_factory) -> list[Scenario]:
             expected_constraints = _expected_constraints(project_type)
             scenario.add("constraints_loaded", loaded, expected_constraints)
 
-            # Claude: constraint bodies printed inline
-            if platform == "claude":
-                printed = {
-                    key
-                    for key in expected_constraints
-                    if f"[CONSTRAINT] {key}" in init.stdout
-                }
-                scenario.add("constraint_bodies_printed", printed, expected_constraints)
+            manifested = {
+                key
+                for key in expected_constraints
+                if f"[READ] .ai/constraints/{key}.md" in init.stdout
+            }
+            scenario.add("constraint_manifest_printed", manifested, expected_constraints)
 
             scenarios.append(scenario)
 

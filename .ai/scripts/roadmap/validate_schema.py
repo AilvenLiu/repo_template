@@ -741,9 +741,9 @@ def validate_phase_folder_structure(phase_dir: Path) -> List[ValidationError]:
                     ),
                     location=str(target),
                     remediation=(
-                        "Declare the exact order INVARIANTS.md > ROADMAP.md > "
-                        "roadmap.yml > sessions/ > prompt.md so fresh sessions "
-                        "pick up the rule without guessing."
+                        "Declare repository-local precedence as INVARIANTS.md > "
+                        "roadmap.yml > ROADMAP.md > sessions/ > prompt.md so "
+                        "fresh sessions pick up the rule without guessing."
                     ),
                 )
             )

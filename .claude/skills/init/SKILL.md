@@ -20,7 +20,9 @@ Session initialization. FIRST ACTION every session — skipping is a critical fa
    - checks required project skills under `.claude/skills/` and `.ai/skills/`
    - checks required `.ai/bin/agent-*` wrappers are executable
    - checks Context7 MCP is configured
-3. Prints the **full text** of every selected constraint (common + language-specific) into stdout so the agent ingests it immediately.
+3. Prints a bounded manifest of selected constraint paths. Read the listed
+   files before work to which they apply instead of injecting every body into
+   the initial session context.
 4. Writes `.ai/session_state.json` and mirrors it to `.claude/session_state.json`.
 
 ## Failure modes
@@ -39,6 +41,7 @@ Read/Glob/Grep are always permitted for exploration.
 
 ## Constraints loaded (always)
 
+- `common/instruction-hierarchy` — scoped repository-local precedence
 - `common/git-workflow` — protected branches, commit attribution
 - `common/session-discipline` — session lifecycle rules
 - `common/closure-discipline` — rigorous review and evidence before closure

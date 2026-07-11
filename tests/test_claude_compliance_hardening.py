@@ -47,7 +47,8 @@ def test_root_claude_contains_claude_specific_loading_instructions() -> None:
         "Read `.ai/capabilities.yml`",
         ".ai/constraints/cpp/",
         ".ai/constraints/hybrid/",
-        "prefer the stricter rule",
+        "bounded constraint manifest",
+        "does not supersede",
         "Do not silently bypass hooks",
     ]
     for needle in required:
@@ -84,6 +85,23 @@ def test_template_project_yml_contains_project_profile_metadata() -> None:
         assert "project_profile:" in content
         for needle in needles:
             assert needle in content
+
+
+def test_hybrid_entrypoints_match_the_generated_profile_schema() -> None:
+    expected_profile = [
+        "language: [python, cpp]",
+        "build_system: scikit-build-core",
+        "bindings: pybind11",
+        "distribution: pypi-wheel",
+        "hardware_targets: [cuda]",
+        "external_dependencies: system_cuda",
+    ]
+    for rel_path in ("templates/hybrid/AGENTS.md", "templates/hybrid/CLAUDE.md"):
+        content = _text(rel_path)
+        for field in expected_profile:
+            assert field in content, f"{rel_path} missing profile field: {field}"
+        assert "language: [python, cpp, cuda]" not in content
+        assert "external_dependencies:\n    system_cuda: true" not in content
 
 
 def test_native_build_ownership_detects_setup_py_extension(tmp_path: Path) -> None:

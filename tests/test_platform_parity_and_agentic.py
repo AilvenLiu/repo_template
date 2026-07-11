@@ -29,7 +29,7 @@ def test_session_init_loads_agentic_team_constraint() -> None:
     body = _read(".ai/scripts/session_init.py")
     assert '"common/agentic-team"' in body, (
         "session_init.py must include common/agentic-team in its always-on list "
-        "so the constraint is printed at session start."
+        "so the constraint appears in the session manifest."
     )
 
 
@@ -104,10 +104,15 @@ def test_agents_cpp_critical_rules_parity() -> None:
     assert not missing, f"templates/cpp/AGENTS.md missing parity items: {missing}"
 
 
-def test_agents_entrypoints_declare_authority_hierarchy() -> None:
-    for name in ("templates/python/AGENTS.md", "templates/cpp/AGENTS.md"):
+def test_agents_entrypoints_declare_scoped_repository_precedence() -> None:
+    for name in (
+        "templates/python/AGENTS.md",
+        "templates/cpp/AGENTS.md",
+        "templates/hybrid/AGENTS.md",
+    ):
         body = _read(name)
-        assert "Authority Hierarchy" in body
+        assert "Platform and Repository-Local Policy" in body
+        assert "does not supersede" in body
         assert "INVARIANTS.md" in body
         assert "ROADMAP.md" in body
         assert "roadmap.yml" in body
@@ -135,7 +140,8 @@ def test_roadmap_prompt_template_declares_authority_order() -> None:
     body = _read(".ai/scripts/roadmap/templates/prompt.md")
     for token in ("INVARIANTS.md", "ROADMAP.md", "roadmap.yml", "sessions", "prompt.md"):
         assert token in body, f"prompt.md template missing token: {token}"
-    assert "Authority Order" in body or "Absolute Authority" in body
+    assert "Repository-Local Precedence" in body
+    assert "does not supersede" in body
 
 
 def test_roadmap_invariants_template_declares_full_authority_order() -> None:

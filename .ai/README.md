@@ -47,7 +47,8 @@ Both Claude and Codex use the shared audit runtime:
 1. **This directory is the sole source of truth for all constraint content.**
    Constraints are vendor-neutral and live exclusively under `.ai/constraints/`;
    there is no platform-specific constraint directory — both Claude Code and Codex
-   load the same bodies from this location.
+   receive the same profile-aware manifest from this location and read the same
+   canonical bodies as needed.
 2. **Shared runtime** (`.ai/scripts`) implements deterministic checks and gates.
 3. **Native platform entrypoints**:
    - `CLAUDE.md` is loaded automatically by Claude Code.
@@ -62,17 +63,17 @@ Both Claude and Codex use the shared audit runtime:
 Project type is determined from `.ai/project.yml`. Prefer `project_profile`
 when present and fall back to legacy `project_type` only when needed.
 
-| Profile | Constraint families loaded before edits |
+| Profile | Constraint families selected for the init manifest |
 |---------|------------------------------------------|
 | Python | `.ai/constraints/common/`, `.ai/constraints/python/` |
 | C++/CUDA | `.ai/constraints/common/`, `.ai/constraints/cpp/` |
 | Hybrid Python/C++/CUDA | `.ai/constraints/common/`, `.ai/constraints/python/`, `.ai/constraints/cpp/`, `.ai/constraints/hybrid/` |
 
-The canonical rule bodies remain in `.ai/constraints/`. Short mandatory
-summaries are repeated in `AGENTS.md`, `CLAUDE.md`, and generated-template
-entrypoints because Claude Code is more reliable when critical constraints are
-visible in its native first-read file. Those summaries must point back here
-instead of becoming separate policy sources.
+The canonical rule bodies remain in `.ai/constraints/`. Initialisation prints a
+bounded manifest; agents read the listed files and constraints relevant to the
+intended work before editing. Short mandatory summaries in `AGENTS.md`,
+`CLAUDE.md`, and generated-template entrypoints must point back here instead of
+becoming separate policy sources.
 
 ## Native Build Ownership Enforcement
 
@@ -88,9 +89,9 @@ Run the fast policy sweep with:
 .ai/bin/agent-check-constraints
 ```
 
-It combines structural constraint checks with forbidden-pattern scanning,
-including representative checks for Python-first native build orchestration in
-C++/CUDA and hybrid projects.
+It combines structural constraint checks, instruction-safety scanning, and
+forbidden-pattern scanning, including representative checks for Python-first
+native build orchestration in C++/CUDA and hybrid projects.
 
 ## Adding a New AI Agent Platform
 

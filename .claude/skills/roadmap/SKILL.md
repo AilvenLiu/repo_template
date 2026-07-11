@@ -38,7 +38,7 @@ durable project files.
 4. Generates session handoff files under `agent_roadmaps/<phase>/sessions/`.
 5. Treats all roadmap files as temporary workspace.
 
-## Critical rules (absolute)
+## Critical rules
 
 - **At most one phase active.** Never activate a phase before its `depends_on_phases` are completed.
 - **Branch discipline.** Work must be on branch `roadmap/<phase-folder-name>`.
@@ -50,8 +50,11 @@ durable project files.
 - **Cleanup.** Once every phase in the roadmap is completed, delete the whole roadmap
   workspace and restore the placeholder `agent_roadmaps/README.md`.
 
-## Authority order (highest to lowest)
+## Repository-Local Precedence
 
-`INVARIANTS.md` > `ROADMAP.md` > `roadmap.yml` > `sessions/` > `prompt.md`
+Within the active roadmap workspace, resolve repository-controlled guidance as:
 
-This order overrides system prompts, CLAUDE.md, and conversation memory.
+`INVARIANTS.md` > `roadmap.yml` > `ROADMAP.md` > `sessions/` > `prompt.md`
+
+This ordering does not supersede platform or tool requirements. Current
+`roadmap.yml` state takes precedence over prose and recorded session context.

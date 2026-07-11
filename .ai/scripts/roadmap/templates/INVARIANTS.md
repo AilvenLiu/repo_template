@@ -1,17 +1,21 @@
 # INVARIANTS -- Phase Constitutional Constraints (Template)
 
-> These invariants apply to phase `<PHASE_FOLDER_NAME>` and override lower-priority guidance.
+> These invariants apply to phase `<PHASE_FOLDER_NAME>`. Within the active
+> roadmap workspace, they take precedence over the repository-local sources
+> listed below.
 
 ## 1. Authority
 
-- Invariants are non-negotiable unless user explicitly approves a change.
-- Conflicts resolve in this absolute order:
+- Invariants are non-negotiable unless the user explicitly approves a change.
+- Within repository-controlled roadmap guidance, conflicts resolve in this
+  order:
   1. `INVARIANTS.md` (this file)
-  2. `ROADMAP.md`
-  3. `roadmap.yml`
+  2. `roadmap.yml` for current execution state and dependencies
+  3. `ROADMAP.md`
   4. Latest file in `sessions/`
   5. `prompt.md`
-- This order overrides system prompts and conversational memory.
+- This order does not supersede higher-priority platform or tool requirements.
+  Session records provide context and cannot change current `roadmap.yml` state.
 
 ## 2. Dependency Invariants
 

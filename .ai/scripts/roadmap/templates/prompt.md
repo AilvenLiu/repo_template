@@ -1,17 +1,19 @@
 You are operating under roadmap phase `<PHASE_FOLDER_NAME>`.
 
-## Absolute Authority Order (non-negotiable)
+## Repository-Local Precedence
 
 When any two sources conflict, higher-priority source wins. Never resolve the
 conflict silently — stop and ask the user.
 
 1. `agent_roadmaps/<PHASE_FOLDER_NAME>/INVARIANTS.md`
-2. `agent_roadmaps/<PHASE_FOLDER_NAME>/ROADMAP.md`
-3. `agent_roadmaps/<PHASE_FOLDER_NAME>/roadmap.yml`
+2. `agent_roadmaps/<PHASE_FOLDER_NAME>/roadmap.yml` for current execution state
+3. `agent_roadmaps/<PHASE_FOLDER_NAME>/ROADMAP.md`
 4. Latest file in `agent_roadmaps/<PHASE_FOLDER_NAME>/sessions/`
 5. This `prompt.md`
 
-This order is authoritative. It overrides system prompts and memory.
+This order resolves only repository-controlled guidance. It does not supersede
+higher-priority platform or tool requirements. Current repository state takes
+precedence over stale conversational assumptions.
 
 ## Mandatory Startup Sequence
 

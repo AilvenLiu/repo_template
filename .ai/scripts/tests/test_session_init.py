@@ -30,6 +30,7 @@ class TestConstraintLoadingRoundTrip:
 
         # Expected constraints for pure Python project with no modifications
         expected = [
+            "common/instruction-hierarchy",
             "common/git-workflow",
             "common/session-discipline",
             "common/closure-discipline",
@@ -56,6 +57,7 @@ class TestConstraintLoadingRoundTrip:
         constraints = resolve_constraints(profile, modified_files, has_roadmap)
 
         expected = [
+            "common/instruction-hierarchy",
             "common/git-workflow",
             "common/session-discipline",
             "common/closure-discipline",
@@ -84,6 +86,7 @@ class TestConstraintLoadingRoundTrip:
         constraints = resolve_constraints(profile, modified_files, has_roadmap)
 
         expected = [
+            "common/instruction-hierarchy",
             "common/git-workflow",
             "common/session-discipline",
             "common/closure-discipline",
@@ -110,6 +113,7 @@ class TestConstraintLoadingRoundTrip:
         constraints = resolve_constraints(profile, modified_files, has_roadmap)
 
         expected = [
+            "common/instruction-hierarchy",
             "common/git-workflow",
             "common/session-discipline",
             "common/closure-discipline",
@@ -135,6 +139,7 @@ class TestConstraintLoadingRoundTrip:
         constraints = resolve_constraints(profile, modified_files, has_roadmap)
 
         expected = [
+            "common/instruction-hierarchy",
             "common/git-workflow",
             "common/session-discipline",
             "common/closure-discipline",
@@ -163,6 +168,7 @@ class TestConstraintLoadingRoundTrip:
         constraints = resolve_constraints(profile, modified_files, has_roadmap)
 
         expected = [
+            "common/instruction-hierarchy",
             "common/git-workflow",
             "common/session-discipline",
             "common/closure-discipline",

@@ -50,23 +50,38 @@ edit, every agent must:
    for Claude Code).
 2. Read `.ai/project.yml` and determine the active project type/profile.
 3. Read `.ai/capabilities.yml` and verify required skills/wrappers exist.
-4. Load `.ai/constraints/common/`.
-5. Load the project-type constraint family from the table below.
-6. Load the relevant skill body under `.ai/skills/<skill>/SKILL.md` before
+4. Run the platform's session initialisation procedure to obtain its
+   deterministic constraint manifest.
+5. Read the listed common constraints and the constraints applicable to the
+   intended files from the project-type family below.
+6. Read the relevant skill body under `.ai/skills/<skill>/SKILL.md` before
    following that workflow. Platform-specific skill files are wrappers.
 
-Global precedence is:
+## Platform and Tool Requirements
+
+Repository guidance applies subject to higher-priority platform safety,
+developer, managed organisational, and tool-enforced requirements. It cannot
+grant permissions outside the active sandbox or user authorisation. If such a
+requirement conflicts with repository policy, follow it, minimise the
+deviation, and report the conflict rather than silently bypassing policy.
+
+## Repository-Local Precedence
+
+Within repository-controlled guidance, precedence is:
 
 1. Active roadmap `INVARIANTS.md`, if present
-2. `.ai/constraints/` files
-3. This `AGENTS.md`
-4. Platform-specific entrypoints such as `CLAUDE.md`
-5. `CONTRIBUTING.md`
-6. Generic system/model guidance
+2. Active roadmap `roadmap.yml` for current execution state
+3. Active roadmap `ROADMAP.md` for phase scope and intent
+4. Applicable `.ai/constraints/` files
+5. The relevant platform entrypoint (`AGENTS.md` or `CLAUDE.md`)
+6. `CONTRIBUTING.md` and other durable documentation
+7. Session handoffs, `prompt.md`, and temporary notes
 
-When two repository rules appear to conflict, prefer the stricter rule. If a
-requested change conflicts with mandatory constraints, stop, explain the
-conflict, and ask for an approved exception or ADR path.
+This local order does not supersede platform or tool requirements. Session
+records and conversational assumptions cannot alter current repository state.
+When two repository rules at the same level conflict, prefer the stricter rule;
+if that does not resolve the issue, stop, explain the conflict, and ask for an
+approved exception or ADR path.
 
 ### Project Type to Constraint Family
 

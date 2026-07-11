@@ -114,7 +114,8 @@ def test_roadmap_create_produces_complete_phase(project_root: Path) -> None:
         "prompt.md",
     ):
         assert token in prompt_text, f"prompt.md missing authority token {token}"
-    assert "Authority Order" in prompt_text or "Absolute Authority" in prompt_text
+    assert "Repository-Local Precedence" in prompt_text
+    assert "does not supersede" in prompt_text
 
 
 def test_completed_phase_is_not_deleted_while_later_phase_remains(

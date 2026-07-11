@@ -128,6 +128,7 @@ def find_active_roadmap(repo_root: Path) -> Optional[Path]:
 
 
 _ALWAYS_COMMON = [
+    "common/instruction-hierarchy",
     "common/git-workflow",
     "common/session-discipline",
     "common/closure-discipline",
@@ -266,6 +267,18 @@ def load_constraint(repo_root: Path, key: str) -> Optional[str]:
         return None
 
 
+def profile_label(profile: ProjectProfile) -> str:
+    """Return an unambiguous human-readable project-profile label."""
+
+    if profile.is_hybrid():
+        return "HYBRID"
+    if profile.has_language(Language.CPP):
+        return "CPP"
+    if profile.has_language(Language.PYTHON):
+        return "PYTHON"
+    return "UNKNOWN"
+
+
 def write_session_state(
     repo_root: Path,
     platform: str,
@@ -298,7 +311,7 @@ def write_session_state(
 
 def run_init(platform: str, verbose: bool = False) -> int:
     repo_root = _repo_root()
-    effective_verbose = True
+    effective_verbose = verbose
 
     separator = "=" * 70
     print(separator)
@@ -314,9 +327,7 @@ def run_init(platform: str, verbose: bool = False) -> int:
     project_yml = repo_root / ".ai" / "project.yml"
     source = ".ai/project.yml" if project_yml.exists() else "heuristic"
 
-    # Display primary language for backward compatibility with existing output format
-    primary_lang = profile.language[0].value.upper() if profile.language else "UNKNOWN"
-    print(f"[OK] Project type: {primary_lang} ({source})")
+    print(f"[OK] Project type: {profile_label(profile)} ({source})")
 
     roadmap_dir = find_active_roadmap(repo_root)
     if roadmap_dir:
@@ -361,7 +372,7 @@ def run_init(platform: str, verbose: bool = False) -> int:
             print(body)
             print()
         else:
-            print(f"[OK] {key}")
+            print(f"[READ] .ai/constraints/{key}.md")
 
     write_session_state(
         repo_root=repo_root,

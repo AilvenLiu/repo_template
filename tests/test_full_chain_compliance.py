@@ -4,7 +4,7 @@
 For each (platform, project_type) combination this suite exercises:
   - skill-presence parity vs the canonical capability manifest
   - .ai/bin/agent-* wrapper presence + executability
-  - constraint hit rate during /init (printed-body coverage)
+  - constraint hit rate during /init (bounded-manifest coverage)
   - full roadmap lifecycle (create -> set-focus -> complete-task -> handoff -> complete)
   - structural validator (positive + negative cases)
   - protected-branch detection by .ai/bin/agent-check-constraints
@@ -228,6 +228,7 @@ def _expected_constraints(project_type: str) -> set[str]:
     """Constraints that resolve_constraints() should always pick at session start."""
 
     common = {
+        "common/instruction-hierarchy",
         "common/git-workflow",
         "common/session-discipline",
         "common/closure-discipline",
@@ -292,13 +293,11 @@ def test_constraint_hit_rate_meets_100pct(
         f"extra={sorted(extra)}\nstdout-tail:\n" + init.stdout[-1500:]
     )
 
-    if platform == "claude":
-        # Claude prints the full constraint body inline; verify each one shows up.
-        for key in expected:
-            assert f"[CONSTRAINT] {key}" in init.stdout, (
-                f"[claude/{project_type}] constraint {key} body not printed in /init output"
-            )
-        assert "Before claiming any work is complete" in init.stdout
+    for key in expected:
+        assert f"[READ] .ai/constraints/{key}.md" in init.stdout, (
+            f"[{platform}/{project_type}] constraint {key} missing from /init manifest"
+        )
+    assert "[CONSTRAINT]" not in init.stdout
 
 
 @pytest.mark.parametrize("project_type", PROJECT_TYPES)

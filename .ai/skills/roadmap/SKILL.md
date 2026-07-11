@@ -47,4 +47,6 @@ project artefacts.
 - Do not copy roadmap-phase labels into durable files outside `agent_roadmaps/`.
 - Once every phase in the roadmap is completed, delete the roadmap workspace and restore the placeholder `agent_roadmaps/README.md`.
 - Authority order:
-  `INVARIANTS.md` > `ROADMAP.md` > `roadmap.yml` > `sessions/` > `prompt.md`.
+  Within repository-controlled roadmap guidance,
+  `INVARIANTS.md` > `roadmap.yml` > `ROADMAP.md` > `sessions/` > `prompt.md`.
+  This scoped order does not supersede platform or tool requirements.

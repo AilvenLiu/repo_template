@@ -14,10 +14,12 @@ from typing import List
 
 try:
     from .constants import PROTECTED_BRANCHES, PROTECTED_PREFIXES
+    from .instruction_safety import scan as scan_instruction_safety
     from .paths import resolve_repo_root
     from .project_profile import BuildSystem, Language, ProjectProfile, detect
 except ImportError:
     from constants import PROTECTED_BRANCHES, PROTECTED_PREFIXES
+    from instruction_safety import scan as scan_instruction_safety
     from paths import resolve_repo_root
     from project_profile import BuildSystem, Language, ProjectProfile, detect
 
@@ -231,6 +233,7 @@ def _check_native_build_ownership(
 
 def check_constraints(repo_root: Path, profile: ProjectProfile) -> List[Violation]:
     violations = _check_git(repo_root)
+    violations.extend(_check_instruction_safety(repo_root))
 
     if profile.has_language(Language.PYTHON):
         violations.extend(_check_python(repo_root, profile))
@@ -239,6 +242,21 @@ def check_constraints(repo_root: Path, profile: ProjectProfile) -> List[Violatio
         violations.extend(_check_native_build_ownership(repo_root, profile))
 
     return violations
+
+
+def _check_instruction_safety(repo_root: Path) -> List[Violation]:
+    return [
+        Violation(
+            category="Instruction Safety",
+            severity="CRITICAL",
+            message=(
+                f"{violation.path.relative_to(repo_root)}:{violation.line} "
+                f"matches {violation.rule}: {violation.reason}"
+            ),
+            remediation=violation.remediation,
+        )
+        for violation in scan_instruction_safety(repo_root)
+    ]
 
 
 def print_report(violations: List[Violation]) -> None:

@@ -7,8 +7,8 @@ version: 1.0.0
 # /karpathy-guidelines
 
 Behavioural checklist for non-trivial coding, debugging, refactoring, and code
-review work. The full text is also loaded into every session via
-`common/karpathy-guidelines` constraint during `/init`.
+review work. `/init` includes `common/karpathy-guidelines` in its constraint
+manifest; read that canonical constraint when it applies.
 
 ## When to apply
 

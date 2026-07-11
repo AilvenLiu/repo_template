@@ -76,7 +76,7 @@ def test_repo_contains_no_removed_legacy_behavior_references() -> None:
             continue
         # Skip machine-generated dirs and the tests dir (tests intentionally
         # reference blocked tokens as string literals in their own test code).
-        skip_parts = {"__pycache__", ".git", ".pytest_cache", "tests"}
+        skip_parts = {"__pycache__", ".git", ".pytest_cache", ".venv", "tests"}
         if any(part in path.parts for part in skip_parts):
             continue
         if path.suffix in {".pyc", ".pyo"}:

@@ -17,7 +17,11 @@ from project_profile import (  # type: ignore[import-not-found]
     ProjectProfile,
     legacy_project_type_to_profile,
 )
-from session_init import find_active_roadmap, resolve_constraints  # type: ignore[import-not-found]
+from session_init import (  # type: ignore[import-not-found]
+    find_active_roadmap,
+    profile_label,
+    resolve_constraints,
+)
 
 
 def test_python_docs_and_tests_constraints_load_precisely() -> None:
@@ -75,6 +79,10 @@ def test_hybrid_cpp_first_loads_alongside_python_deps() -> None:
     assert "hybrid/cpp-first" in keys
     assert "python/dependencies" in keys
     assert "cpp/dependencies" in keys
+
+
+def test_hybrid_profile_has_unambiguous_init_label() -> None:
+    assert profile_label(_make_hybrid_profile()) == "HYBRID"
 
 
 def test_find_active_roadmap_detects_new_schema() -> None:

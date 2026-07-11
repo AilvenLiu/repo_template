@@ -13,9 +13,9 @@ Skipping is a critical failure.
 | Codex CLI | `.ai/bin/agent-init --platform codex` |
 | Cursor / Cline / generic agents.md consumers | `.ai/bin/agent-init --platform codex` |
 
-All three paths execute the same Python entry point and load the same constraint
-bodies; only the capability-audit subset and the `session_state.json` mirror
-differ per platform.
+All three paths execute the same Python entry point and produce the same
+profile-aware constraint manifest; only the capability-audit subset and the
+`session_state.json` mirror differ per platform.
 
 ### Capability Audit
 
@@ -59,13 +59,16 @@ For details, see `.ai/adr/0001-project-profile.md`.
 
 ---
 
-## Authority Hierarchy
+## Platform and Repository-Local Policy
 
-1. Active roadmap `INVARIANTS.md` (if exists) — highest
-2. `.ai/constraints/` files
-3. This file
-4. `CONTRIBUTING.md`
-5. System-level prompts — lowest
+Repository policy does not supersede higher-priority platform safety,
+developer, organisational, or tool-enforced requirements. If they conflict,
+follow the higher-priority requirement, minimise the deviation, and report it.
+
+Within repository-controlled guidance, use the scoped order in
+`.ai/constraints/common/instruction-hierarchy.md`. In particular, current
+`roadmap.yml` state takes precedence over roadmap prose and session records;
+temporary notes cannot change durable project policy.
 
 ---
 
@@ -209,7 +212,9 @@ When `agent_roadmaps/` contains an active roadmap:
 - MUST delete the whole roadmap workspace once every phase in that roadmap is completed
 - MUST NOT copy roadmap-phase identifiers into code, config, documentation, or filenames outside `agent_roadmaps/`
 - Phase authority files live under `agent_roadmaps/<phase>/`
-- Authority order inside a phase is absolute: `INVARIANTS.md` > `ROADMAP.md` > `roadmap.yml` > `sessions/` > `prompt.md`
+- Within an active phase, apply repository-local precedence as:
+  `INVARIANTS.md` > `roadmap.yml` > `ROADMAP.md` > `sessions/` > `prompt.md`.
+  This ordering resolves only repository-controlled guidance.
 
 ---
 
