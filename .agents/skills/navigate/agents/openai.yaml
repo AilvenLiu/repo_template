@@ -1,0 +1,4 @@
+interface:
+  display_name: "Navigate Code"
+  short_description: "Trace symbols, dependencies, and call sites"
+  default_prompt: "Use $navigate to locate this symbol and its affected call sites."

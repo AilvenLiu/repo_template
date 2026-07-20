@@ -5,15 +5,15 @@ from pathlib import Path
 
 sys.path.insert(
     0,
-    str(Path(__file__).parent.parent / ".ai" / "scripts" / "pre-commit"),
+    str(Path(__file__).parent.parent / ".agents" / "scripts" / "pre-commit"),
 )
 sys.path.insert(
     0,
-    str(Path(__file__).parent.parent / ".ai" / "scripts"),
+    str(Path(__file__).parent.parent / ".agents" / "scripts"),
 )
 sys.path.insert(
     0,
-    str(Path(__file__).parent.parent / ".ai" / "scripts" / "common"),
+    str(Path(__file__).parent.parent / ".agents" / "scripts" / "common"),
 )
 
 from utils import PreCommitManager  # type: ignore[import-not-found]
@@ -27,15 +27,15 @@ def test_find_python_files_excludes_agent_infrastructure_dirs() -> None:
         (root / "src" / "app.py").write_text("print('ok')\n")
         (root / ".claude" / "skills").mkdir(parents=True)
         (root / ".claude" / "skills" / "tool.py").write_text("print('agent')\n")
-        (root / ".ai" / "scripts").mkdir(parents=True)
-        (root / ".ai" / "scripts" / "gate.py").write_text("print('agent')\n")
+        (root / ".agents" / "scripts").mkdir(parents=True)
+        (root / ".agents" / "scripts" / "gate.py").write_text("print('agent')\n")
 
         manager = PreCommitManager(root)
         files = [str(path.relative_to(root)) for path in manager.find_python_files()]
 
         assert "src/app.py" in files
         assert ".claude/skills/tool.py" not in files
-        assert ".ai/scripts/gate.py" not in files
+        assert ".agents/scripts/gate.py" not in files
 
 
 def test_find_mypy_targets_falls_back_to_python_files_outside_git() -> None:
@@ -53,8 +53,8 @@ def test_find_mypy_targets_falls_back_to_python_files_outside_git() -> None:
 def test_describe_project_type_reports_hybrid() -> None:
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
-        (root / ".ai").mkdir()
-        (root / ".ai" / "project.yml").write_text(
+        (root / ".agents").mkdir()
+        (root / ".agents" / "project.yml").write_text(
             "project_profile:\n"
             "  language: [python, cpp]\n"
             "  build_system: scikit-build-core\n"
@@ -70,8 +70,8 @@ def test_describe_project_type_reports_hybrid() -> None:
 def test_scikit_build_python_environment_and_manifest_are_accepted() -> None:
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
-        (root / ".ai").mkdir()
-        (root / ".ai" / "project.yml").write_text(
+        (root / ".agents").mkdir()
+        (root / ".agents" / "project.yml").write_text(
             "project_profile:\n"
             "  language: [python, cpp]\n"
             "  build_system: scikit-build-core\n"
@@ -86,7 +86,9 @@ def test_scikit_build_python_environment_and_manifest_are_accepted() -> None:
         profile = manager.detect_project_profile()
 
         env_ok, env_message = manager.python_environment_status(profile)
-        manifest_ok, manifest_message = manager.python_dependency_manifest_status(profile)
+        manifest_ok, manifest_message = manager.python_dependency_manifest_status(
+            profile
+        )
 
         assert env_ok is True
         assert "scikit-build-core" in env_message
@@ -97,8 +99,8 @@ def test_scikit_build_python_environment_and_manifest_are_accepted() -> None:
 def test_scikit_build_constraints_do_not_require_poetry_lock(monkeypatch) -> None:
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
-        (root / ".ai").mkdir()
-        (root / ".ai" / "project.yml").write_text(
+        (root / ".agents").mkdir()
+        (root / ".agents" / "project.yml").write_text(
             "project_profile:\n"
             "  language: [python, cpp]\n"
             "  build_system: scikit-build-core\n"

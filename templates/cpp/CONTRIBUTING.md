@@ -9,11 +9,11 @@ Before making any changes:
 
 1. **Run `/init` at session start** - Loads relevant constraints based on your work
 2. **Create a feature branch** - Never commit directly to protected branches
-3. **Follow loaded constraints** - Technical requirements are in `.ai/constraints/`
+3. **Follow loaded constraints** - Technical requirements are in `.agents/constraints/`
 4. **Run `/pre-commit validate`** - Before committing to check formatting, linting, build, tests
 5. **Open a pull request** - Follow the PR template below
 
-For detailed technical requirements, see `.ai/constraints/cpp/` and run `/init`.
+For detailed technical requirements, see `.agents/constraints/cpp/` and run `/init`.
 
 ## 1. General Principles
 
@@ -28,7 +28,7 @@ If unsure, ask before acting.
 
 ## 2. Constraint System
 
-This repository uses a modular constraint system. Instead of duplicating all technical requirements here, detailed constraints are organised in `.ai/constraints/`:
+This repository uses a modular constraint system. Instead of duplicating all technical requirements here, detailed constraints are organised in `.agents/constraints/`:
 
 ### C++/CUDA-Specific Constraints
 - `cpp/testing.md` - Google Test, Catch2, coverage (70%+)
@@ -89,7 +89,7 @@ Rules:
 - ASCII-only characters
 - British English spelling
 
-See `.ai/constraints/common/git-workflow.md` for detailed commit conventions.
+See `.agents/constraints/common/git-workflow.md` for detailed commit conventions.
 
 ## 4. Pull Request Guidelines
 
@@ -211,7 +211,7 @@ Review for:
 
 ## 6. Technical Standards Quick Reference
 
-For detailed requirements, see `.ai/constraints/cpp/` and run `/init`.
+For detailed requirements, see `.agents/constraints/cpp/` and run `/init`.
 
 ### C++ Version
 - **Minimum**: C++17
@@ -289,7 +289,7 @@ cudaMalloc(&ptr, size);  // Memory leak risk
 cudaFree(ptr);  // May not be called if exception thrown
 ```
 
-See `.ai/constraints/cpp/cuda.md` for comprehensive CUDA requirements.
+See `.agents/constraints/cpp/cuda.md` for comprehensive CUDA requirements.
 
 ## 8. Versioning and Releases
 
@@ -388,6 +388,6 @@ When in doubt, ask for clarification before proceeding.
 **Remember**: These guidelines exist to maintain code quality, safety, and maintainability. Following them ensures a healthy, sustainable codebase.
 
 For detailed technical requirements, see:
-- `.ai/constraints/cpp/` - C++/CUDA-specific constraints
-- `.ai/constraints/common/` - Common constraints
+- `.agents/constraints/cpp/` - C++/CUDA-specific constraints
+- `.agents/constraints/common/` - Common constraints
 - AGENTS.md - Agent operating constraints and authority hierarchy

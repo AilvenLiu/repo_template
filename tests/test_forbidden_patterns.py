@@ -6,7 +6,7 @@ from __future__ import annotations
 from pathlib import Path
 import sys
 
-sys.path.insert(0, str(Path(__file__).parent.parent / ".ai" / "scripts"))
+sys.path.insert(0, str(Path(__file__).parent.parent / ".agents" / "scripts"))
 
 from forbidden_patterns import scan  # type: ignore[import-not-found]  # noqa: E402
 from project_type import ProjectType  # type: ignore[import-not-found]  # noqa: E402
@@ -36,7 +36,9 @@ def test_detects_bare_numbered_phase_label_outside_agent_roadmaps(
 def test_ignores_temporary_roadmap_workspace(tmp_path: Path) -> None:
     workspace = tmp_path / "agent_roadmaps" / "phase-0-baseline"
     workspace.mkdir(parents=True)
-    (workspace / "ROADMAP.md").write_text("roadmap/phase-0-baseline\n", encoding="utf-8")
+    (workspace / "ROADMAP.md").write_text(
+        "roadmap/phase-0-baseline\n", encoding="utf-8"
+    )
     findings = scan(tmp_path, ProjectType.PYTHON)
     categories = {finding.category for finding in findings}
     assert "roadmap-phase-label" not in categories

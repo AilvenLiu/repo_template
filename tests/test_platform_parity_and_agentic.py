@@ -16,7 +16,7 @@ def _read(rel: str) -> str:
 
 
 def test_agentic_team_constraint_file_exists() -> None:
-    path = ROOT / ".ai" / "constraints" / "common" / "agentic-team.md"
+    path = ROOT / ".agents" / "constraints" / "common" / "agentic-team.md"
     assert path.exists(), "agentic-team constraint must exist"
     body = path.read_text()
     assert "Agentic Team" in body
@@ -26,7 +26,7 @@ def test_agentic_team_constraint_file_exists() -> None:
 
 
 def test_session_init_loads_agentic_team_constraint() -> None:
-    body = _read(".ai/scripts/session_init.py")
+    body = _read(".agents/scripts/session_init.py")
     assert '"common/agentic-team"' in body, (
         "session_init.py must include common/agentic-team in its always-on list "
         "so the constraint appears in the session manifest."
@@ -36,7 +36,9 @@ def test_session_init_loads_agentic_team_constraint() -> None:
 def test_agents_files_reference_agentic_team_constraint() -> None:
     for name in ("templates/python/AGENTS.md", "templates/cpp/AGENTS.md"):
         body = _read(name)
-        assert "agentic-team.md" in body, f"{name} must reference agentic-team constraint"
+        assert "agentic-team.md" in body, (
+            f"{name} must reference agentic-team constraint"
+        )
         assert "Agentic Team" in body, f"{name} must have an Agentic Team section"
 
 
@@ -126,31 +128,51 @@ def test_agents_entrypoints_have_procedures_table() -> None:
         body = _read(name)
         assert "Procedures and Wrappers" in body
         assert "| Procedure |" in body
-        assert ".ai/bin/agent-init --platform" in body
-        assert ".ai/bin/agent-precommit" in body
+        assert ".agents/bin/agent-init --platform" in body
+        assert ".agents/bin/agent-precommit" in body
 
 
 def test_codex_axis_files_are_gone() -> None:
     """The CODEX*.md files were intentionally removed; agents.md spec replaces them."""
     for name in ("CODEX.md", "CODEX_PYTHON.md", "CODEX_CPP.md"):
-        assert not (ROOT / name).exists(), f"{name} should not exist after CODEX axis removal"
+        assert not (ROOT / name).exists(), (
+            f"{name} should not exist after CODEX axis removal"
+        )
 
 
 def test_roadmap_prompt_template_declares_authority_order() -> None:
-    body = _read(".ai/scripts/roadmap/templates/prompt.md")
-    for token in ("INVARIANTS.md", "ROADMAP.md", "roadmap.yml", "sessions", "prompt.md"):
+    body = _read(".agents/scripts/roadmap/templates/prompt.md")
+    for token in (
+        "INVARIANTS.md",
+        "ROADMAP.md",
+        "roadmap.yml",
+        "sessions",
+        "prompt.md",
+    ):
         assert token in body, f"prompt.md template missing token: {token}"
     assert "Repository-Local Precedence" in body
     assert "does not supersede" in body
 
 
 def test_roadmap_invariants_template_declares_full_authority_order() -> None:
-    body = _read(".ai/scripts/roadmap/templates/INVARIANTS.md")
-    for token in ("INVARIANTS.md", "ROADMAP.md", "roadmap.yml", "sessions", "prompt.md"):
+    body = _read(".agents/scripts/roadmap/templates/INVARIANTS.md")
+    for token in (
+        "INVARIANTS.md",
+        "ROADMAP.md",
+        "roadmap.yml",
+        "sessions",
+        "prompt.md",
+    ):
         assert token in body, f"INVARIANTS.md template missing token: {token}"
 
 
 def test_roadmap_roadmap_template_declares_authority_order() -> None:
-    body = _read(".ai/scripts/roadmap/templates/ROADMAP.md")
-    for token in ("INVARIANTS.md", "ROADMAP.md", "roadmap.yml", "sessions", "prompt.md"):
+    body = _read(".agents/scripts/roadmap/templates/ROADMAP.md")
+    for token in (
+        "INVARIANTS.md",
+        "ROADMAP.md",
+        "roadmap.yml",
+        "sessions",
+        "prompt.md",
+    ):
         assert token in body, f"ROADMAP.md template missing token: {token}"

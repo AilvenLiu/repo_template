@@ -1,38 +1,41 @@
 #!/usr/bin/env python3
-"""Tests for shared capability audit runtime (.ai/scripts/capability_audit.py)."""
+"""Tests for shared capability audit runtime (.agents/scripts/capability_audit.py)."""
 
 import tempfile
 from pathlib import Path
 
-import yaml
+import yaml  # type: ignore[import-untyped]
 
 import sys
-sys.path.insert(0, str(Path(__file__).parent.parent / ".ai" / "scripts"))
 
-import capability_audit
+sys.path.insert(0, str(Path(__file__).parent.parent / ".agents" / "scripts"))
+
+import capability_audit  # type: ignore[import-not-found]
 from capability_audit import run_audit
 
 
 def _write_manifest(repo: Path, data: dict) -> None:
-    manifest_path = repo / ".ai" / "capabilities.yml"
+    manifest_path = repo / ".agents" / "capabilities.yml"
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
     with open(manifest_path, "w") as fh:
         yaml.dump(data, fh)
 
 
 def _create_common_layout(repo: Path) -> None:
-    (repo / ".ai" / "skills").mkdir(parents=True, exist_ok=True)
-    (repo / ".ai" / "bin").mkdir(parents=True, exist_ok=True)
+    (repo / ".agents" / "skills").mkdir(parents=True, exist_ok=True)
+    (repo / ".agents" / "bin").mkdir(parents=True, exist_ok=True)
     (repo / ".claude" / "skills").mkdir(parents=True, exist_ok=True)
 
 
 def _create_skill(repo: Path, skill_id: str, *, with_claude_stub: bool = True) -> None:
-    """Create the .ai/skills/<id>/SKILL.md body and (optionally) the Claude stub."""
-    (repo / ".ai" / "skills" / skill_id).mkdir(parents=True, exist_ok=True)
-    (repo / ".ai" / "skills" / skill_id / "SKILL.md").write_text(f"# {skill_id}")
+    """Create the .agents/skills/<id>/SKILL.md body and (optionally) the Claude stub."""
+    (repo / ".agents" / "skills" / skill_id).mkdir(parents=True, exist_ok=True)
+    (repo / ".agents" / "skills" / skill_id / "SKILL.md").write_text(f"# {skill_id}")
     if with_claude_stub:
         (repo / ".claude" / "skills" / skill_id).mkdir(parents=True, exist_ok=True)
-        (repo / ".claude" / "skills" / skill_id / "SKILL.md").write_text(f"# {skill_id}")
+        (repo / ".claude" / "skills" / skill_id / "SKILL.md").write_text(
+            f"# {skill_id}"
+        )
 
 
 def test_missing_manifest_fails() -> None:
@@ -57,7 +60,7 @@ def test_v1_manifest_backward_compatibility() -> None:
             },
         )
 
-        # Make project skill available (both .ai body and Claude stub).
+        # Make project skill available (both .agents body and Claude stub).
         _create_skill(repo, "init")
 
         # Claude plugin check will fail because CLI isn't available, but loader should parse.
@@ -77,7 +80,7 @@ def test_codex_audit_passes_with_required_skills_and_commands() -> None:
                 "repo_commands": [
                     {
                         "id": "agent-init",
-                        "path": ".ai/bin/agent-init",
+                        "path": ".agents/bin/agent-init",
                         "required": True,
                         "executable": True,
                     }
@@ -87,10 +90,10 @@ def test_codex_audit_passes_with_required_skills_and_commands() -> None:
         }
         _write_manifest(repo, manifest)
 
-        # Codex audit only requires the .ai/skills body (no Claude stub needed).
+        # Codex audit only requires the .agents/skills body (no Claude stub needed).
         _create_skill(repo, "init", with_claude_stub=False)
 
-        cmd = repo / ".ai" / "bin" / "agent-init"
+        cmd = repo / ".agents" / "bin" / "agent-init"
         cmd.write_text("#!/bin/sh\nexit 0\n")
         cmd.chmod(0o755)
 
@@ -110,7 +113,7 @@ def test_codex_audit_fails_when_command_missing() -> None:
                     "repo_commands": [
                         {
                             "id": "agent-precommit",
-                            "path": ".ai/bin/agent-precommit",
+                            "path": ".agents/bin/agent-precommit",
                             "required": True,
                             "executable": True,
                         }
@@ -122,7 +125,9 @@ def test_codex_audit_fails_when_command_missing() -> None:
 
         result = run_audit(repo, platform="codex")
         assert not result.passed
-        assert any(e.category == "repo_command" and not e.available for e in result.entries)
+        assert any(
+            e.category == "repo_command" and not e.available for e in result.entries
+        )
 
 
 def test_claude_plugin_skill_discovery(monkeypatch) -> None:
@@ -136,7 +141,10 @@ def test_claude_plugin_skill_discovery(monkeypatch) -> None:
                 "platform_requirements": {
                     "claude": {
                         "claude_plugins": [
-                            {"id": "example-plugin@example-marketplace", "required": True}
+                            {
+                                "id": "example-plugin@example-marketplace",
+                                "required": True,
+                            }
                         ],
                         "claude_plugin_skills": [
                             {
@@ -187,7 +195,9 @@ def test_context7_mcp_check_for_claude(monkeypatch) -> None:
             {
                 "platform_requirements": {
                     "claude": {
-                        "integrations": [{"id": "context7-mcp", "required": True, "check": "mcp"}]
+                        "integrations": [
+                            {"id": "context7-mcp", "required": True, "check": "mcp"}
+                        ]
                     }
                 }
             },
@@ -203,7 +213,9 @@ def test_context7_mcp_check_for_claude(monkeypatch) -> None:
         assert result.passed
 
 
-def test_context7_mcp_fallback_passes_when_health_probe_unavailable(monkeypatch) -> None:
+def test_context7_mcp_fallback_passes_when_health_probe_unavailable(
+    monkeypatch,
+) -> None:
     with tempfile.TemporaryDirectory() as tmp:
         repo = Path(tmp)
         _create_common_layout(repo)
@@ -213,7 +225,9 @@ def test_context7_mcp_fallback_passes_when_health_probe_unavailable(monkeypatch)
             {
                 "platform_requirements": {
                     "claude": {
-                        "integrations": [{"id": "context7-mcp", "required": True, "check": "mcp"}]
+                        "integrations": [
+                            {"id": "context7-mcp", "required": True, "check": "mcp"}
+                        ]
                     }
                 }
             },
@@ -227,7 +241,12 @@ def test_context7_mcp_fallback_passes_when_health_probe_unavailable(monkeypatch)
                 {
                     "id": "context7@claude-plugins-official",
                     "enabled": True,
-                    "mcpServers": {"context7": {"command": "npx", "args": ["-y", "@upstash/context7-mcp"]}},
+                    "mcpServers": {
+                        "context7": {
+                            "command": "npx",
+                            "args": ["-y", "@upstash/context7-mcp"],
+                        }
+                    },
                 }
             ],
         )
@@ -239,7 +258,9 @@ def test_context7_mcp_fallback_passes_when_health_probe_unavailable(monkeypatch)
         assert "fallback" in integration.method.lower()
 
 
-def test_context7_mcp_fails_when_probe_and_plugin_fallback_both_fail(monkeypatch) -> None:
+def test_context7_mcp_fails_when_probe_and_plugin_fallback_both_fail(
+    monkeypatch,
+) -> None:
     with tempfile.TemporaryDirectory() as tmp:
         repo = Path(tmp)
         _create_common_layout(repo)
@@ -249,7 +270,9 @@ def test_context7_mcp_fails_when_probe_and_plugin_fallback_both_fail(monkeypatch
             {
                 "platform_requirements": {
                     "claude": {
-                        "integrations": [{"id": "context7-mcp", "required": True, "check": "mcp"}]
+                        "integrations": [
+                            {"id": "context7-mcp", "required": True, "check": "mcp"}
+                        ]
                     }
                 }
             },
@@ -276,7 +299,7 @@ def test_codex_repo_commands_are_deduplicated_between_common_and_platform() -> N
                     "repo_commands": [
                         {
                             "id": "agent-init",
-                            "path": ".ai/bin/agent-init",
+                            "path": ".agents/bin/agent-init",
                             "required": True,
                             "executable": True,
                         }
@@ -287,7 +310,7 @@ def test_codex_repo_commands_are_deduplicated_between_common_and_platform() -> N
                         "repo_commands": [
                             {
                                 "id": "agent-init",
-                                "path": ".ai/bin/agent-init",
+                                "path": ".agents/bin/agent-init",
                                 "required": True,
                                 "executable": True,
                             }
@@ -297,13 +320,15 @@ def test_codex_repo_commands_are_deduplicated_between_common_and_platform() -> N
             },
         )
 
-        cmd = repo / ".ai" / "bin" / "agent-init"
+        cmd = repo / ".agents" / "bin" / "agent-init"
         cmd.write_text("#!/bin/sh\nexit 0\n")
         cmd.chmod(0o755)
 
         result = run_audit(repo, platform="codex")
         entries = [
-            e for e in result.entries if e.category == "repo_command" and e.capability_id == "agent-init"
+            e
+            for e in result.entries
+            if e.category == "repo_command" and e.capability_id == "agent-init"
         ]
         assert len(entries) == 1
 
@@ -312,8 +337,8 @@ def test_project_skills_can_be_filtered_by_project_type() -> None:
     with tempfile.TemporaryDirectory() as tmp:
         repo = Path(tmp)
         _create_common_layout(repo)
-        (repo / ".ai").mkdir(parents=True, exist_ok=True)
-        (repo / ".ai" / "project.yml").write_text("project_type: cpp\n")
+        (repo / ".agents").mkdir(parents=True, exist_ok=True)
+        (repo / ".agents" / "project.yml").write_text("project_type: cpp\n")
 
         _write_manifest(
             repo,

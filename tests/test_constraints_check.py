@@ -7,7 +7,7 @@ from pathlib import Path
 import sys
 import tempfile
 
-sys.path.insert(0, str(Path(__file__).parent.parent / ".ai" / "scripts"))
+sys.path.insert(0, str(Path(__file__).parent.parent / ".agents" / "scripts"))
 
 from constraints_check import check_constraints  # type: ignore[import-not-found]  # noqa: E402
 from project_profile import (  # type: ignore[import-not-found]  # noqa: E402
@@ -34,9 +34,7 @@ def test_hybrid_scikit_build_project_does_not_require_poetry_lock() -> None:
         (repo / "cmake" / "Dependencies.cmake").write_text("", encoding="utf-8")
         (repo / "cmake" / "Options.cmake").write_text("", encoding="utf-8")
         (repo / "3rdparty" / "cpm-cache").mkdir(parents=True)
-        (repo / "3rdparty" / "cpm-cache" / ".gitkeep").write_text(
-            "", encoding="utf-8"
-        )
+        (repo / "3rdparty" / "cpm-cache" / ".gitkeep").write_text("", encoding="utf-8")
 
         profile = ProjectProfile(
             language=[Language.PYTHON, Language.CPP],

@@ -9,11 +9,11 @@ Before making any changes:
 
 1. **Run `/init` at session start** - Loads relevant constraints based on your work
 2. **Create a feature branch** - Never commit directly to protected branches
-3. **Follow loaded constraints** - Technical requirements are in `.ai/constraints/`
+3. **Follow loaded constraints** - Technical requirements are in `.agents/constraints/`
 4. **Run `/pre-commit validate`** - Before committing to check formatting, linting, tests
 5. **Open a pull request** - Follow the PR template below
 
-For detailed technical requirements, see `.ai/constraints/python/`, `.ai/constraints/cpp/`, and `.ai/constraints/hybrid/`, then run `/init`.
+For detailed technical requirements, see `.agents/constraints/python/`, `.agents/constraints/cpp/`, and `.agents/constraints/hybrid/`, then run `/init`.
 
 ## 1. General Principles
 
@@ -29,7 +29,7 @@ If unsure, ask before acting.
 
 ## 2. Constraint System
 
-This repository uses a modular constraint system. Instead of duplicating all technical requirements here, detailed constraints are organised in `.ai/constraints/`:
+This repository uses a modular constraint system. Instead of duplicating all technical requirements here, detailed constraints are organised in `.agents/constraints/`:
 
 ### Python-Specific Constraints
 - `python/testing.md` - pytest, coverage (80%+), test organisation
@@ -111,7 +111,7 @@ Rules:
 - British English spelling
 - NO AI attribution (no `Co-Authored-By:` lines)
 
-See `.ai/constraints/common/git-workflow.md` for detailed commit conventions.
+See `.agents/constraints/common/git-workflow.md` for detailed commit conventions.
 
 ## 4. Pull Request Guidelines
 
@@ -217,23 +217,23 @@ poetry run pytest tests/python/
 
 ### Using Agent Commands
 
-The repository provides `.ai/bin/agent-*` commands for common workflows:
+The repository provides `.agents/bin/agent-*` commands for common workflows:
 
 ```bash
 # Full build (setup + compile + test)
-.ai/bin/agent-build full
+.agents/bin/agent-build full
 
 # Just compile
-.ai/bin/agent-build compile
+.agents/bin/agent-build compile
 
 # Run pre-commit checks
-.ai/bin/agent-precommit
+.agents/bin/agent-precommit
 
 # Add Python dependency
-.ai/bin/agent-dependency add numpy ">=1.24.0"
+.agents/bin/agent-dependency add numpy ">=1.24.0"
 
 # Add C++ dependency (via CPM)
-.ai/bin/agent-dependency add fmtlib/fmt 10.2.1
+.agents/bin/agent-dependency add fmtlib/fmt 10.2.1
 ```
 
 ## 6. Testing Requirements
@@ -392,13 +392,12 @@ result = my_extension.process_dlpack(capsule)
 
 ```bash
 # Add runtime dependency
-poetry add numpy
+.agents/bin/agent-dependency add numpy
 
 # Add dev dependency
-poetry add --group dev pytest
+.agents/bin/agent-dependency add pytest --dev
 
-# Update lock file
-poetry lock --no-update
+# The wrapper updates and validates pyproject.toml plus poetry.lock
 ```
 
 ### C++ Dependencies
@@ -552,7 +551,7 @@ auditwheel repair dist/*.whl \
 
 ## 15. Getting Help
 
-- Check `.ai/constraints/` for detailed technical requirements
+- Check `.agents/constraints/` for detailed technical requirements
 - Run `/init` to load relevant constraints
 - Run `/check-constraints` to verify compliance
 - Open an issue for questions or clarifications

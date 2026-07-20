@@ -14,7 +14,7 @@ guidance for previously generated repositories.
 Language-specific source files live under `templates/<language>/` with their
 generic names (`CLAUDE.md`, `AGENTS.md`, `CONTRIBUTING.md`, `.gitignore`,
 `project.yml`). The `/create-project` skill copies the shared template tree
-(`.ai/`, `.claude/`, `agent_roadmaps/`) and overlays the chosen
+(`.agents/`, `.claude/`, `agent_roadmaps/`) and overlays the chosen
 language's directory onto the target. The copied `agent_roadmaps/` directory is
 an empty placeholder for temporary roadmap state only; generated projects must
 not inherit historical roadmap files.
@@ -28,7 +28,7 @@ The recommended way to create a project is `/create-project` (see below).
 /create-project /path/to/new/project
 
 # Or manually:
-python3 .claude/skills/create-project/scripts/init.py /path/to/new/project
+python3 .agents/skills/create-project/scripts/init.py /path/to/new/project
 ```
 
 The script prompts for project type (Python, C++/CUDA, or hybrid
@@ -53,7 +53,7 @@ templates/
     CLAUDE.md         -> CLAUDE.md
     CONTRIBUTING.md   -> CONTRIBUTING.md
     .gitignore        -> .gitignore
-    project.yml       -> .ai/project.yml
+    project.yml       -> .agents/project.yml
     poetry.toml       -> poetry.toml (in-project venv config)
     POETRY_README.md  -> (template-level note about poetry.toml; not copied)
   cpp/
@@ -61,23 +61,23 @@ templates/
     CLAUDE.md         -> CLAUDE.md
     CONTRIBUTING.md   -> CONTRIBUTING.md
     .gitignore        -> .gitignore
-    project.yml       -> .ai/project.yml
+    project.yml       -> .agents/project.yml
   hybrid/
     AGENTS.md         -> AGENTS.md in generated hybrid projects
     CLAUDE.md         -> CLAUDE.md
     CONTRIBUTING.md   -> CONTRIBUTING.md
     .gitignore        -> .gitignore
-    project.yml       -> .ai/project.yml
+    project.yml       -> .agents/project.yml
 ```
 
 ### Shared Infrastructure (copied verbatim into generated projects)
 
-- `.ai/project.yml` -- machine-readable project type (source of truth, set
+- `.agents/project.yml` -- machine-readable project type (source of truth, set
   by `/create-project` from `templates/<language>/project.yml`)
-- `.ai/constraints/` -- vendor-neutral constraint files (common, python, cpp, hybrid)
-- `.ai/skills/` -- vendor-neutral skill procedure manifests (`<name>/SKILL.md`)
-- `.ai/scripts/` -- shared runtime tools used by `.ai/bin/agent-*` wrappers
-- `.ai/bin/` -- platform-neutral guarded workflow commands (`agent-*`)
+- `.agents/constraints/` -- vendor-neutral constraint files (common, python, cpp, hybrid)
+- `.agents/skills/` -- vendor-neutral skill procedure manifests (`<name>/SKILL.md`)
+- `.agents/scripts/` -- shared runtime tools used by `.agents/bin/agent-*` wrappers
+- `.agents/bin/` -- platform-neutral guarded workflow commands (`agent-*`)
 - `.claude/` -- Claude Code skill stubs, hooks, and settings (native loader)
 - `agent_roadmaps/` -- temporary multi-session workflow workspace
 
@@ -96,6 +96,9 @@ templates/
 | `/check-constraints` | Lightweight constraint compliance check |
 | `/context7` | Library documentation via Context7 MCP |
 | `/python-env-setup` | Diagnose/fix pyenv+Poetry environment issues |
+| `/deploy-service` | Secure host deployment, activation, rollback, ingress, and data-root guidance |
+| `/service-cicd` | GitHub Actions CI, auto-deployment, auto-release, and artefact promotion |
+| `/gpu-ci` | Profile-aware CUDA CI, GPU test, cache, and wheel-release guidance |
 
 ## Architecture
 
@@ -104,10 +107,10 @@ In a real (non-template) repo, the key entrypoints are:
 - `CLAUDE.md` -- self-sufficient Claude Code entrypoint with critical rules inline
 - `AGENTS.md` -- vendor-neutral agent operating constraints, loaded automatically
   by Codex CLI / Cursor / Cline / other [agents.md](https://agents.md)-aware tools
-- `.ai/project.yml` -- deterministic project type detection
-- `.ai/constraints/` -- modular constraint files loaded by init workflows
-- `.ai/skills/` -- vendor-neutral skill procedure manifests
-- `.ai/scripts/` -- shared init/audit/policy enforcement core used by adapters
+- `.agents/project.yml` -- deterministic project type detection
+- `.agents/constraints/` -- modular constraint files loaded by init workflows
+- `.agents/skills/` -- vendor-neutral skill procedure manifests
+- `.agents/scripts/` -- shared init/audit/policy enforcement core used by adapters
 
 `CLAUDE.md` and `AGENTS.md` are the only first-class entrypoints; everything
 else routes through them.
@@ -118,19 +121,19 @@ This template is designed to work with multiple AI agent platforms:
 
 - **Claude Code**: Reads `CLAUDE.md` natively. Slash commands (`/init`, etc.)
   are auto-discovered from `.claude/skills/<name>/SKILL.md` (each is a
-  frontmatter+pointer stub) and dispatch to `.ai/bin/agent-*` wrappers.
+  frontmatter+pointer stub) and dispatch to `.agents/bin/agent-*` wrappers.
 - **Codex / Cursor / Cline / generic agents.md consumers**: Read `AGENTS.md`
   natively. The `Procedures and Wrappers` table in `AGENTS.md` lists every
-  `.ai/bin/agent-*` wrapper, with the canonical procedure descriptions in
-  `.ai/skills/<name>/SKILL.md`.
+  `.agents/bin/agent-*` wrapper, with the canonical procedure descriptions in
+  `.agents/skills/<name>/SKILL.md`.
 
 Both platforms inherit the bundled `karpathy-guidelines` behaviour and shared
 closure discipline:
-- via the matching skill manifest under `.ai/skills/karpathy-guidelines/`
+- via the matching skill manifest under `.agents/skills/karpathy-guidelines/`
   (with a Claude stub at `.claude/skills/karpathy-guidelines/`)
-- via `.ai/constraints/common/karpathy-guidelines.md`, which `init` loads
+- via `.agents/constraints/common/karpathy-guidelines.md`, which `init` loads
   automatically into the active session
-- via `.ai/constraints/common/closure-discipline.md`, which requires rigorous
+- via `.agents/constraints/common/closure-discipline.md`, which requires rigorous
   review, strongest relevant validation, and explicit residual-risk reporting
   before session, task, commit, or roadmap phase closure
 

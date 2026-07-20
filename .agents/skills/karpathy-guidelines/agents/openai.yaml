@@ -1,0 +1,4 @@
+interface:
+  display_name: "Execution Guidelines"
+  short_description: "Apply scoped evidence-driven coding guardrails"
+  default_prompt: "Use $karpathy-guidelines to keep this implementation scoped and verified."

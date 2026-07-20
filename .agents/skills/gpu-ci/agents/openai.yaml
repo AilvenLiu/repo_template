@@ -1,0 +1,4 @@
+interface:
+  display_name: "GPU CI"
+  short_description: "Design CUDA-aware CI and wheel validation"
+  default_prompt: "Use $gpu-ci to design the CUDA build and test pipeline."

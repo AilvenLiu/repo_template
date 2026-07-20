@@ -31,11 +31,13 @@ preserves policy strength through scoped repository-local precedence.
 | Root `AGENTS.md` | `AGENTS.md`-aware agent session start | Vendor-neutral entrypoint |
 | `templates/*/CLAUDE.md` and `AGENTS.md` | Generated-project session start | Profile-specific entrypoints |
 | `.claude/settings.json` and hooks | Tool lifecycle | Permission and session gates, not policy text |
-| `.ai/bin/agent-init` | Explicit `/init` or wrapper invocation | Profile detection, capability audit, bounded constraint manifest |
-| `.ai/constraints/` | Read from the init manifest before relevant work | Canonical shared and profile policy |
-| `.ai/skills/` and `.claude/skills/` | Relevant procedure invocation | Canonical skill bodies and Claude discovery stubs |
+| `.agents/bin/agent-init` | Explicit `/init` or wrapper invocation | Profile detection, capability audit, bounded constraint manifest |
+| `.agents/constraints/` | Read from the init manifest before relevant work | Canonical shared and profile policy |
+| `.agents/skills/` | Codex session discovery and relevant procedure invocation | Canonical skill bodies; native Codex repository skills |
+| `.claude/skills/` | Claude Code skill discovery | Thin delegates to canonical skill bodies |
+| `.codex/hooks.json` and `.claude/settings.json` | Platform startup/tool lifecycle | Native hook registration; adapters delegate to `.agents/hooks/` |
 | `agent_roadmaps/` | Only when a roadmap is active | Temporary phase scope and execution state |
-| `.claude/skills/create-project/scripts/init.py` | Project generation | Copies canonical shared assets and applies one profile overlay |
+| `.agents/skills/create-project/scripts/init.py` | Project generation | Copies canonical shared assets and applies one profile overlay |
 
 The generator is the source of generated output. Do not edit a disposable
 generated project to change template policy; update its canonical source and
@@ -87,7 +89,7 @@ but they are excluded from the scanner's production-source scope.
 Run the static checks from the template root:
 
 ```bash
-.ai/bin/agent-check-constraints
+.agents/bin/agent-check-constraints
 python3 -m pytest tests/test_instruction_safety.py tests/test_e2e_project_generation.py
 ```
 
@@ -106,12 +108,12 @@ claude -p --no-session-persistence --permission-mode plan \
   'Reply with exactly: OK'
 claude -p --no-session-persistence --permission-mode plan \
   'Identify the project profile and the required initialisation command. Do not modify files.'
-.ai/bin/agent-init --platform claude
+.agents/bin/agent-init --platform claude
 ```
 
 Do not add `--safe-mode` to the normal-mode check. Use safe mode only as a
 diagnostic comparison if a normal session fails. For Codex, use the same fresh
-project and run `.ai/bin/agent-init --platform codex`; then perform a read-only
+project and run `.agents/bin/agent-init --platform codex`; then perform a read-only
 profile and workflow check through the available Codex surface.
 
 ## Downstream Migration
@@ -120,13 +122,13 @@ For a repository generated from an older template, first preserve local policy
 customisations in a separate review diff. Then update these generated sources:
 
 1. Root `AGENTS.md` and `CLAUDE.md`
-2. `.ai/constraints/common/instruction-hierarchy.md` and
-   `.ai/constraints/common/git-workflow.md`
-3. `.ai/skills/init/SKILL.md`, `.ai/skills/roadmap/SKILL.md`, and their
+2. `.agents/constraints/common/instruction-hierarchy.md` and
+   `.agents/constraints/common/git-workflow.md`
+3. `.agents/skills/init/SKILL.md`, `.agents/skills/roadmap/SKILL.md`, and their
    `.claude/skills/` adapters
-4. `.ai/scripts/session_init.py`, the roadmap templates, and
-   `.ai/scripts/instruction_safety.py`
-5. Tests and the `.ai/bin/agent-check-constraints` validation path
+4. `.agents/scripts/session_init.py`, the roadmap templates, and
+   `.agents/scripts/instruction_safety.py`
+5. Tests and the `.agents/bin/agent-check-constraints` validation path
 6. Any copied setup examples that contain real credential material
 
 Regenerate a throwaway project from the updated template and compare these

@@ -3,11 +3,11 @@
 
 For each (platform, project_type) combination this suite exercises:
   - skill-presence parity vs the canonical capability manifest
-  - .ai/bin/agent-* wrapper presence + executability
+  - .agents/bin/agent-* wrapper presence + executability
   - constraint hit rate during /init (bounded-manifest coverage)
   - full roadmap lifecycle (create -> set-focus -> complete-task -> handoff -> complete)
   - structural validator (positive + negative cases)
-  - protected-branch detection by .ai/bin/agent-check-constraints
+  - protected-branch detection by .agents/bin/agent-check-constraints
 
 Hit-rate thresholds (computed against the manifest, not hardcoded counts) are
 asserted so future drift between manifest and template is caught immediately.
@@ -27,8 +27,8 @@ import pytest
 import yaml  # type: ignore[import-untyped]
 
 ROOT = Path(__file__).parent.parent
-sys.path.insert(0, str(ROOT / ".claude" / "skills" / "create-project" / "scripts"))
-sys.path.insert(0, str(ROOT / ".ai" / "scripts"))
+sys.path.insert(0, str(ROOT / ".agents" / "skills" / "create-project" / "scripts"))
+sys.path.insert(0, str(ROOT / ".agents" / "scripts"))
 
 from capability_audit import _entry_enabled_for_repo  # type: ignore[import-not-found]  # noqa: E402
 from init import create_project  # type: ignore[import-not-found]  # noqa: E402
@@ -44,7 +44,7 @@ def _run(cmd: list[str], cwd: Path) -> subprocess.CompletedProcess:
 
 
 def _force_audit_pass(project_root: Path) -> None:
-    for rel in (".ai/session_state.json", ".claude/session_state.json"):
+    for rel in (".agents/session_state.json", ".claude/session_state.json"):
         path = project_root / rel
         if not path.exists():
             continue
@@ -71,7 +71,7 @@ def _seed_initialized_state(
         "active_roadmap": None,
         "capability_audit": {"passed": True, "entries": []},
     }
-    for rel in (".ai/session_state.json", ".claude/session_state.json"):
+    for rel in (".agents/session_state.json", ".claude/session_state.json"):
         path = project_root / rel
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(state, indent=2))
@@ -85,19 +85,21 @@ def _make_project(tmp_path: Path, project_type: str) -> Path:
 
 
 def _init(project_root: Path, platform: str) -> subprocess.CompletedProcess:
-    return _run(["bash", ".ai/bin/agent-init", "--platform", platform], project_root)
+    return _run(
+        ["bash", ".agents/bin/agent-init", "--platform", platform], project_root
+    )
 
 
 def _manifest() -> dict:
-    return yaml.safe_load((ROOT / ".ai" / "capabilities.yml").read_text())
+    return yaml.safe_load((ROOT / ".agents" / "capabilities.yml").read_text())
 
 
 def _expected_skills(manifest: dict, platform: str, project_root: Path) -> set[str]:
     """Skills that must exist on disk for a generated project of this type.
 
-    After the .codex/ removal, the platform argument is informational only —
-    every skill in common_requirements.project_skills is expected on both
-    platforms (under .ai/skills/<id>/SKILL.md).
+    The platform argument is informational because both platforms consume the same
+    canonical skill in common_requirements.project_skills is expected on both
+    platforms (under .agents/skills/<id>/SKILL.md).
     """
     del platform  # parity is now uniform across platforms
 
@@ -134,13 +136,13 @@ def test_all_required_skills_present_on_disk(
     manifest = _manifest()
     expected = _expected_skills(manifest, platform, project)
 
-    # Every required skill must have its canonical body under .ai/skills/.
-    ai_skills_dir = project / ".ai" / "skills"
-    found_ai = {p.name for p in ai_skills_dir.iterdir() if p.is_dir()}
-    missing_ai = expected - found_ai
+    # Every required skill must have its canonical body under .agents/skills/.
+    agents_skills_dir = project / ".agents" / "skills"
+    found_agents = {p.name for p in agents_skills_dir.iterdir() if p.is_dir()}
+    missing_ai = expected - found_agents
     assert not missing_ai, (
-        f"[{project_type}] Required skill bodies missing under .ai/skills/: "
-        f"{sorted(missing_ai)}\n  Found: {sorted(found_ai)}"
+        f"[{project_type}] Required skill bodies missing under .agents/skills/: "
+        f"{sorted(missing_ai)}\n  Found: {sorted(found_agents)}"
     )
 
     if platform == "claude":
@@ -155,20 +157,22 @@ def test_all_required_skills_present_on_disk(
 
 
 @pytest.mark.parametrize("project_type", PROJECT_TYPES)
-def test_every_ai_skill_has_skill_md_body(tmp_path: Path, project_type: str) -> None:
+def test_every_agents_skill_has_skill_md_body(
+    tmp_path: Path, project_type: str
+) -> None:
     project = _make_project(tmp_path, project_type)
-    skills_dir = project / ".ai" / "skills"
-    assert skills_dir.is_dir(), ".ai/skills/ must exist in generated projects"
+    skills_dir = project / ".agents" / "skills"
+    assert skills_dir.is_dir(), ".agents/skills/ must exist in generated projects"
     for skill_dir in skills_dir.iterdir():
         if not skill_dir.is_dir():
             continue
         skill_md = skill_dir / "SKILL.md"
         assert skill_md.exists(), (
-            f"[{project_type}] .ai/skills/{skill_dir.name}/SKILL.md missing"
+            f"[{project_type}] .agents/skills/{skill_dir.name}/SKILL.md missing"
         )
         body = skill_md.read_text()
         assert body.strip(), (
-            f"[{project_type}] .ai/skills/{skill_dir.name}/SKILL.md is empty"
+            f"[{project_type}] .agents/skills/{skill_dir.name}/SKILL.md is empty"
         )
 
 
@@ -206,7 +210,7 @@ def test_all_required_wrappers_present_and_executable(
     manifest = _manifest()
     expected = _expected_wrappers(manifest, project)
 
-    bin_dir = project / ".ai" / "bin"
+    bin_dir = project / ".agents" / "bin"
     found = {
         p.name for p in bin_dir.iterdir() if p.is_file() and p.name.startswith("agent-")
     }
@@ -236,6 +240,8 @@ def _expected_constraints(project_type: str) -> set[str]:
         "common/mcp-integration",
         "common/ascii-only",
         "common/agentic-team",
+        "common/service-deployment",
+        "common/github-actions-cicd",
     }
     if project_type == "python":
         common |= {
@@ -277,7 +283,7 @@ def test_constraint_hit_rate_meets_100pct(
     init = _init(project, platform)
     expected = _expected_constraints(project_type)
 
-    state_path = project / ".ai" / "session_state.json"
+    state_path = project / ".agents" / "session_state.json"
     assert state_path.exists(), (
         f"[{platform}/{project_type}] session_state.json missing"
     )
@@ -294,7 +300,7 @@ def test_constraint_hit_rate_meets_100pct(
     )
 
     for key in expected:
-        assert f"[READ] .ai/constraints/{key}.md" in init.stdout, (
+        assert f"[READ] .agents/constraints/{key}.md" in init.stdout, (
             f"[{platform}/{project_type}] constraint {key} missing from /init manifest"
         )
     assert "[CONSTRAINT]" not in init.stdout
@@ -314,22 +320,35 @@ def test_generated_entrypoints_expose_phase_and_closure_discipline(
         assert "roadmap phase" in text.lower(), f"{name} missing roadmap phase wording"
         assert "agent_roadmaps/<phase>" in text, f"{name} uses stale roadmap path token"
 
-    roadmap_skill = (project / ".claude" / "skills" / "roadmap" / "SKILL.md").read_text()
-    roadmap_guide = (
-        project / ".claude" / "skills" / "roadmap" / "TEMPLATE_COMPLIANCE_GUIDE.md"
+    roadmap_skill = (
+        project / ".agents" / "skills" / "roadmap" / "SKILL.md"
     ).read_text()
-    init_skill = (project / ".claude" / "skills" / "init" / "SKILL.md").read_text()
+    roadmap_stub = (project / ".claude" / "skills" / "roadmap" / "SKILL.md").read_text()
+    roadmap_guide = (
+        project
+        / ".agents"
+        / "skills"
+        / "roadmap"
+        / "references"
+        / "template-compliance.md"
+    ).read_text()
+    init_skill = (project / ".agents" / "skills" / "init" / "SKILL.md").read_text()
+    init_runtime = (project / ".agents" / "scripts" / "session_init.py").read_text()
+    init_stub = (project / ".claude" / "skills" / "init" / "SKILL.md").read_text()
 
     for name, text in {
-        ".claude/skills/roadmap/SKILL.md": roadmap_skill,
-        ".claude/skills/roadmap/TEMPLATE_COMPLIANCE_GUIDE.md": roadmap_guide,
+        ".agents/skills/roadmap/SKILL.md": roadmap_skill,
+        ".agents/skills/roadmap/references/template-compliance.md": roadmap_guide,
     }.items():
         assert "--phases" in text, f"{name} missing phase create flag"
         assert "depends_on_phases" in text, f"{name} missing phase dependencies"
         assert "depends_on_steps" not in text, f"{name} still references step schema"
         assert "--steps" not in text, f"{name} still documents legacy create flag"
 
-    assert "common/closure-discipline" in init_skill
+    assert "common/closure-discipline" in init_runtime
+    assert ".agents/bin/agent-init" in init_skill
+    assert ".agents/skills/roadmap/SKILL.md" in roadmap_stub
+    assert ".agents/skills/init/SKILL.md" in init_stub
 
 
 @pytest.mark.parametrize("project_type", PROJECT_TYPES)
@@ -339,7 +358,7 @@ def test_session_state_records_platform_and_project_type(
 ) -> None:
     project = _make_project(tmp_path, project_type)
     _init(project, platform)
-    state = json.loads((project / ".ai" / "session_state.json").read_text())
+    state = json.loads((project / ".agents" / "session_state.json").read_text())
     assert state["platform"] == platform
     assert state["project_type"] == project_type
     assert state["project_profile"]
@@ -368,7 +387,7 @@ def test_full_roadmap_lifecycle(
     create = _run(
         [
             "bash",
-            ".ai/bin/agent-roadmap",
+            ".agents/bin/agent-roadmap",
             "create",
             "lifecycle",
             "--phases",
@@ -392,25 +411,27 @@ def test_full_roadmap_lifecycle(
 
     _run(["git", "checkout", "-b", f"roadmap/{phase}", "-q"], project)
 
-    validate = _run(["bash", ".ai/bin/agent-roadmap", "validate", phase], project)
+    validate = _run(["bash", ".agents/bin/agent-roadmap", "validate", phase], project)
     assert validate.returncode == 0, validate.stdout + validate.stderr
 
-    check = _run(["bash", ".ai/bin/agent-roadmap", "check"], project)
+    check = _run(["bash", ".agents/bin/agent-roadmap", "check"], project)
     assert check.returncode == 0, check.stdout + check.stderr
 
-    status = _run(["bash", ".ai/bin/agent-roadmap", "status"], project)
+    status = _run(["bash", ".agents/bin/agent-roadmap", "status"], project)
     assert status.returncode == 0, status.stdout + status.stderr
     assert phase in status.stdout
 
     # Complete the first two tasks; phase remains active.
     for _ in range(2):
-        comp = _run(["bash", ".ai/bin/agent-roadmap", "update", "complete-task"], project)
+        comp = _run(
+            ["bash", ".agents/bin/agent-roadmap", "update", "complete-task"], project
+        )
         assert comp.returncode == 0, comp.stdout + comp.stderr
 
     handoff = _run(
         [
             "bash",
-            ".ai/bin/agent-roadmap",
+            ".agents/bin/agent-roadmap",
             "handoff",
             "--non-interactive",
             "--work",
@@ -425,7 +446,9 @@ def test_full_roadmap_lifecycle(
     assert sessions, "handoff did not produce a session file"
 
     # Complete the last task — this auto-marks the phase completed.
-    final = _run(["bash", ".ai/bin/agent-roadmap", "update", "complete-task"], project)
+    final = _run(
+        ["bash", ".agents/bin/agent-roadmap", "update", "complete-task"], project
+    )
     assert final.returncode == 0, final.stdout + final.stderr
 
     assert not phase_dir.exists(), (
@@ -450,7 +473,7 @@ def test_validator_flags_each_missing_required_file(
     _run(
         [
             "bash",
-            ".ai/bin/agent-roadmap",
+            ".agents/bin/agent-roadmap",
             "create",
             "neg",
             "--phases",
@@ -463,10 +486,14 @@ def test_validator_flags_each_missing_required_file(
     target = project / "agent_roadmaps" / "phase-0-core" / missing_file
     target.unlink()
 
-    res = _run(["bash", ".ai/bin/agent-roadmap", "validate", "phase-0-core"], project)
+    res = _run(
+        ["bash", ".agents/bin/agent-roadmap", "validate", "phase-0-core"], project
+    )
     assert res.returncode != 0
     assert missing_file in res.stdout
-    assert "Missing required phase file" in res.stdout or "Phase Structure" in res.stdout
+    assert (
+        "Missing required phase file" in res.stdout or "Phase Structure" in res.stdout
+    )
 
 
 @pytest.mark.parametrize("victim", ["prompt.md", "INVARIANTS.md"])
@@ -475,7 +502,7 @@ def test_validator_flags_authority_order_strip(tmp_path: Path, victim: str) -> N
     _run(
         [
             "bash",
-            ".ai/bin/agent-roadmap",
+            ".agents/bin/agent-roadmap",
             "create",
             "neg",
             "--phases",
@@ -487,7 +514,9 @@ def test_validator_flags_authority_order_strip(tmp_path: Path, victim: str) -> N
     )
     target = project / "agent_roadmaps" / "phase-0-core" / victim
     target.write_text("Just plain prose with no authority order anywhere.\n")
-    res = _run(["bash", ".ai/bin/agent-roadmap", "validate", "phase-0-core"], project)
+    res = _run(
+        ["bash", ".agents/bin/agent-roadmap", "validate", "phase-0-core"], project
+    )
     assert res.returncode != 0
     assert "Authority Order" in res.stdout
 
@@ -507,7 +536,7 @@ def test_check_constraints_flags_protected_branch(
     r = _run(["git", "checkout", "main", "-q"], project)
     if r.returncode != 0:
         _run(["git", "checkout", "master", "-q"], project)
-    res = _run(["bash", ".ai/bin/agent-check-constraints"], project)
+    res = _run(["bash", ".agents/bin/agent-check-constraints"], project)
     assert res.returncode != 0
     assert "protected branch" in (res.stdout + res.stderr).lower()
 
@@ -517,7 +546,7 @@ def test_check_constraints_passes_on_feature_branch(
     tmp_path: Path, project_type: str
 ) -> None:
     project = _make_project(tmp_path, project_type)
-    res = _run(["bash", ".ai/bin/agent-check-constraints"], project)
+    res = _run(["bash", ".agents/bin/agent-check-constraints"], project)
     assert res.returncode == 0, res.stdout + res.stderr
 
 
@@ -527,9 +556,8 @@ def test_check_constraints_passes_on_feature_branch(
 
 
 def test_every_manifest_skill_has_implementation_in_template() -> None:
-    """Every manifest skill must have a body under .ai/skills/ (vendor-neutral),
+    """Every manifest skill must have a body under .agents/skills/ (vendor-neutral),
     plus a Claude stub under .claude/skills/ for slash-command dispatch.
-    The 'create-project' skill is template-only and lives only on the Claude side.
     """
     manifest = _manifest()
     skill_ids: set[str] = {
@@ -537,18 +565,18 @@ def test_every_manifest_skill_has_implementation_in_template() -> None:
         for entry in manifest.get("common_requirements", {}).get("project_skills", [])
     }
 
-    ai_skills = {p.name for p in (ROOT / ".ai" / "skills").iterdir() if p.is_dir()}
+    agents_skills = {
+        p.name for p in (ROOT / ".agents" / "skills").iterdir() if p.is_dir()
+    }
     claude_skills = {
         p.name for p in (ROOT / ".claude" / "skills").iterdir() if p.is_dir()
     }
 
     for skill_id in skill_ids:
-        # create-project is template-only; it has no .ai/skills/ body.
-        if skill_id != "create-project":
-            assert skill_id in ai_skills, (
-                f"Manifest declares skill '{skill_id}' but no .ai/skills/{skill_id}/ "
-                "directory exists"
-            )
+        assert skill_id in agents_skills, (
+            f"Manifest declares skill '{skill_id}' but no .agents/skills/{skill_id}/ "
+            "directory exists"
+        )
         assert skill_id in claude_skills, (
             f"Manifest declares skill '{skill_id}' but no .claude/skills/{skill_id}/ "
             "directory exists"
@@ -556,14 +584,14 @@ def test_every_manifest_skill_has_implementation_in_template() -> None:
 
 
 def test_every_constraint_file_resolves_via_loader() -> None:
-    """Every .ai/constraints/**/*.md should be loadable by session_init.load_constraint."""
+    """Every .agents/constraints/**/*.md should be loadable by session_init.load_constraint."""
 
-    sys.path.insert(0, str(ROOT / ".ai" / "scripts"))
+    sys.path.insert(0, str(ROOT / ".agents" / "scripts"))
     from session_init import load_constraint  # type: ignore[import-not-found]  # noqa: E402
 
-    for md in (ROOT / ".ai" / "constraints").rglob("*.md"):
+    for md in (ROOT / ".agents" / "constraints").rglob("*.md"):
         if md.name == "README.md":
             continue
-        rel = md.relative_to(ROOT / ".ai" / "constraints").with_suffix("")
+        rel = md.relative_to(ROOT / ".agents" / "constraints").with_suffix("")
         body = load_constraint(ROOT, str(rel).replace(os.sep, "/"))
         assert body is not None and body.strip(), f"Constraint {rel} did not load"

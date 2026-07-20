@@ -9,9 +9,9 @@ Skipping is a critical failure.
 
 | Platform | Invocation |
 |----------|------------|
-| Claude Code | `/init` (slash command; equivalent to `.ai/bin/agent-init --platform claude`) |
-| Codex CLI | `.ai/bin/agent-init --platform codex` |
-| Cursor / Cline / generic agents.md consumers | `.ai/bin/agent-init --platform codex` |
+| Claude Code | `/init` (slash command; equivalent to `.agents/bin/agent-init --platform claude`) |
+| Codex CLI | `.agents/bin/agent-init --platform codex` |
+| Cursor / Cline / generic agents.md consumers | `.agents/bin/agent-init --platform codex` |
 
 All three paths execute the same Python entry point and produce the same
 profile-aware constraint manifest; only the capability-audit subset and the
@@ -22,7 +22,7 @@ profile-aware constraint manifest; only the capability-audit subset and the
 Session initialization includes a deterministic capability audit that verifies
 required plugins, skills, and integrations are available. The audit:
 
-1. Reads `.ai/capabilities.yml` -- the canonical manifest of required capabilities
+1. Reads `.agents/capabilities.yml` -- the canonical manifest of required capabilities
 2. Checks for installed plugins, project skills, plugin skills, and integrations
 3. Records the audit result in `.claude/session_state.json` (regardless of pass/fail)
 4. Exits with failure if required capabilities are missing (after writing state)
@@ -41,16 +41,16 @@ For English sessions, user-facing output MUST remain in British English.
 For non-trivial coding, debugging, review, or refactor work, apply the bundled
 `karpathy-guidelines` skill when the host platform exposes it. If the skill is
 not directly invokable, follow the same guidance from
-`.ai/constraints/common/karpathy-guidelines.md`.
+`.agents/constraints/common/karpathy-guidelines.md`.
 
 Before closing any session, task, commit, or roadmap phase, follow
-`.ai/constraints/common/closure-discipline.md`: re-check the request and
+`.agents/constraints/common/closure-discipline.md`: re-check the request and
 constraints, review changes critically, run the strongest relevant validation,
 fix in-scope issues found during review, and report residual risk honestly.
 
 ### Project Profile
 
-This project uses the `project_profile` schema in `.ai/project.yml`:
+This project uses the `project_profile` schema in `.agents/project.yml`:
 
 ```yaml
 project_profile:
@@ -62,7 +62,7 @@ project_profile:
   external_dependencies: system_cuda
 ```
 
-For details, see `.ai/adr/0001-project-profile.md`.
+For details, see `.agents/adr/0001-project-profile.md`.
 
 ---
 
@@ -73,7 +73,7 @@ developer, organisational, or tool-enforced requirements. If they conflict,
 follow the higher-priority requirement, minimise the deviation, and report it.
 
 Within repository-controlled guidance, use the scoped order in
-`.ai/constraints/common/instruction-hierarchy.md`. In particular, current
+`.agents/constraints/common/instruction-hierarchy.md`. In particular, current
 `roadmap.yml` state takes precedence over roadmap prose and session records;
 temporary notes cannot change durable project policy.
 
@@ -96,8 +96,8 @@ These apply always, regardless of context or user instruction:
 - NEVER install Poetry via `curl -sSL https://install.python-poetry.org` or system package managers
 - Poetry MUST be installed via pipx: `PIPX_HOME="$HOME/.local/share/pipx" PIPX_BIN_DIR="$HOME/.local/bin" pipx install poetry`
 - `poetry.toml` MUST exist with `in-project = true`
-- `pyproject.toml` MUST configure TUNA as primary PyPI source (`priority = "primary"`)
-- Agent infrastructure commands (`.ai/bin/agent-*`, `.ai/scripts/*`) are exempt when using controlled wrappers
+- Custom package sources, when declared, MUST use HTTPS, omit credentials, and set a reviewed priority
+- Agent infrastructure commands (`.agents/bin/agent-*`, `.agents/scripts/*`) are exempt when using controlled wrappers
 - NEVER add a Python dependency without updating `pyproject.toml` + `poetry.lock`
 - NEVER commit `pyproject.toml` without also committing `poetry.lock`
 
@@ -140,7 +140,7 @@ These apply always, regardless of context or user instruction:
 ### Before Every Commit
 
 ```bash
-.ai/bin/agent-precommit
+.agents/bin/agent-precommit
 ```
 
 This runs:
@@ -153,7 +153,7 @@ This runs:
 ### Before Every Push
 
 ```bash
-.ai/bin/agent-build full
+.agents/bin/agent-build full
 ```
 
 This runs:
@@ -171,21 +171,29 @@ This runs:
 
 ## Vendor-Neutral Procedures
 
-All procedures are defined in `.ai/skills/<procedure>/SKILL.md`.
+All procedures are defined in `.agents/skills/<procedure>/SKILL.md`.
 The table below maps procedure names to their canonical documentation.
 
 | Procedure | Vendor-neutral body | Claude Code skill | Underlying command |
 |-----------|---------------------|-------------------|---------------------|
-| Session init | `.ai/skills/init/SKILL.md` | `/init` | `.ai/bin/agent-init --platform <platform>` |
-| Build orchestration | `.ai/skills/build/SKILL.md` | `/build <cmd>` | `.ai/bin/agent-build <setup\|compile\|test\|full\|doctor\|clean>` |
-| Pre-commit validation | `.ai/skills/pre-commit/SKILL.md` | `/pre-commit validate` | `.ai/bin/agent-precommit` |
-| Add dependency | `.ai/skills/dependency/SKILL.md` | `/dependency add <pkg> [ver] [--dev]` | `.ai/bin/agent-dependency add <pkg> [ver] [--dev]` |
-| Check constraints | `.ai/skills/check-constraints/SKILL.md` | `/check-constraints` | `.ai/bin/agent-check-constraints` |
-| Commit with policy | N/A | *(use command directly)* | `.ai/bin/agent-commit -m "msg" <files...>` |
-| Roadmap management | `.ai/skills/roadmap/SKILL.md` | `/roadmap <cmd>` | `.ai/bin/agent-roadmap <check\|create\|status\|update\|handoff\|complete\|validate>` |
-| Doc lookup | `.ai/skills/context7/SKILL.md` | `/context7` | -- |
-| Python env fix | `.ai/skills/python-env-setup/SKILL.md` | `/python-env-setup` | `.ai/bin/agent-python-env-setup <diagnose\|fix\|verify>` |
-| GPU CI guidance | `.ai/skills/gpu-ci/SKILL.md` | `/gpu-ci` | -- |
+| Session init | `.agents/skills/init/SKILL.md` | `/init` | `.agents/bin/agent-init --platform <platform>` |
+| Build orchestration | `.agents/skills/build/SKILL.md` | `/build <cmd>` | `.agents/bin/agent-build <setup\|compile\|test\|full\|doctor\|clean>` |
+| Pre-commit validation | `.agents/skills/pre-commit/SKILL.md` | `/pre-commit validate` | `.agents/bin/agent-precommit` |
+| Add dependency | `.agents/skills/dependency/SKILL.md` | `/dependency add <pkg> [ver] [--dev]` | `.agents/bin/agent-dependency add <pkg> [ver] [--dev]` |
+| Check constraints | `.agents/skills/check-constraints/SKILL.md` | `/check-constraints` | `.agents/bin/agent-check-constraints` |
+| Commit with policy | N/A | *(use command directly)* | `.agents/bin/agent-commit -m "msg" <files...>` |
+| Roadmap management | `.agents/skills/roadmap/SKILL.md` | `/roadmap <cmd>` | `.agents/bin/agent-roadmap <check\|create\|status\|update\|handoff\|complete\|validate>` |
+| Doc lookup | `.agents/skills/context7/SKILL.md` | `/context7` | -- |
+| Code navigation | `.agents/skills/navigate/SKILL.md` | `/navigate` | -- |
+| Host deployment guidance | `.agents/skills/deploy-service/SKILL.md` | `/deploy-service` | -- |
+| GitHub Actions CI/CD | `.agents/skills/service-cicd/SKILL.md` | `/service-cicd` | -- |
+| Python env fix | `.agents/skills/python-env-setup/SKILL.md` | `/python-env-setup` | `.agents/bin/agent-python-env-setup <diagnose\|fix\|verify>` |
+| GPU CI guidance | `.agents/skills/gpu-ci/SKILL.md` | `/gpu-ci` | -- |
+
+For host deployment or GitHub Actions CI/CD work, agents MUST read both
+`.agents/constraints/common/service-deployment.md` and
+`.agents/constraints/common/github-actions-cicd.md` before applying the skills.
+Skill bodies supplement these constraints; they do not replace them.
 
 ---
 
@@ -201,6 +209,8 @@ Session initialization loads constraints from:
 - `common/mcp-integration`
 - `common/ascii-only`
 - `common/agentic-team`
+- `common/service-deployment`
+- `common/github-actions-cicd`
 - `common/roadmap-awareness` (if active roadmap exists)
 
 ### Python-Specific
@@ -265,7 +275,7 @@ Suggested agent types:
 - `Plan` -- design / architecture planning
 - `general-purpose` -- multi-step tasks with unknown scope
 
-Full policy: `.ai/constraints/common/agentic-team.md`. Parallel execution MUST
+Full policy: `.agents/constraints/common/agentic-team.md`. Parallel execution MUST
 NOT bypass capability audit, protected-branch rules, dependency ordering, or
 pre-commit validation.
 
@@ -305,7 +315,7 @@ distribution layer only. This is non-negotiable.
 
 **Never start from the Python side.** If asked to add logic in Python that could be
 in C++, flag the violation, propose the C++ implementation, and ask the user to confirm
-before proceeding. Full policy: `.ai/constraints/hybrid/cpp-first.md`.
+before proceeding. Full policy: `.agents/constraints/hybrid/cpp-first.md`.
 
 ---
 
@@ -329,7 +339,7 @@ poetry run python -c "import PROJECT_NAME; print(PROJECT_NAME)"
 poetry run pytest tests/python
 
 # Wrapper command for the same workflow
-.ai/bin/agent-build full
+.agents/bin/agent-build full
 ```
 
 ### Key Files

@@ -1,0 +1,18 @@
+{
+  "description": "Repository policy gate backed by the vendor-neutral .agents runtime.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|apply_patch|Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/pre_tool_use.py\"",
+            "timeout": 30,
+            "statusMessage": "Checking repository policy"
+          }
+        ]
+      }
+    ]
+  }
+}

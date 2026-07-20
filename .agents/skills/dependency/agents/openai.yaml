@@ -1,0 +1,4 @@
+interface:
+  display_name: "Manage Dependency"
+  short_description: "Add dependencies through guarded workflows"
+  default_prompt: "Use $dependency to add this dependency through the repository workflow."

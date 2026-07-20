@@ -9,9 +9,9 @@ Skipping is a critical failure.
 
 | Platform | Invocation |
 |----------|------------|
-| Claude Code | `/init` (slash command; equivalent to `.ai/bin/agent-init --platform claude`) |
-| Codex CLI | `.ai/bin/agent-init --platform codex` |
-| Cursor / Cline / generic agents.md consumers | `.ai/bin/agent-init --platform codex` |
+| Claude Code | `/init` (slash command; equivalent to `.agents/bin/agent-init --platform claude`) |
+| Codex CLI | `.agents/bin/agent-init --platform codex` |
+| Cursor / Cline / generic agents.md consumers | `.agents/bin/agent-init --platform codex` |
 
 All three paths execute the same Python entry point and produce the same
 profile-aware constraint manifest; only the capability-audit subset and the
@@ -22,7 +22,7 @@ profile-aware constraint manifest; only the capability-audit subset and the
 Session initialization includes a deterministic capability audit that verifies
 required plugins, skills, and integrations are available. The audit:
 
-1. Reads `.ai/capabilities.yml` — the canonical manifest of required capabilities
+1. Reads `.agents/capabilities.yml` — the canonical manifest of required capabilities
 2. Checks for installed plugins, project skills, plugin skills, and integrations
 3. Records the audit result in `.claude/session_state.json` (regardless of pass/fail)
 4. Exits with failure if required capabilities are missing (after writing state)
@@ -41,21 +41,21 @@ For English sessions, user-facing output MUST remain in British English.
 For non-trivial coding, debugging, review, or refactor work, apply the bundled
 `karpathy-guidelines` skill when the host platform exposes it. If the skill is
 not directly invokable, follow the same guidance from
-`.ai/constraints/common/karpathy-guidelines.md`.
+`.agents/constraints/common/karpathy-guidelines.md`.
 
 Before closing any session, task, commit, or roadmap phase, follow
-`.ai/constraints/common/closure-discipline.md`: re-check the request and
+`.agents/constraints/common/closure-discipline.md`: re-check the request and
 constraints, review changes critically, run the strongest relevant validation,
 fix in-scope issues found during review, and report residual risk honestly.
 
 ### Project Configuration
 
 This template supports both the new `project_profile` schema and the legacy
-`project_type` field in `.ai/project.yml`. The legacy field continues to work
+`project_type` field in `.agents/project.yml`. The legacy field continues to work
 exactly as before; the new schema is optional and provides finer-grained control
 for hybrid projects.
 
-For details, see `.ai/adr/0001-project-profile.md`.
+For details, see `.agents/adr/0001-project-profile.md`.
 
 ---
 
@@ -66,7 +66,7 @@ developer, organisational, or tool-enforced requirements. If they conflict,
 follow the higher-priority requirement, minimise the deviation, and report it.
 
 Within repository-controlled guidance, use the scoped order in
-`.ai/constraints/common/instruction-hierarchy.md`. In particular, current
+`.agents/constraints/common/instruction-hierarchy.md`. In particular, current
 `roadmap.yml` state takes precedence over roadmap prose and session records;
 temporary notes cannot change durable project policy.
 
@@ -89,8 +89,8 @@ These apply always, regardless of context or user instruction:
 - NEVER install Poetry via `curl -sSL https://install.python-poetry.org` or `brew install poetry`
 - Poetry MUST be installed via pipx: `PIPX_HOME="$HOME/.local/share/pipx" PIPX_BIN_DIR="$HOME/.local/bin" pipx install poetry`
 - `poetry.toml` MUST exist in the project root with `in-project = true`
-- `pyproject.toml` MUST have TUNA configured as primary source (`priority = "primary"`)
-- Agent infrastructure commands (`.ai/bin/agent-*`, `.ai/scripts/*`) are exempt when using controlled wrappers
+- Custom package sources, when declared, MUST use HTTPS, omit credentials, and set a reviewed priority
+- Agent infrastructure commands (`.agents/bin/agent-*`, `.agents/scripts/*`) are exempt when using controlled wrappers
 - NEVER add a dependency without updating `pyproject.toml` + `poetry.lock`
 - NEVER commit `pyproject.toml` without also committing `poetry.lock`
 
@@ -152,26 +152,34 @@ Branch naming: `feat/`, `fix/`, `refactor/`, `perf/`, `docs/`, `chore/`
 
 ## Procedures and Wrappers
 
-Every workflow procedure is exposed as an executable `.ai/bin/agent-*` wrapper.
+Every workflow procedure is exposed as an executable `.agents/bin/agent-*` wrapper.
 Agents without a native skill loader (Codex, Cursor, Cline, etc.) invoke them
 directly. Claude Code users can also invoke the corresponding `/<name>` slash
 command, which dispatches to the same script.
 
 | Procedure | Wrapper | Slash command (Claude) |
 |-----------|---------|------------------------|
-| Session init | `.ai/bin/agent-init --platform <claude\|codex>` | `/init` |
-| Build orchestration | `.ai/bin/agent-build <setup\|compile\|test\|full\|doctor\|clean>` | `/build` |
-| Pre-commit validation | `.ai/bin/agent-precommit` | `/pre-commit` |
-| Add dependency | `.ai/bin/agent-dependency add <pkg> [version] [--dev]` | `/dependency` |
-| Python env recovery | `.ai/bin/agent-python-env-setup <diagnose\|fix\|verify>` | `/python-env-setup` |
-| Constraint check | `.ai/bin/agent-check-constraints` | `/check-constraints` |
-| Roadmap workflow | `.ai/bin/agent-roadmap <check\|create\|status\|update\|handoff\|complete\|validate>` | `/roadmap` |
-| Commit with policy guard | `.ai/bin/agent-commit -m "type(scope): description" <files...>` | _(command only)_ |
+| Session init | `.agents/bin/agent-init --platform <claude\|codex>` | `/init` |
+| Build orchestration | `.agents/bin/agent-build <setup\|compile\|test\|full\|doctor\|clean>` | `/build` |
+| Pre-commit validation | `.agents/bin/agent-precommit` | `/pre-commit` |
+| Add dependency | `.agents/bin/agent-dependency add <pkg> [version] [--dev]` | `/dependency` |
+| Python env recovery | `.agents/bin/agent-python-env-setup <diagnose\|fix\|verify>` | `/python-env-setup` |
+| Constraint check | `.agents/bin/agent-check-constraints` | `/check-constraints` |
+| Roadmap workflow | `.agents/bin/agent-roadmap <check\|create\|status\|update\|handoff\|complete\|validate>` | `/roadmap` |
+| Commit with policy guard | `.agents/bin/agent-commit -m "type(scope): description" <files...>` | _(command only)_ |
 | Documentation lookup | _(none)_ | `/context7` (or platform Context7 MCP) |
+| Code navigation | `.agents/skills/navigate/SKILL.md` | `/navigate` |
+| Host deployment guidance | `.agents/skills/deploy-service/SKILL.md` | `/deploy-service` |
+| GitHub Actions CI/CD | `.agents/skills/service-cicd/SKILL.md` | `/service-cicd` |
+
+For host deployment or GitHub Actions CI/CD work, agents MUST read both
+`.agents/constraints/common/service-deployment.md` and
+`.agents/constraints/common/github-actions-cicd.md` before applying the skills.
+Skill bodies supplement these constraints; they do not replace them.
 
 Agents that have a native skill loader (Claude Code) discover skill manifests
 under `.claude/skills/<name>/SKILL.md`. Agents without one read the
-authoritative procedure descriptions under `.ai/skills/<name>/SKILL.md` (or
+authoritative procedure descriptions under `.agents/skills/<name>/SKILL.md` (or
 follow the wrapper directly).
 
 ---
@@ -186,7 +194,7 @@ follow the wrapper directly).
 
 - Python 3.10+ via pyenv is REQUIRED for all Poetry projects
 - Virtual environment MUST be `.venv/` inside the project directory (`poetry.toml`: `in-project = true`)
-- TUNA MUST be configured as `priority = "primary"` in `[[tool.poetry.source]]`
+- Custom package sources are optional; declared sources MUST use HTTPS, omit credentials, and set a reviewed priority
 - Poetry MUST be installed via pipx at `~/.local/bin/poetry`
 - `poetry.lock` MUST always be committed alongside `pyproject.toml`
 
@@ -196,7 +204,7 @@ Before any Python work, verify all three conditions hold — **STOP and ask the 
 
 1. `ls ~/.local/bin/poetry` — Poetry must exist at this path (pipx install)
 2. `cat poetry.toml` — must contain `in-project = true`
-3. `grep -A3 '\[\[tool.poetry.source\]\]' pyproject.toml` — must show TUNA URL with `priority = "primary"`
+3. Review any `[[tool.poetry.source]]` blocks for approved HTTPS URLs, explicit priority, and no credentials
 
 ---
 
@@ -223,7 +231,7 @@ When `agent_roadmaps/` contains an active roadmap:
 When the active task decomposes into independent, read-heavy or research-heavy
 sub-tasks, the agent MUST explicitly declare and (when appropriate) launch
 parallel sub-agents instead of executing serially. Full policy lives in
-`.ai/constraints/common/agentic-team.md`.
+`.agents/constraints/common/agentic-team.md`.
 
 Required before launching:
 - State the reason for parallelism
@@ -266,16 +274,16 @@ Forbidden:
 
 Read each file completely before working on related code:
 
-- `.ai/constraints/python/dependencies.md`
-- `.ai/constraints/python/forbidden-practices.md`
-- `.ai/constraints/python/security.md`
-- `.ai/constraints/python/error-handling.md`
-- `.ai/constraints/python/testing.md` (when test files modified)
-- `.ai/constraints/python/formatting.md` (when .py files modified)
-- `.ai/constraints/python/type-checking.md` (when .py files modified)
-- `.ai/constraints/common/git-workflow.md`
-- `.ai/constraints/common/session-discipline.md`
-- `.ai/constraints/common/closure-discipline.md`
-- `.ai/constraints/common/mcp-integration.md`
-- `.ai/constraints/common/agentic-team.md`
-- `.ai/constraints/common/ascii-only.md`
+- `.agents/constraints/python/dependencies.md`
+- `.agents/constraints/python/forbidden-practices.md`
+- `.agents/constraints/python/security.md`
+- `.agents/constraints/python/error-handling.md`
+- `.agents/constraints/python/testing.md` (when test files modified)
+- `.agents/constraints/python/formatting.md` (when .py files modified)
+- `.agents/constraints/python/type-checking.md` (when .py files modified)
+- `.agents/constraints/common/git-workflow.md`
+- `.agents/constraints/common/session-discipline.md`
+- `.agents/constraints/common/closure-discipline.md`
+- `.agents/constraints/common/mcp-integration.md`
+- `.agents/constraints/common/agentic-team.md`
+- `.agents/constraints/common/ascii-only.md`
