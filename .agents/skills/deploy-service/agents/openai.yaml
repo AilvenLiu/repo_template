@@ -1,0 +1,4 @@
+interface:
+  display_name: "Deploy Service"
+  short_description: "Design secure host-side service deployment"
+  default_prompt: "Use $deploy-service to design a secure deployment and rollback plan."

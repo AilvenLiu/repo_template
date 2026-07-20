@@ -1,0 +1,4 @@
+interface:
+  display_name: "Context7 Docs"
+  short_description: "Look up current official library docs"
+  default_prompt: "Use $context7 to find current documentation for this API."

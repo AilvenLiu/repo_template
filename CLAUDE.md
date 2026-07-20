@@ -15,20 +15,20 @@ Claude Code MUST NOT edit files until it has completed this read-and-load sequen
 
 1. Read this `CLAUDE.md`.
 2. Read root `AGENTS.md` as the cross-agent contract.
-3. Read `.ai/project.yml` and determine the active project type/profile.
-4. Read `.ai/capabilities.yml` for required skills, wrappers, and integrations.
+3. Read `.agents/project.yml` and determine the active project type/profile.
+4. Read `.agents/capabilities.yml` for required skills, wrappers, and integrations.
 5. Run `/init` and read the constraint paths in its manifest.
 6. Read the project-type constraint family applicable to the intended work:
-   - Python: `.ai/constraints/python/`
-   - C++/CUDA: `.ai/constraints/cpp/`
-   - Hybrid Python/C++/CUDA: `.ai/constraints/python/`, `.ai/constraints/cpp/`, and `.ai/constraints/hybrid/`
+   - Python: `.agents/constraints/python/`
+   - C++/CUDA: `.agents/constraints/cpp/`
+   - Hybrid Python/C++/CUDA: `.agents/constraints/python/`, `.agents/constraints/cpp/`, and `.agents/constraints/hybrid/`
 7. Load relevant skills before using their workflow. Claude skill stubs in
    `.claude/skills/` are discovery wrappers; canonical skill bodies live in
-   `.ai/skills/`.
+   `.agents/skills/`.
 
 If `/init` reports missing required Claude Code capabilities, the session
 remains blocked until they are installed and `/init` is re-run. The canonical
-bootstrap commands live in `.ai/constraints/common/session-discipline.md` and
+bootstrap commands live in `.agents/constraints/common/session-discipline.md` and
 the per-language `templates/<python|cpp>/CLAUDE.md` files.
 
 ## Platform and Repository Policy
@@ -40,14 +40,14 @@ compliance, follow the higher-priority requirement, minimise the deviation, and
 report it before an unauthorised or unsafe mutation.
 
 For repository-local conflicts, use the scoped order in root `AGENTS.md` and
-`.ai/constraints/common/instruction-hierarchy.md`. Do not treat a session
+`.agents/constraints/common/instruction-hierarchy.md`. Do not treat a session
 record or stale conversational assumption as current repository state.
 Do not silently bypass hooks, wrappers, tests, `/init`, `/check-constraints`, or
 `/pre-commit`.
 
 ## Project Type Decision Table
 
-Read `.ai/project.yml` before editing. Prefer `project_profile` when present;
+Read `.agents/project.yml` before editing. Prefer `project_profile` when present;
 otherwise use legacy `project_type`.
 
 | Detected profile | Constraints Claude must load | Build ownership |
@@ -60,7 +60,7 @@ Before final response after any edit, Claude Code must run the relevant
 validation command or explain why it could not be run:
 
 ```bash
-.ai/bin/agent-check-constraints
+.agents/bin/agent-check-constraints
 ```
 
 ## Bundled Behavioural Skill
@@ -87,7 +87,7 @@ than silently changing commit metadata.
 ## Vendor-Neutral Constraints
 
 All coding standards, workflow rules, and quality requirements are defined in the
-vendor-neutral `.ai/` directory. Claude-specific skills implement the procedures
+vendor-neutral `.agents/` directory. Claude-specific skills implement the procedures
 described there using Claude Code's tool and hook system.
 
 ## Project-Specific Instructions
@@ -102,7 +102,7 @@ generated projects live under `templates/`:
 When a real project is generated via `/create-project`, the appropriate
 `templates/<language>/` overlay is copied to the project root, so each file
 arrives with its generic name (`CLAUDE.md`, `AGENTS.md`, `CONTRIBUTING.md`,
-`.gitignore`, `.ai/project.yml`).
+`.gitignore`, `.agents/project.yml`).
 
 ## C++/CUDA and Hybrid Build Policy Summary
 

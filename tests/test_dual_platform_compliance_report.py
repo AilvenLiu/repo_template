@@ -29,8 +29,8 @@ import pytest
 import yaml  # type: ignore[import-untyped]
 
 ROOT = Path(__file__).parent.parent
-sys.path.insert(0, str(ROOT / ".claude" / "skills" / "create-project" / "scripts"))
-sys.path.insert(0, str(ROOT / ".ai" / "scripts"))
+sys.path.insert(0, str(ROOT / ".agents" / "skills" / "create-project" / "scripts"))
+sys.path.insert(0, str(ROOT / ".agents" / "scripts"))
 
 from capability_audit import _entry_enabled_for_repo  # type: ignore[import-not-found]  # noqa: E402
 from init import create_project  # type: ignore[import-not-found]  # noqa: E402
@@ -70,7 +70,7 @@ class Scenario:
 
 
 def _manifest() -> dict:
-    return yaml.safe_load((ROOT / ".ai" / "capabilities.yml").read_text())
+    return yaml.safe_load((ROOT / ".agents" / "capabilities.yml").read_text())
 
 
 def _expected_skills(manifest: dict, platform: str, project_root: Path) -> set[str]:
@@ -108,11 +108,13 @@ def _expected_constraints(project_type: str) -> set[str]:
         "common/instruction-hierarchy",
         "common/git-workflow",
         "common/session-discipline",
-            "common/closure-discipline",
+        "common/closure-discipline",
         "common/karpathy-guidelines",
         "common/mcp-integration",
         "common/ascii-only",
         "common/agentic-team",
+        "common/service-deployment",
+        "common/github-actions-cicd",
     }
     if project_type == "python":
         common |= {
@@ -160,15 +162,15 @@ def compliance(tmp_path_factory) -> list[Scenario]:
             scenario = Scenario(platform=platform, project_type=project_type)
 
             # Skill body presence (canonical, vendor-neutral location).
-            ai_skills_dir = target / ".ai" / "skills"
-            on_disk = {p.name for p in ai_skills_dir.iterdir() if p.is_dir()}
+            agents_skills_dir = target / ".agents" / "skills"
+            on_disk = {p.name for p in agents_skills_dir.iterdir() if p.is_dir()}
             expected_skills = _expected_skills(manifest, platform, target)
             scenario.add("skills_present", on_disk, expected_skills)
 
             # Skill SKILL.md validity
             valid_skill_md = {
                 p.name
-                for p in ai_skills_dir.iterdir()
+                for p in agents_skills_dir.iterdir()
                 if p.is_dir()
                 and (p / "SKILL.md").exists()
                 and (p / "SKILL.md").read_text().strip()
@@ -189,14 +191,16 @@ def compliance(tmp_path_factory) -> list[Scenario]:
             wrappers_expected = _expected_wrappers(manifest, target)
             wrappers_present = {
                 p.name
-                for p in (target / ".ai" / "bin").iterdir()
+                for p in (target / ".agents" / "bin").iterdir()
                 if p.is_file() and os.access(p, os.X_OK) and p.name.startswith("agent-")
             }
             scenario.add("wrappers_executable", wrappers_present, wrappers_expected)
 
             # Constraint hit rate via /init
-            init = _run(["bash", ".ai/bin/agent-init", "--platform", platform], target)
-            state_path = target / ".ai" / "session_state.json"
+            init = _run(
+                ["bash", ".agents/bin/agent-init", "--platform", platform], target
+            )
+            state_path = target / ".agents" / "session_state.json"
             loaded = set(
                 json.loads(state_path.read_text()).get("loaded_constraints", [])
             )
@@ -206,14 +210,16 @@ def compliance(tmp_path_factory) -> list[Scenario]:
             manifested = {
                 key
                 for key in expected_constraints
-                if f"[READ] .ai/constraints/{key}.md" in init.stdout
+                if f"[READ] .agents/constraints/{key}.md" in init.stdout
             }
-            scenario.add("constraint_manifest_printed", manifested, expected_constraints)
+            scenario.add(
+                "constraint_manifest_printed", manifested, expected_constraints
+            )
 
             scenarios.append(scenario)
 
     # Template-level authority-order coverage (shared across scenarios)
-    template_dir = ROOT / ".ai" / "scripts" / "roadmap" / "templates"
+    template_dir = ROOT / ".agents" / "scripts" / "roadmap" / "templates"
     tokens = {"INVARIANTS.md", "ROADMAP.md", "roadmap.yml", "sessions", "prompt.md"}
     for target_file in ("prompt.md", "INVARIANTS.md", "ROADMAP.md"):
         body = (template_dir / target_file).read_text()
@@ -247,26 +253,26 @@ def test_report_prints_and_every_required_rate_is_100pct(
     assert not offenders, "Compliance gaps detected:\n  - " + "\n  - ".join(offenders)
 
 
-def test_skill_parity_between_ai_skills_and_claude_stubs() -> None:
-    """Every .ai/skills/<name>/ must have a matching .claude/skills/<name>/ stub
-    (and vice versa, except for the template-only create-project + the Claude
-    'common' utility folder).
+def test_skill_parity_between_agents_skills_and_claude_stubs() -> None:
+    """Every .agents/skills/<name>/ must have a matching .claude/skills/<name>/ stub
+    (and vice versa, except for non-skill Claude utility folders).
     """
-    ai_skills = {p.name for p in (ROOT / ".ai" / "skills").iterdir() if p.is_dir()}
+    agents_skills = {
+        p.name for p in (ROOT / ".agents" / "skills").iterdir() if p.is_dir()
+    }
     claude_skills = {
         p.name for p in (ROOT / ".claude" / "skills").iterdir() if p.is_dir()
     }
 
     # Known, documented asymmetries:
-    # - 'create-project' is a template-only Claude skill; no .ai/skills body.
     # - 'common' holds shared utility code, not a user-facing skill.
-    claude_only_allowed = {"create-project", "common"}
-    claude_minus_ai = claude_skills - ai_skills - claude_only_allowed
-    ai_minus_claude = ai_skills - claude_skills
+    claude_only_allowed = {"common"}
+    claude_minus_agents = claude_skills - agents_skills - claude_only_allowed
+    agents_minus_claude = agents_skills - claude_skills
 
-    assert not claude_minus_ai, (
-        f"Claude skills with no .ai/skills body: {sorted(claude_minus_ai)}"
+    assert not claude_minus_agents, (
+        f"Claude skills with no .agents/skills body: {sorted(claude_minus_agents)}"
     )
-    assert not ai_minus_claude, (
-        f".ai/skills entries with no Claude stub: {sorted(ai_minus_claude)}"
+    assert not agents_minus_claude, (
+        f".agents/skills entries with no Claude stub: {sorted(agents_minus_claude)}"
     )

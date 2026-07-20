@@ -1,0 +1,4 @@
+interface:
+  display_name: "Check Constraints"
+  short_description: "Validate active repository constraints"
+  default_prompt: "Use $check-constraints to validate repository policy compliance."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Build"
+  short_description: "Run the profile-aware build workflow"
+  default_prompt: "Use $build to run and diagnose the repository build."

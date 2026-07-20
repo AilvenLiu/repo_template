@@ -1,0 +1,10 @@
+#!/bin/bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
+source "$SCRIPT_DIR/_agent_common.sh"
+REPO_ROOT="$(agent_repo_root)"
+
+run_agent_python "$REPO_ROOT" "$REPO_ROOT/.agents/scripts/policy_gate.py" --op mutate --context '{}'
+run_agent_python "$REPO_ROOT" "$REPO_ROOT/.agents/scripts/pre-commit/validate.py"

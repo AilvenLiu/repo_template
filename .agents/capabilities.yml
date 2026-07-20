@@ -1,0 +1,128 @@
+# Capability Manifest v3
+#
+# Skill bodies live at .agents/skills/<id>/SKILL.md (vendor-neutral).
+# Claude Code additionally requires a frontmatter stub at
+# .claude/skills/<id>/SKILL.md for slash-command discovery; the audit
+# enforces that for the claude platform.
+#
+# Codex discovers canonical repository skills natively from
+# .agents/skills/<id>/SKILL.md. Claude Code discovers thin delegates under
+# .claude/skills/<id>/SKILL.md. AGENTS.md and CLAUDE.md expose mandatory
+# repository policy; .agents/bin/agent-<id> wrappers provide deterministic
+# execution where a workflow needs it.
+
+common_requirements:
+  project_skills:
+    - id: karpathy-guidelines
+      required: true
+
+    - id: python-env-setup
+      required: true
+      when: language=python
+
+    - id: roadmap
+      required: true
+
+    - id: navigate
+      required: true
+
+    - id: pre-commit
+      required: true
+
+    - id: context7
+      required: true
+
+    - id: init
+      required: true
+
+    - id: check-constraints
+      required: true
+
+    - id: dependency
+      required: true
+
+    - id: build
+      required: true
+
+    - id: deploy-service
+      required: true
+
+    - id: service-cicd
+      required: true
+
+    - id: gpu-ci
+      required: true
+      when: distribution=pypi-wheel OR hardware_targets=cuda
+      notes: Relevant for wheel publishing and CUDA-targeted projects
+
+    - id: create-project
+      required: true
+      template_only: true
+      notes: Removed by the project generator; required only in template repo
+
+  repo_commands:
+    - id: agent-init
+      path: .agents/bin/agent-init
+      required: true
+      executable: true
+
+    - id: agent-build
+      path: .agents/bin/agent-build
+      required: true
+      executable: true
+
+    - id: agent-precommit
+      path: .agents/bin/agent-precommit
+      required: true
+      executable: true
+
+    - id: agent-dependency
+      path: .agents/bin/agent-dependency
+      required: true
+      executable: true
+
+    - id: agent-python-env-setup
+      path: .agents/bin/agent-python-env-setup
+      required: true
+      executable: true
+      when: language=python
+
+    - id: agent-commit
+      path: .agents/bin/agent-commit
+      required: true
+      executable: true
+
+    - id: agent-check-constraints
+      path: .agents/bin/agent-check-constraints
+      required: true
+      executable: true
+
+    - id: agent-roadmap
+      path: .agents/bin/agent-roadmap
+      required: true
+      executable: true
+
+platform_requirements:
+  claude:
+    claude_plugins:
+      - id: context7@claude-plugins-official
+        required: true
+        notes: Context7 documentation lookup via MCP
+
+    claude_marketplaces:
+      - id: claude-plugins-official
+        source: anthropics/claude-plugins-official
+        required: true
+
+    integrations:
+      - id: context7-mcp
+        required: true
+        check: mcp
+        notes: >
+          Primary method: claude plugin install context7@claude-plugins-official
+          Fallback: claude mcp add --transport http context7 https://mcp.context7.com/mcp --header "CONTEXT7_API_KEY: <key>"
+
+  codex:
+    # Codex natively scans .agents/skills from the working directory to the
+    # repository root. Project skills above are the canonical native bodies.
+    integrations: []

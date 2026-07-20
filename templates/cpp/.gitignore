@@ -1,7 +1,7 @@
 # C++/CUDA Project .gitignore
 
 # Build directories
-!.ai/skills/build/
+!.agents/skills/build/
 !.claude/skills/build/
 build/
 cmake-build-*/
@@ -133,7 +133,7 @@ Doxyfile.bak
 
 # Claude Code session state (temporary, not committed)
 .claude/session_state.json
-.ai/session_state.json
+.agents/session_state.json
 
 # Migration backup artifact
-.ai/capabilities.yml.bak
+.agents/capabilities.yml.bak

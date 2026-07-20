@@ -1,0 +1,4 @@
+interface:
+  display_name: "Create Project"
+  short_description: "Generate a project from this template"
+  default_prompt: "Use $create-project to initialize a new project from this template."

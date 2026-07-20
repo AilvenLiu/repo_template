@@ -7,7 +7,7 @@ import tempfile
 
 import yaml  # type: ignore[import-untyped]
 
-sys.path.insert(0, str(Path(__file__).parent.parent / ".ai" / "scripts"))
+sys.path.insert(0, str(Path(__file__).parent.parent / ".agents" / "scripts"))
 
 from project_profile import (  # type: ignore[import-not-found]
     BuildSystem,

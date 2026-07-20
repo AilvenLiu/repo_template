@@ -34,9 +34,9 @@ The constraint system has three layers:
 2. **This file** (`AGENTS.md`)
    - Vendor-neutral operating constraints
    - Absolute prohibitions and mandatory workflows
-   - References detailed constraint files in `.ai/constraints/`
+   - References detailed constraint files in `.agents/constraints/`
 
-3. **Detailed constraints** (`.ai/constraints/`)
+3. **Detailed constraints** (`.agents/constraints/`)
    - Modular, topic-specific constraint files
    - Loaded dynamically by session initialization
    - Common constraints + language-specific constraints
@@ -48,13 +48,13 @@ edit, every agent must:
 
 1. Read the native entrypoint for its platform (`AGENTS.md`, and `CLAUDE.md`
    for Claude Code).
-2. Read `.ai/project.yml` and determine the active project type/profile.
-3. Read `.ai/capabilities.yml` and verify required skills/wrappers exist.
+2. Read `.agents/project.yml` and determine the active project type/profile.
+3. Read `.agents/capabilities.yml` and verify required skills/wrappers exist.
 4. Run the platform's session initialisation procedure to obtain its
    deterministic constraint manifest.
 5. Read the listed common constraints and the constraints applicable to the
    intended files from the project-type family below.
-6. Read the relevant skill body under `.ai/skills/<skill>/SKILL.md` before
+6. Read the relevant skill body under `.agents/skills/<skill>/SKILL.md` before
    following that workflow. Platform-specific skill files are wrappers.
 
 ## Platform and Tool Requirements
@@ -72,7 +72,7 @@ Within repository-controlled guidance, precedence is:
 1. Active roadmap `INVARIANTS.md`, if present
 2. Active roadmap `roadmap.yml` for current execution state
 3. Active roadmap `ROADMAP.md` for phase scope and intent
-4. Applicable `.ai/constraints/` files
+4. Applicable `.agents/constraints/` files
 5. The relevant platform entrypoint (`AGENTS.md` or `CLAUDE.md`)
 6. `CONTRIBUTING.md` and other durable documentation
 7. Session handoffs, `prompt.md`, and temporary notes
@@ -85,20 +85,20 @@ approved exception or ADR path.
 
 ### Project Type to Constraint Family
 
-Prefer `project_profile` in `.ai/project.yml`; use legacy `project_type` only
+Prefer `project_profile` in `.agents/project.yml`; use legacy `project_type` only
 when `project_profile` is absent.
 
 | Project metadata | Required constraint families | Primary build authority |
 |------------------|------------------------------|-------------------------|
-| `project_type: python` or `language: [python]` | `.ai/constraints/common/`, `.ai/constraints/python/` | Poetry for Python environment and dependencies |
-| `project_type: cpp` or `language: [cpp]` | `.ai/constraints/common/`, `.ai/constraints/cpp/` | CMake for native build graph; CPM for lightweight C++ deps |
-| `language` includes both `python` and `cpp` | `.ai/constraints/common/`, `.ai/constraints/python/`, `.ai/constraints/cpp/`, `.ai/constraints/hybrid/` | CMake for native build graph; scikit-build-core only bridges packaging |
+| `project_type: python` or `language: [python]` | `.agents/constraints/common/`, `.agents/constraints/python/` | Poetry for Python environment and dependencies |
+| `project_type: cpp` or `language: [cpp]` | `.agents/constraints/common/`, `.agents/constraints/cpp/` | CMake for native build graph; CPM for lightweight C++ deps |
+| `language` includes both `python` and `cpp` | `.agents/constraints/common/`, `.agents/constraints/python/`, `.agents/constraints/cpp/`, `.agents/constraints/hybrid/` | CMake for native build graph; scikit-build-core only bridges packaging |
 
 Before final response after edits, run the relevant validation command, or state
 why it could not be run:
 
 ```bash
-.ai/bin/agent-check-constraints
+.agents/bin/agent-check-constraints
 ```
 
 ## C++/CUDA and Hybrid Build Policy Summary
@@ -137,14 +137,14 @@ To create a new project from this template:
 /create-project /path/to/new/project
 
 # Or manually:
-python3 .claude/skills/create-project/scripts/init.py /path/to/new/project
+python3 .agents/skills/create-project/scripts/init.py /path/to/new/project
 ```
 
 The script will:
 1. Prompt for project type (Python, C++/CUDA, or hybrid Python/C++/CUDA)
 2. Copy the template structure
 3. Rename language-specific files to generic names
-4. Write `.ai/project.yml` with the correct project type
+4. Write `.agents/project.yml` with the correct project type
 5. Remove template-only artifacts
 6. Create an initial git commit
 

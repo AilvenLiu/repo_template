@@ -1,0 +1,4 @@
+interface:
+  display_name: "Initialize Session"
+  short_description: "Load profile, capabilities, and constraints"
+  default_prompt: "Use $init to initialize this repository session."

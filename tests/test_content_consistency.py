@@ -6,7 +6,11 @@ from pathlib import Path
 
 def test_python_testing_does_not_recommend_direct_pip_install() -> None:
     content = (
-        Path(__file__).parent.parent / ".ai" / "constraints" / "python" / "testing.md"
+        Path(__file__).parent.parent
+        / ".agents"
+        / "constraints"
+        / "python"
+        / "testing.md"
     ).read_text()
     assert "pip install pytest" not in content
 
@@ -23,17 +27,17 @@ def test_template_docs_cover_hybrid_projects() -> None:
         assert "hybrid" in content.lower(), rel_path
 
 
-def test_template_docs_do_not_reference_removed_codex_tree() -> None:
+def test_template_docs_do_not_reference_obsolete_codex_skills() -> None:
     root = Path(__file__).parent.parent
     checked = [
         root / "README.md",
         root / "AGENTS.md",
-        root / ".ai" / "README.md",
+        root / ".agents" / "README.md",
         root / ".claude" / "skills" / "create-project" / "SKILL.md",
     ]
     for path in checked:
         content = path.read_text()
-        assert ".codex/" not in content, str(path)
+        assert ".codex/skills" not in content, str(path)
 
 
 def test_codex_entrypoint_files_removed() -> None:
@@ -46,20 +50,20 @@ def test_codex_entrypoint_files_removed() -> None:
 
 def test_canonical_check_constraints_skill_uses_wrapper() -> None:
     root = Path(__file__).parent.parent
-    skill = (root / ".ai" / "skills" / "check-constraints" / "SKILL.md").read_text()
-    assert ".ai/bin/agent-check-constraints" in skill
+    skill = (root / ".agents" / "skills" / "check-constraints" / "SKILL.md").read_text()
+    assert ".agents/bin/agent-check-constraints" in skill
 
 
 def test_canonical_build_skill_uses_wrapper() -> None:
     root = Path(__file__).parent.parent
-    skill = (root / ".ai" / "skills" / "build" / "SKILL.md").read_text()
-    assert ".ai/bin/agent-build" in skill
+    skill = (root / ".agents" / "skills" / "build" / "SKILL.md").read_text()
+    assert ".agents/bin/agent-build" in skill
 
 
 def test_canonical_python_env_skill_uses_wrapper() -> None:
     root = Path(__file__).parent.parent
-    skill = (root / ".ai" / "skills" / "python-env-setup" / "SKILL.md").read_text()
-    assert ".ai/bin/agent-python-env-setup" in skill
+    skill = (root / ".agents" / "skills" / "python-env-setup" / "SKILL.md").read_text()
+    assert ".agents/bin/agent-python-env-setup" in skill
 
 
 def test_repo_contains_no_removed_legacy_behavior_references() -> None:

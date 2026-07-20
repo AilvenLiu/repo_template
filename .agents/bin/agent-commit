@@ -1,0 +1,54 @@
+#!/bin/bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
+source "$SCRIPT_DIR/_agent_common.sh"
+REPO_ROOT="$(agent_repo_root)"
+
+if [[ $# -lt 3 ]]; then
+  echo "Usage: .agents/bin/agent-commit -m \"type(scope): description\" <file1> [file2 ...]" >&2
+  exit 1
+fi
+
+MESSAGE=""
+FILES=()
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -m|--message)
+      MESSAGE="$2"
+      shift 2
+      ;;
+    *)
+      FILES+=("$1")
+      shift
+      ;;
+  esac
+done
+
+if [[ -z "$MESSAGE" ]]; then
+  echo "Commit message is required via -m/--message" >&2
+  exit 1
+fi
+
+if [[ ${#FILES[@]} -eq 0 ]]; then
+  echo "At least one explicit file path is required. Refusing implicit git add -A." >&2
+  exit 1
+fi
+
+for file in "${FILES[@]}"; do
+  if [[ "$file" =~ (^|/)\.env($|\.|/) ]] || [[ "$file" =~ (^|/)credentials($|\.|_) ]] || [[ "$file" =~ \.(pem|key)$ ]]; then
+    echo "Refusing to stage potentially sensitive file: $file" >&2
+    exit 1
+  fi
+
+done
+
+"$REPO_ROOT/.agents/bin/agent-precommit"
+
+BRANCH="$(git -C "$REPO_ROOT" branch --show-current || true)"
+run_agent_python "$REPO_ROOT" "$REPO_ROOT/.agents/scripts/policy_gate.py" --op commit --message "$MESSAGE" --branch "$BRANCH"
+
+git -C "$REPO_ROOT" add "${FILES[@]}"
+exec git -C "$REPO_ROOT" commit -m "$MESSAGE"

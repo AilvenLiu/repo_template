@@ -6,7 +6,7 @@ from __future__ import annotations
 from pathlib import Path
 import sys
 
-sys.path.insert(0, str(Path(__file__).parent.parent / ".ai" / "scripts"))
+sys.path.insert(0, str(Path(__file__).parent.parent / ".agents" / "scripts"))
 
 from constraints_check import check_constraints  # type: ignore[import-not-found]  # noqa: E402
 from project_profile import (  # type: ignore[import-not-found]  # noqa: E402
@@ -27,11 +27,11 @@ def test_root_agents_contains_cross_agent_mandatory_contract() -> None:
     content = _text("AGENTS.md")
     required = [
         "Mandatory Cross-Agent Contract",
-        ".ai/project.yml",
-        ".ai/capabilities.yml",
-        ".ai/constraints/common/",
-        ".ai/constraints/hybrid/",
-        ".ai/bin/agent-check-constraints",
+        ".agents/project.yml",
+        ".agents/capabilities.yml",
+        ".agents/constraints/common/",
+        ".agents/constraints/hybrid/",
+        ".agents/bin/agent-check-constraints",
         "Python packaging must not define or replace the native build graph",
     ]
     for needle in required:
@@ -43,10 +43,10 @@ def test_root_claude_contains_claude_specific_loading_instructions() -> None:
     required = [
         "Claude Code MUST NOT edit files until it has completed this read-and-load sequence",
         "Read root `AGENTS.md`",
-        "Read `.ai/project.yml`",
-        "Read `.ai/capabilities.yml`",
-        ".ai/constraints/cpp/",
-        ".ai/constraints/hybrid/",
+        "Read `.agents/project.yml`",
+        "Read `.agents/capabilities.yml`",
+        ".agents/constraints/cpp/",
+        ".agents/constraints/hybrid/",
         "bounded constraint manifest",
         "does not supersede",
         "Do not silently bypass hooks",
@@ -114,9 +114,7 @@ def test_native_build_ownership_detects_setup_py_extension(tmp_path: Path) -> No
     (tmp_path / "cmake" / "Dependencies.cmake").write_text("", encoding="utf-8")
     (tmp_path / "cmake" / "Options.cmake").write_text("", encoding="utf-8")
     (tmp_path / "3rdparty" / "cpm-cache").mkdir(parents=True)
-    (tmp_path / "3rdparty" / "cpm-cache" / ".gitkeep").write_text(
-        "", encoding="utf-8"
-    )
+    (tmp_path / "3rdparty" / "cpm-cache" / ".gitkeep").write_text("", encoding="utf-8")
     (tmp_path / "setup.py").write_text(
         "from setuptools import setup, Extension\n"
         "setup(ext_modules=[Extension('pkg._core', ['src/core.cpp'])])\n",

@@ -10,9 +10,9 @@ import sys
 import pytest
 import yaml  # type: ignore[import-untyped]
 
-SCRIPTS_DIR = Path(__file__).parent.parent / ".ai" / "scripts" / "roadmap"
+SCRIPTS_DIR = Path(__file__).parent.parent / ".agents" / "scripts" / "roadmap"
 sys.path.insert(0, str(SCRIPTS_DIR))
-sys.path.insert(0, str(Path(__file__).parent.parent / ".ai" / "scripts" / "common"))
+sys.path.insert(0, str(Path(__file__).parent.parent / ".agents" / "scripts" / "common"))
 
 
 def _load_module(module_name: str, file_path: Path):

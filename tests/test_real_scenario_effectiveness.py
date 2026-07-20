@@ -24,38 +24,25 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).parent.parent
-sys.path.insert(0, str(ROOT / ".claude" / "skills" / "create-project" / "scripts"))
-sys.path.insert(0, str(ROOT / ".ai" / "scripts"))
+sys.path.insert(0, str(ROOT / ".agents" / "skills" / "create-project" / "scripts"))
+sys.path.insert(0, str(ROOT / ".agents" / "scripts"))
 
-from init import create_project  # noqa: E402
+from init import create_project  # type: ignore[import-not-found]  # noqa: E402
 
 
 def _run(cmd: list[str], cwd: Path) -> subprocess.CompletedProcess:
-    return subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, env=os.environ.copy())
-
-
-def _force_audit_pass(project_root: Path) -> None:
-    for rel in (".ai/session_state.json", ".claude/session_state.json"):
-        path = project_root / rel
-        if not path.exists():
-            continue
-        data = json.loads(path.read_text())
-        audit = data.get("capability_audit")
-        if isinstance(audit, dict):
-            audit["passed"] = True
-            for entry in audit.get("entries", []):
-                if entry.get("required"):
-                    entry["available"] = True
-        data["capability_audit"] = audit
-        path.write_text(json.dumps(data, indent=2))
+    return subprocess.run(
+        cmd, cwd=cwd, capture_output=True, text=True, env=os.environ.copy()
+    )
 
 
 def _bootstrap(tmp_path: Path, project_type: str, platform: str) -> Path:
     target = tmp_path / f"real_{project_type}"
     create_project(ROOT, target, project_type)
     _run(["git", "checkout", "-b", "feat/real-scenario", "-q"], target)
-    _run(["bash", ".ai/bin/agent-init", "--platform", platform], target)
-    _force_audit_pass(target)
+    _run(["bash", ".agents/bin/agent-init", "--platform", platform], target)
+    assert (target / ".agents/session_state.json").is_file()
+    assert (target / ".claude/session_state.json").is_file()
     return target
 
 
@@ -198,7 +185,8 @@ def _seed_realistic_cpp_clean(project: Path) -> None:
         'option(PROJECT_ENABLE_TESTS "Build native tests" ON)\n'
     )
     (project / "cmake" / "Dependencies.cmake").write_text(
-        'set(CPM_SOURCE_CACHE "${CMAKE_SOURCE_DIR}/3rdparty/cpm-cache" CACHE PATH "CPM source cache")\n'
+        'set(CPM_SOURCE_CACHE "${CMAKE_SOURCE_DIR}/3rdparty/cpm-cache" '
+        'CACHE PATH "CPM source cache")\n'
         "\n"
         "# fmt\n"
         "# Upstream: https://github.com/fmtlib/fmt\n"
@@ -256,6 +244,26 @@ def _seed_realistic_cpp_dirty(project: Path) -> dict[str, int]:
 
 
 # ---------------------------------------------------------------------------
+# Realistic hybrid project seeding
+# ---------------------------------------------------------------------------
+
+
+def _seed_realistic_hybrid_clean(project: Path) -> None:
+    original_pyproject = (project / "pyproject.toml").read_text()
+    _seed_realistic_python_clean(project)
+    (project / "pyproject.toml").write_text(original_pyproject)
+    _seed_realistic_cpp_clean(project)
+
+
+def _seed_realistic_hybrid_dirty(project: Path) -> dict[str, int]:
+    original_pyproject = (project / "pyproject.toml").read_text()
+    python_seeded = _seed_realistic_python_dirty(project)
+    (project / "pyproject.toml").write_text(original_pyproject)
+    cpp_seeded = _seed_realistic_cpp_dirty(project)
+    return {**python_seeded, **cpp_seeded}
+
+
+# ---------------------------------------------------------------------------
 # Effectiveness measurement
 # ---------------------------------------------------------------------------
 
@@ -279,7 +287,10 @@ class Effectiveness:
         return self.total_detected / self.total_seeded if self.total_seeded else 1.0
 
     def summary(self) -> str:
-        lines = [f"[{self.scenario}] seeded={self.total_seeded} detected={self.total_detected} ({self.rate:.0%})"]
+        lines = [
+            f"[{self.scenario}] seeded={self.total_seeded} "
+            f"detected={self.total_detected} ({self.rate:.0%})"
+        ]
         for cat, count in self.seeded.items():
             hit = self.detected.get(cat, 0)
             status = "OK " if hit >= count else "MISS"
@@ -291,7 +302,7 @@ def _findings_for(project: Path) -> list[dict]:
     res = _run(
         [
             "bash",
-            ".ai/bin/agent-check-constraints",
+            ".agents/bin/agent-check-constraints",
             "--skip-forbidden-scan",  # we'll run forbidden_patterns explicitly w/ --json
         ],
         project,
@@ -302,7 +313,7 @@ def _findings_for(project: Path) -> list[dict]:
     scan = _run(
         [
             "python3",
-            str(project / ".ai" / "scripts" / "forbidden_patterns.py"),
+            str(project / ".agents" / "scripts" / "forbidden_patterns.py"),
             "--project-type",
             "auto",
             "--json",
@@ -319,7 +330,9 @@ def _findings_for(project: Path) -> list[dict]:
 
 
 @pytest.mark.parametrize("platform", ["claude", "codex"])
-def test_clean_python_project_produces_no_findings(tmp_path: Path, platform: str) -> None:
+def test_clean_python_project_produces_no_findings(
+    tmp_path: Path, platform: str
+) -> None:
     project = _bootstrap(tmp_path, "python", platform)
     _seed_realistic_python_clean(project)
     findings = _findings_for(project)
@@ -334,13 +347,25 @@ def test_clean_cpp_project_produces_no_findings(tmp_path: Path, platform: str) -
     assert findings == [], f"False-positive findings on clean project: {findings}"
 
 
+@pytest.mark.parametrize("platform", ["claude", "codex"])
+def test_clean_hybrid_project_produces_no_findings(
+    tmp_path: Path, platform: str
+) -> None:
+    project = _bootstrap(tmp_path, "hybrid", platform)
+    _seed_realistic_hybrid_clean(project)
+    findings = _findings_for(project)
+    assert findings == [], f"False-positive findings on clean project: {findings}"
+
+
 # ---------------------------------------------------------------------------
 # Tests: seeded violations must be detected (effectiveness >= 100%)
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.parametrize("platform", ["claude", "codex"])
-def test_seeded_python_violations_are_all_detected(tmp_path: Path, platform: str) -> None:
+def test_seeded_python_violations_are_all_detected(
+    tmp_path: Path, platform: str
+) -> None:
     project = _bootstrap(tmp_path, "python", platform)
     seeded = _seed_realistic_python_dirty(project)
 
@@ -375,36 +400,87 @@ def test_seeded_cpp_violations_are_all_detected(tmp_path: Path, platform: str) -
     )
 
 
+@pytest.mark.parametrize("platform", ["claude", "codex"])
+def test_seeded_hybrid_violations_are_all_detected(
+    tmp_path: Path, platform: str
+) -> None:
+    project = _bootstrap(tmp_path, "hybrid", platform)
+    seeded = _seed_realistic_hybrid_dirty(project)
+
+    findings = _findings_for(project)
+    detected: dict[str, int] = {}
+    for finding in findings:
+        detected[finding["category"]] = detected.get(finding["category"], 0) + 1
+
+    eff = Effectiveness(f"hybrid/{platform}", seeded, detected)
+    print("\n" + eff.summary())
+    assert eff.rate >= 1.0, (
+        f"Hybrid detection rate {eff.rate:.0%} below 100%:\n{eff.summary()}\n\n"
+        f"findings:\n{json.dumps(findings, indent=2)}"
+    )
+
+
 # ---------------------------------------------------------------------------
 # End-to-end through the wrapper (user-facing path)
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.parametrize("platform", ["claude", "codex"])
-def test_check_constraints_wrapper_fails_on_seeded_python_repo(tmp_path: Path, platform: str) -> None:
+def test_check_constraints_wrapper_fails_on_seeded_python_repo(
+    tmp_path: Path, platform: str
+) -> None:
     project = _bootstrap(tmp_path, "python", platform)
     _seed_realistic_python_dirty(project)
 
-    res = _run(["bash", ".ai/bin/agent-check-constraints"], project)
+    res = _run(["bash", ".agents/bin/agent-check-constraints"], project)
     assert res.returncode != 0, (
-        ".ai/bin/agent-check-constraints should surface seeded violations via forbidden_patterns.\n"
+        ".agents/bin/agent-check-constraints should surface seeded violations via forbidden_patterns.\n"
         + res.stdout
     )
     combined = res.stdout + res.stderr
-    for cat in ("bare-except", "eval-exec", "hardcoded-secret", "mutable-default", "pip-install"):
+    for cat in (
+        "bare-except",
+        "eval-exec",
+        "hardcoded-secret",
+        "mutable-default",
+        "pip-install",
+    ):
         assert cat in combined, f"{cat} not surfaced by wrapper output"
 
 
 @pytest.mark.parametrize("platform", ["claude", "codex"])
-def test_check_constraints_wrapper_fails_on_seeded_cpp_repo(tmp_path: Path, platform: str) -> None:
+def test_check_constraints_wrapper_fails_on_seeded_cpp_repo(
+    tmp_path: Path, platform: str
+) -> None:
     project = _bootstrap(tmp_path, "cpp", platform)
     _seed_realistic_cpp_dirty(project)
 
-    res = _run(["bash", ".ai/bin/agent-check-constraints"], project)
+    res = _run(["bash", ".agents/bin/agent-check-constraints"], project)
     assert res.returncode != 0
     combined = res.stdout + res.stderr
     for cat in ("raw-new", "raw-delete", "c-style-cast", "cuda-error-ignored"):
         assert cat in combined, f"{cat} not surfaced by wrapper output"
+
+
+@pytest.mark.parametrize("platform", ["claude", "codex"])
+def test_check_constraints_wrapper_fails_on_seeded_hybrid_repo(
+    tmp_path: Path, platform: str
+) -> None:
+    project = _bootstrap(tmp_path, "hybrid", platform)
+    _seed_realistic_hybrid_dirty(project)
+
+    res = _run(["bash", ".agents/bin/agent-check-constraints"], project)
+    assert res.returncode != 0
+    combined = res.stdout + res.stderr
+    for category in (
+        "bare-except",
+        "eval-exec",
+        "pip-install",
+        "raw-new",
+        "raw-delete",
+        "cuda-error-ignored",
+    ):
+        assert category in combined, f"{category} not surfaced by wrapper output"
 
 
 # ---------------------------------------------------------------------------
@@ -448,13 +524,15 @@ def effectiveness_matrix(tmp_path_factory) -> list[Effectiveness]:
         for project_type, seeder, clean in (
             ("python", _seed_realistic_python_dirty, _seed_realistic_python_clean),
             ("cpp", _seed_realistic_cpp_dirty, _seed_realistic_cpp_clean),
+            ("hybrid", _seed_realistic_hybrid_dirty, _seed_realistic_hybrid_clean),
         ):
             tmp = tmp_path_factory.mktemp(f"eff_{platform}_{project_type}")
             target = tmp / "proj"
             create_project(ROOT, target, project_type)
             _run(["git", "checkout", "-b", "feat/eff", "-q"], target)
-            _run(["bash", ".ai/bin/agent-init", "--platform", platform], target)
-            _force_audit_pass(target)
+            _run(["bash", ".agents/bin/agent-init", "--platform", platform], target)
+            assert (target / ".agents/session_state.json").is_file()
+            assert (target / ".claude/session_state.json").is_file()
             seeded = seeder(target)
             findings = _findings_for(target)
             detected: dict[str, int] = {}

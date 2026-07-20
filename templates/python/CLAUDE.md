@@ -14,9 +14,9 @@ session state.
 The normal init path prints a bounded, profile-aware constraint manifest.
 Read the listed files before work to which they apply.
 
-Before editing, Claude Code MUST read `AGENTS.md`, `.ai/project.yml`,
-`.ai/capabilities.yml`, `.ai/constraints/common/`, and `.ai/constraints/python/`.
-Load relevant skills from `.claude/skills/` or `.ai/skills/` before following a
+Before editing, Claude Code MUST read `AGENTS.md`, `.agents/project.yml`,
+`.agents/capabilities.yml`, `.agents/constraints/common/`, and `.agents/constraints/python/`.
+Load relevant skills from `.claude/skills/` or `.agents/skills/` before following a
 workflow. Treat constraints as mandatory; when rules conflict, prefer the
 stricter rule. If a request conflicts with these constraints, stop and explain.
 Do not bypass hooks, wrappers, `/init`, `/check-constraints`, tests, or
@@ -34,7 +34,7 @@ If the audit fails, the session is locked down:
 - Read-only operations (Read/Glob/Grep) remain available
 - You must install missing capabilities and re-run `/init` to unlock
 
-The audit reads `.ai/capabilities.yml` as the canonical manifest.
+The audit reads `.agents/capabilities.yml` as the canonical manifest.
 
 For consistency across different machines and networks, the Context7 integration
 check uses a fallback path: if `claude mcp list` health probing is temporarily
@@ -68,7 +68,7 @@ assumptions explicit, pushes toward minimal diffs, and requires concrete
 verification before completion.
 
 Before closing any session, task, commit, or roadmap phase, follow
-`.ai/constraints/common/closure-discipline.md`: re-check the request and
+`.agents/constraints/common/closure-discipline.md`: re-check the request and
 constraints, review changes critically, run the strongest relevant validation,
 fix in-scope issues found during review, and report residual risk honestly.
 
@@ -89,11 +89,11 @@ than silently changing commit metadata.
 ## Project Configuration Migration
 
 This template supports both the new `project_profile` schema and the legacy
-`project_type` field in `.ai/project.yml`. The legacy field continues to work
+`project_type` field in `.agents/project.yml`. The legacy field continues to work
 exactly as before; the new schema is optional and provides finer-grained control
 for hybrid projects.
 
-For details, see `.ai/adr/0001-project-profile.md`.
+For details, see `.agents/adr/0001-project-profile.md`.
 
 ## Platform and Repository-Local Policy
 
@@ -102,7 +102,7 @@ developer, organisational, or tool-enforced requirements. If they conflict,
 follow the higher-priority requirement, minimise the deviation, and report it.
 
 Within repository-controlled guidance, use the scoped order in `AGENTS.md` and
-`.ai/constraints/common/instruction-hierarchy.md`. Current `roadmap.yml` state
+`.agents/constraints/common/instruction-hierarchy.md`. Current `roadmap.yml` state
 takes precedence over roadmap prose and session records; temporary notes cannot
 change durable project policy.
 
@@ -114,47 +114,55 @@ change durable project policy.
 - NEVER install Poetry via `curl -sSL https://install.python-poetry.org` or system package managers
 - Poetry MUST be installed via pipx at `~/.local/bin/poetry`
 - `poetry.toml` MUST exist in the project with `in-project = true`
-- `pyproject.toml` MUST configure TUNA as primary PyPI source (`priority = "primary"`)
-- Agent infrastructure commands (`.ai/bin/agent-*`, `.ai/scripts/*`) are exempt when using controlled wrappers
+- Custom package sources, when declared, MUST use HTTPS, omit credentials, and set a reviewed priority
+- Agent infrastructure commands (`.agents/bin/agent-*`, `.agents/scripts/*`) are exempt when using controlled wrappers
 - NEVER commit without running `/pre-commit validate` first
 - NEVER hardcode secrets, credentials, or API keys
 - NEVER use bare `except:`, mutable default arguments, or `eval()`/`exec()`
 
 ## Required Workflow Commands
 
-These `.ai/bin/agent-*` commands are the canonical tool interface. Use them
+These `.agents/bin/agent-*` commands are the canonical tool interface. Use them
 directly whenever performing the corresponding workflow step:
 
-- Init: `.ai/bin/agent-init --platform claude`
-- Build orchestration: `.ai/bin/agent-build <setup|compile|test|full|doctor|clean>`
-- Constraint check: `.ai/bin/agent-check-constraints`
-- Pre-commit validation: `.ai/bin/agent-precommit`
-- Dependency add: `.ai/bin/agent-dependency add <package> [version] [--dev]`
-- Python env recovery: `.ai/bin/agent-python-env-setup <diagnose|fix|verify>`
-- Roadmap workflow: `.ai/bin/agent-roadmap <check|create|status|update|handoff|complete|validate>`
-- Commit with policy guard: `.ai/bin/agent-commit -m "type(scope): description" <file1> [file2 ...]`
+- Init: `.agents/bin/agent-init --platform claude`
+- Build orchestration: `.agents/bin/agent-build <setup|compile|test|full|doctor|clean>`
+- Constraint check: `.agents/bin/agent-check-constraints`
+- Pre-commit validation: `.agents/bin/agent-precommit`
+- Dependency add: `.agents/bin/agent-dependency add <package> [version] [--dev]`
+- Python env recovery: `.agents/bin/agent-python-env-setup <diagnose|fix|verify>`
+- Roadmap workflow: `.agents/bin/agent-roadmap <check|create|status|update|handoff|complete|validate>`
+- Commit with policy guard: `.agents/bin/agent-commit -m "type(scope): description" <file1> [file2 ...]`
 
 ## Claude Code Skill Mappings
 
-Skills are convenience wrappers around `.ai/bin/agent-*` commands.
+Skills are convenience wrappers around `.agents/bin/agent-*` commands.
 When a slash command is unavailable or you need finer control, call the
-`.ai/bin/agent-*` command directly.
+`.agents/bin/agent-*` command directly.
 
 | Procedure | Skill | Underlying command |
 |-----------|-------|--------------------|
-| Session init | `/init` | `.ai/bin/agent-init --platform claude` |
-| Build orchestration | `/build <cmd>` | `.ai/bin/agent-build <setup|compile|test|full|doctor|clean>` |
-| Pre-commit | `/pre-commit validate` | `.ai/bin/agent-precommit` |
-| Add dependency | `/dependency add <pkg> [ver] [--dev]` | `.ai/bin/agent-dependency add <pkg> [ver] [--dev]` |
-| Check constraints | `/check-constraints` | `.ai/bin/agent-check-constraints` |
-| Commit | *(use command directly)* | `.ai/bin/agent-commit -m "msg" <files...>` |
-| Roadmap management | `/roadmap <cmd>` | `.ai/bin/agent-roadmap <check|create|status|update|handoff|complete|validate>` |
+| Session init | `/init` | `.agents/bin/agent-init --platform claude` |
+| Build orchestration | `/build <cmd>` | `.agents/bin/agent-build <setup|compile|test|full|doctor|clean>` |
+| Pre-commit | `/pre-commit validate` | `.agents/bin/agent-precommit` |
+| Add dependency | `/dependency add <pkg> [ver] [--dev]` | `.agents/bin/agent-dependency add <pkg> [ver] [--dev]` |
+| Check constraints | `/check-constraints` | `.agents/bin/agent-check-constraints` |
+| Commit | *(use command directly)* | `.agents/bin/agent-commit -m "msg" <files...>` |
+| Roadmap management | `/roadmap <cmd>` | `.agents/bin/agent-roadmap <check|create|status|update|handoff|complete|validate>` |
 | Doc lookup | `/context7` | — |
-| Python env fix | `/python-env-setup` | `.ai/bin/agent-python-env-setup <diagnose|fix|verify>` |
+| Code navigation | `/navigate` | `.agents/skills/navigate/SKILL.md` |
+| Host deployment guidance | `/deploy-service` | `.agents/skills/deploy-service/SKILL.md` |
+| GitHub Actions CI/CD | `/service-cicd` | `.agents/skills/service-cicd/SKILL.md` |
+| Python env fix | `/python-env-setup` | `.agents/bin/agent-python-env-setup <diagnose|fix|verify>` |
+
+For host deployment or GitHub Actions CI/CD work, Claude MUST read both
+`.agents/constraints/common/service-deployment.md` and
+`.agents/constraints/common/github-actions-cicd.md` before applying the skills.
+Skill bodies supplement these constraints; they do not replace them.
 
 ## Vendor-Neutral Constraints
 
-All coding standards and workflow rules live in `.ai/constraints/`.
+All coding standards and workflow rules live in `.agents/constraints/`.
 The `/init` skill selects the relevant subset at session start and prints their
 paths. Read the manifest entries rather than injecting every body into the
 initial session context.
@@ -188,6 +196,6 @@ instead of executing sequentially. Suggested `subagent_type` values:
 - `Plan` — design / architecture planning
 - `general-purpose` — multi-step tasks with unknown scope
 
-Full policy: `.ai/constraints/common/agentic-team.md`. Parallel execution MUST
+Full policy: `.agents/constraints/common/agentic-team.md`. Parallel execution MUST
 NOT bypass capability audit, protected-branch rules, dependency ordering, or
 pre-commit validation.

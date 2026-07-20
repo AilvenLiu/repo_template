@@ -11,12 +11,12 @@ import pytest
 import yaml  # type: ignore[import-untyped]
 
 # Add import roots
-sys.path.insert(0, str(Path(__file__).parent.parent / ".ai" / "scripts"))
+sys.path.insert(0, str(Path(__file__).parent.parent / ".agents" / "scripts"))
 sys.path.insert(
     0,
     str(
         Path(__file__).parent.parent
-        / ".claude"
+        / ".agents"
         / "skills"
         / "create-project"
         / "scripts"
@@ -34,34 +34,35 @@ def template_root():
 
 
 def _assert_common_generated_assets(target: Path, project_type: str) -> None:
-    ai_skill_dirs = {
-        path.name for path in (target / ".ai" / "skills").iterdir() if path.is_dir()
+    agents_skill_dirs = {
+        path.name for path in (target / ".agents" / "skills").iterdir() if path.is_dir()
     }
     claude_skill_dirs = {
         path.name for path in (target / ".claude" / "skills").iterdir() if path.is_dir()
     }
 
-    assert (target / ".ai" / "capabilities.yml").exists()
+    assert (target / ".agents" / "capabilities.yml").exists()
     assert (
-        target / ".ai" / "constraints" / "common" / "karpathy-guidelines.md"
+        target / ".agents" / "constraints" / "common" / "karpathy-guidelines.md"
     ).exists()
-    assert (target / ".ai" / "project.yml").exists()
-    assert (target / ".ai" / "scripts" / "session_init.py").exists()
-    # .codex/ has been deleted; codex consumes AGENTS.md + .ai/skills/ instead.
-    assert not (target / ".codex").exists()
-    assert not (target / ".ai" / "skills" / "bazel").exists()
+    assert (target / ".agents" / "project.yml").exists()
+    assert (target / ".agents" / "scripts" / "session_init.py").exists()
+    assert (target / ".codex" / "hooks.json").exists()
+    assert (target / ".codex" / "hooks" / "pre_tool_use.py").exists()
+    assert not (target / ".codex" / "skills").exists()
+    assert not (target / ".agents" / "skills" / "bazel").exists()
     assert not (target / ".claude" / "skills" / "bazel").exists()
-    assert not (target / ".ai" / "bin" / "agent-bazel").exists()
-    # Canonical skill bodies live under .ai/skills/<name>/SKILL.md.
-    assert (target / ".ai" / "skills" / "build" / "SKILL.md").exists()
-    assert (target / ".ai" / "skills" / "init" / "SKILL.md").exists()
-    assert (target / ".ai" / "skills" / "karpathy-guidelines" / "SKILL.md").exists()
-    assert (target / ".ai" / "skills" / "navigate" / "SKILL.md").exists()
+    assert not (target / ".agents" / "bin" / "agent-bazel").exists()
+    # Canonical skill bodies live under .agents/skills/<name>/SKILL.md.
+    assert (target / ".agents" / "skills" / "build" / "SKILL.md").exists()
+    assert (target / ".agents" / "skills" / "init" / "SKILL.md").exists()
+    assert (target / ".agents" / "skills" / "karpathy-guidelines" / "SKILL.md").exists()
+    assert (target / ".agents" / "skills" / "navigate" / "SKILL.md").exists()
     # Claude stubs (frontmatter for slash-command discovery) must exist for each.
     assert (target / ".claude" / "skills" / "karpathy-guidelines" / "SKILL.md").exists()
-    assert (target / ".ai" / "bin" / "agent-build").exists()
+    assert (target / ".agents" / "bin" / "agent-build").exists()
     manifest = yaml.safe_load(
-        (Path(__file__).parent.parent / ".ai" / "capabilities.yml").read_text()
+        (Path(__file__).parent.parent / ".agents" / "capabilities.yml").read_text()
     )
     expected_skills = {
         entry["id"]
@@ -71,32 +72,34 @@ def _assert_common_generated_assets(target: Path, project_type: str) -> None:
         and _entry_enabled_for_repo(entry, False, target)
     }
     if project_type in {"python", "hybrid"}:
-        assert (target / ".ai" / "skills" / "python-env-setup" / "SKILL.md").exists()
+        assert (
+            target / ".agents" / "skills" / "python-env-setup" / "SKILL.md"
+        ).exists()
         assert (
             target / ".claude" / "skills" / "python-env-setup" / "SKILL.md"
         ).exists()
-        assert (target / ".ai" / "bin" / "agent-python-env-setup").exists()
+        assert (target / ".agents" / "bin" / "agent-python-env-setup").exists()
     else:
-        assert not (target / ".ai" / "skills" / "python-env-setup").exists()
+        assert not (target / ".agents" / "skills" / "python-env-setup").exists()
         assert not (target / ".claude" / "skills" / "python-env-setup").exists()
         assert not (
             target / ".claude" / "docs" / "python-env-quick-reference.md"
         ).exists()
-        assert not (target / ".ai" / "bin" / "agent-python-env-setup").exists()
+        assert not (target / ".agents" / "bin" / "agent-python-env-setup").exists()
         assert (target / "cmake" / "CPM.cmake").exists()
         assert (target / "cmake" / "Dependencies.cmake").exists()
         assert (target / "3rdparty" / "cpm-cache" / ".gitkeep").exists()
     if project_type == "hybrid":
         assert (target / "pyproject.toml").exists()
         assert (target / "CMakeLists.txt").exists()
-    assert expected_skills <= ai_skill_dirs
+    assert expected_skills <= agents_skill_dirs
     # Claude has the same skills + the 'common' utility folder.
     assert expected_skills <= (claude_skill_dirs - {"common"})
-    assert (target / ".ai" / "bin" / "agent-init").exists()
-    assert (target / ".ai" / "bin" / "agent-precommit").exists()
-    assert (target / ".ai" / "bin" / "agent-check-constraints").exists()
-    assert (target / ".ai" / "bin" / "agent-roadmap").exists()
-    assert (target / ".ai" / "bin" / "_agent_common.sh").exists()
+    assert (target / ".agents" / "bin" / "agent-init").exists()
+    assert (target / ".agents" / "bin" / "agent-precommit").exists()
+    assert (target / ".agents" / "bin" / "agent-check-constraints").exists()
+    assert (target / ".agents" / "bin" / "agent-roadmap").exists()
+    assert (target / ".agents" / "bin" / "_agent_common.sh").exists()
     assert (target / "agent_roadmaps" / "README.md").exists()
     roadmap_dirs = [
         path.name
@@ -111,6 +114,8 @@ def _assert_common_generated_assets(target: Path, project_type: str) -> None:
     assert not (target / "CODEX_CPP.md").exists()
     assert not any(target.rglob("__pycache__"))
     assert not any(target.rglob("*.pyc"))
+    assert not (target / ".agents" / "session_state.json").exists()
+    assert not (target / ".claude" / "session_state.json").exists()
 
 
 def _assert_template_only_removed(target: Path) -> None:
@@ -127,6 +132,7 @@ def _assert_template_only_removed(target: Path) -> None:
         "Generated project must not contain the templates/ overlay tree"
     )
     assert not (target / ".claude" / "skills" / "create-project").exists()
+    assert not (target / ".agents" / "skills" / "create-project").exists()
 
 
 def test_e2e_python_project_generation_and_codex_init(template_root):
@@ -144,13 +150,13 @@ def test_e2e_python_project_generation_and_codex_init(template_root):
         assert audit.passed
 
         result = subprocess.run(
-            ["bash", ".ai/bin/agent-init", "--platform", "codex"],
+            ["bash", ".agents/bin/agent-init", "--platform", "codex"],
             cwd=target,
             capture_output=True,
             text=True,
         )
         assert result.returncode == 0, result.stdout + "\n" + result.stderr
-        state = json.loads((target / ".ai" / "session_state.json").read_text())
+        state = json.loads((target / ".agents" / "session_state.json").read_text())
         assert state["active_roadmap"] is None
         assert "common/roadmap-awareness" not in state["loaded_constraints"]
 
@@ -162,7 +168,7 @@ def test_e2e_python_project_generation_and_codex_init(template_root):
             check=True,
         )
         constraints = subprocess.run(
-            ["bash", ".ai/bin/agent-check-constraints"],
+            ["bash", ".agents/bin/agent-check-constraints"],
             cwd=target,
             capture_output=True,
             text=True,
@@ -186,13 +192,13 @@ def test_e2e_cpp_project_generation_and_codex_init(template_root):
         assert audit.passed
 
         result = subprocess.run(
-            ["bash", ".ai/bin/agent-init", "--platform", "codex"],
+            ["bash", ".agents/bin/agent-init", "--platform", "codex"],
             cwd=target,
             capture_output=True,
             text=True,
         )
         assert result.returncode == 0, result.stdout + "\n" + result.stderr
-        state = json.loads((target / ".ai" / "session_state.json").read_text())
+        state = json.loads((target / ".agents" / "session_state.json").read_text())
         assert state["active_roadmap"] is None
         assert "common/roadmap-awareness" not in state["loaded_constraints"]
 
@@ -204,7 +210,7 @@ def test_e2e_cpp_project_generation_and_codex_init(template_root):
             check=True,
         )
         constraints = subprocess.run(
-            ["bash", ".ai/bin/agent-check-constraints"],
+            ["bash", ".agents/bin/agent-check-constraints"],
             cwd=target,
             capture_output=True,
             text=True,
@@ -226,13 +232,13 @@ def test_e2e_hybrid_project_generation_and_codex_init(template_root):
         assert audit.passed
 
         result = subprocess.run(
-            ["bash", ".ai/bin/agent-init", "--platform", "codex"],
+            ["bash", ".agents/bin/agent-init", "--platform", "codex"],
             cwd=target,
             capture_output=True,
             text=True,
         )
         assert result.returncode == 0, result.stdout + "\n" + result.stderr
-        state = json.loads((target / ".ai" / "session_state.json").read_text())
+        state = json.loads((target / ".agents" / "session_state.json").read_text())
         assert state["active_roadmap"] is None
         loaded = set(state["loaded_constraints"])
         assert "common/roadmap-awareness" not in loaded
@@ -248,7 +254,7 @@ def test_e2e_hybrid_dependency_add_routes_python_and_cpp(template_root):
         create_project(template_root, target, "hybrid")
 
         init = subprocess.run(
-            ["bash", ".ai/bin/agent-init", "--platform", "codex"],
+            ["bash", ".agents/bin/agent-init", "--platform", "codex"],
             cwd=target,
             capture_output=True,
             text=True,
@@ -264,7 +270,7 @@ def test_e2e_hybrid_dependency_add_routes_python_and_cpp(template_root):
         )
 
         cpp_dep = subprocess.run(
-            ["bash", ".ai/bin/agent-dependency", "add", "fmtlib/fmt", "10.2.1"],
+            ["bash", ".agents/bin/agent-dependency", "add", "fmtlib/fmt", "10.2.1"],
             cwd=target,
             capture_output=True,
             text=True,
@@ -272,7 +278,7 @@ def test_e2e_hybrid_dependency_add_routes_python_and_cpp(template_root):
         assert cpp_dep.returncode == 0, cpp_dep.stdout + "\n" + cpp_dep.stderr
 
         py_dep = subprocess.run(
-            ["bash", ".ai/bin/agent-dependency", "add", "numpy", ">=1.24.0"],
+            ["bash", ".agents/bin/agent-dependency", "add", "numpy", ">=1.24.0"],
             cwd=target,
             capture_output=True,
             text=True,

@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
-"""Tests for shared policy gate (.ai/scripts/policy_gate.py)."""
+"""Tests for shared policy gate (.agents/scripts/policy_gate.py)."""
 
 import json
 import tempfile
 from pathlib import Path
 
 import sys
-sys.path.insert(0, str(Path(__file__).parent.parent / ".ai" / "scripts"))
 
-import policy_gate
+sys.path.insert(0, str(Path(__file__).parent.parent / ".agents" / "scripts"))
+
+import policy_gate  # type: ignore[import-not-found]
 
 
 def _write_state(repo: Path, passed: bool = True) -> None:
@@ -16,7 +17,7 @@ def _write_state(repo: Path, passed: bool = True) -> None:
         "initialized": True,
         "capability_audit": {"passed": passed},
     }
-    state_path = repo / ".ai" / "session_state.json"
+    state_path = repo / ".agents" / "session_state.json"
     state_path.parent.mkdir(parents=True, exist_ok=True)
     state_path.write_text(json.dumps(state))
 
@@ -32,10 +33,12 @@ def test_bash_preinit_allows_only_init() -> None:
     with tempfile.TemporaryDirectory() as tmp:
         repo = Path(tmp)
 
-        allowed, _ = policy_gate.gate_bash(repo, {"command": ".ai/bin/agent-init"})
+        allowed, _ = policy_gate.gate_bash(repo, {"command": ".agents/bin/agent-init"})
         assert allowed
 
-        allowed, _ = policy_gate.gate_bash(repo, {"command": ".ai/bin/agent-init --platform claude"})
+        allowed, _ = policy_gate.gate_bash(
+            repo, {"command": ".agents/bin/agent-init --platform claude"}
+        )
         assert allowed
 
         allowed, _ = policy_gate.gate_bash(repo, {"command": "ls -la"})
@@ -62,7 +65,10 @@ def test_commit_blocks_ai_attribution() -> None:
 
         allowed, message = policy_gate.gate_commit(
             repo,
-            {"branch": "feat/demo", "message": "feat(x): update\n\nCo-Authored-By: Bot"},
+            {
+                "branch": "feat/demo",
+                "message": "feat(x): update\n\nCo-Authored-By: Bot",
+            },
         )
         assert not allowed
         assert "attribution" in message.lower()
@@ -73,10 +79,12 @@ def test_dependency_blocks_direct_pip_for_python_repo() -> None:
         repo = Path(tmp)
         _write_state(repo, passed=True)
 
-        (repo / ".ai").mkdir(exist_ok=True)
-        (repo / ".ai" / "project.yml").write_text("project_type: python\n")
+        (repo / ".agents").mkdir(exist_ok=True)
+        (repo / ".agents" / "project.yml").write_text("project_type: python\n")
 
-        allowed, _ = policy_gate.gate_dependency(repo, {"command": "pip install requests"})
+        allowed, _ = policy_gate.gate_dependency(
+            repo, {"command": "pip install requests"}
+        )
         assert not allowed
 
 
@@ -84,18 +92,21 @@ def test_dependency_blocks_direct_pip_for_python_repo() -> None:
 # Extended Python pattern tests (venv paths + version-suffixed interpreters)
 # ---------------------------------------------------------------------------
 
+
 def _python_repo(tmp: str) -> Path:
     repo = Path(tmp)
     _write_state(repo, passed=True)
-    (repo / ".ai").mkdir(exist_ok=True)
-    (repo / ".ai" / "project.yml").write_text("project_type: python\n")
+    (repo / ".agents").mkdir(exist_ok=True)
+    (repo / ".agents" / "project.yml").write_text("project_type: python\n")
     return repo
 
 
 def test_bash_blocks_venv_pip_install() -> None:
     with tempfile.TemporaryDirectory() as tmp:
         repo = _python_repo(tmp)
-        allowed, msg = policy_gate.gate_bash(repo, {"command": ".venv/bin/pip install requests"})
+        allowed, msg = policy_gate.gate_bash(
+            repo, {"command": ".venv/bin/pip install requests"}
+        )
         assert not allowed
         assert "BLOCKED" in msg
 
@@ -103,7 +114,9 @@ def test_bash_blocks_venv_pip_install() -> None:
 def test_bash_blocks_venv_pip3_install() -> None:
     with tempfile.TemporaryDirectory() as tmp:
         repo = _python_repo(tmp)
-        allowed, msg = policy_gate.gate_bash(repo, {"command": ".venv/bin/pip3 install requests"})
+        allowed, msg = policy_gate.gate_bash(
+            repo, {"command": ".venv/bin/pip3 install requests"}
+        )
         assert not allowed
         assert "BLOCKED" in msg
 
@@ -111,7 +124,9 @@ def test_bash_blocks_venv_pip3_install() -> None:
 def test_bash_blocks_versioned_pip_install() -> None:
     with tempfile.TemporaryDirectory() as tmp:
         repo = _python_repo(tmp)
-        allowed, msg = policy_gate.gate_bash(repo, {"command": "pip3.10 install requests"})
+        allowed, msg = policy_gate.gate_bash(
+            repo, {"command": "pip3.10 install requests"}
+        )
         assert not allowed
         assert "BLOCKED" in msg
 
@@ -119,7 +134,9 @@ def test_bash_blocks_versioned_pip_install() -> None:
 def test_bash_blocks_venv_python_direct() -> None:
     with tempfile.TemporaryDirectory() as tmp:
         repo = _python_repo(tmp)
-        allowed, msg = policy_gate.gate_bash(repo, {"command": ".venv/bin/python script.py"})
+        allowed, msg = policy_gate.gate_bash(
+            repo, {"command": ".venv/bin/python script.py"}
+        )
         assert not allowed
         assert "BLOCKED" in msg
 
@@ -127,7 +144,9 @@ def test_bash_blocks_venv_python_direct() -> None:
 def test_bash_blocks_venv_python3_direct() -> None:
     with tempfile.TemporaryDirectory() as tmp:
         repo = _python_repo(tmp)
-        allowed, msg = policy_gate.gate_bash(repo, {"command": ".venv/bin/python3 script.py"})
+        allowed, msg = policy_gate.gate_bash(
+            repo, {"command": ".venv/bin/python3 script.py"}
+        )
         assert not allowed
         assert "BLOCKED" in msg
 
@@ -171,7 +190,8 @@ def test_bash_allows_ai_script_python() -> None:
     with tempfile.TemporaryDirectory() as tmp:
         repo = _python_repo(tmp)
         allowed, _ = policy_gate.gate_bash(
-            repo, {"command": "python3 .ai/scripts/session_init.py --platform codex"}
+            repo,
+            {"command": "python3 .agents/scripts/session_init.py --platform codex"},
         )
         assert allowed
 
@@ -180,8 +200,8 @@ def test_mutate_blocks_setup_py_for_hybrid_repo() -> None:
     with tempfile.TemporaryDirectory() as tmp:
         repo = Path(tmp)
         _write_state(repo, passed=True)
-        (repo / ".ai").mkdir(exist_ok=True)
-        (repo / ".ai" / "project.yml").write_text(
+        (repo / ".agents").mkdir(exist_ok=True)
+        (repo / ".agents" / "project.yml").write_text(
             "project_profile:\n"
             "  language: [python, cpp]\n"
             "  build_system: scikit-build-core\n",

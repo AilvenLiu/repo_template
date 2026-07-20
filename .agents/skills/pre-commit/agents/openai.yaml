@@ -1,0 +1,4 @@
+interface:
+  display_name: "Pre-Commit Gate"
+  short_description: "Run the repository-owned quality gate"
+  default_prompt: "Use $pre-commit to validate these changes before handoff."

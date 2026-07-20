@@ -1,0 +1,4 @@
+interface:
+  display_name: "Roadmap"
+  short_description: "Manage dependency-aware multi-session work"
+  default_prompt: "Use $roadmap to create or update the execution roadmap."

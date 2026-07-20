@@ -9,11 +9,11 @@ Before making any changes:
 
 1. **Run `/init` at session start** - Loads relevant constraints based on your work
 2. **Create a feature branch** - Never commit directly to protected branches
-3. **Follow loaded constraints** - Technical requirements are in `.ai/constraints/`
+3. **Follow loaded constraints** - Technical requirements are in `.agents/constraints/`
 4. **Run `/pre-commit validate`** - Before committing to check formatting, linting, tests
 5. **Open a pull request** - Follow the PR template below
 
-For detailed technical requirements, see `.ai/constraints/python/` and run `/init`.
+For detailed technical requirements, see `.agents/constraints/python/` and run `/init`.
 
 ## 1. General Principles
 
@@ -28,7 +28,7 @@ If unsure, ask before acting.
 
 ## 2. Constraint System
 
-This repository uses a modular constraint system. Instead of duplicating all technical requirements here, detailed constraints are organised in `.ai/constraints/`:
+This repository uses a modular constraint system. Instead of duplicating all technical requirements here, detailed constraints are organised in `.agents/constraints/`:
 
 ### Python-Specific Constraints
 - `python/testing.md` - pytest, coverage (80%+), test organisation
@@ -89,7 +89,7 @@ Rules:
 - ASCII-only characters
 - British English spelling
 
-See `.ai/constraints/common/git-workflow.md` for detailed commit conventions.
+See `.agents/constraints/common/git-workflow.md` for detailed commit conventions.
 
 ## 4. Pull Request Guidelines
 
@@ -190,7 +190,7 @@ Review for:
 
 ## 6. Technical Standards Quick Reference
 
-For detailed requirements, see `.ai/constraints/python/` and run `/init`.
+For detailed requirements, see `.agents/constraints/python/` and run `/init`.
 
 ### Python Version
 - **Minimum**: Python 3.10
@@ -323,6 +323,6 @@ When in doubt, ask for clarification before proceeding.
 **Remember**: These guidelines exist to maintain code quality, type safety, and maintainability. Following them ensures a healthy, sustainable Python codebase.
 
 For detailed technical requirements, see:
-- `.ai/constraints/python/` - Python-specific constraints
-- `.ai/constraints/common/` - Common constraints
+- `.agents/constraints/python/` - Python-specific constraints
+- `.agents/constraints/common/` - Common constraints
 - AGENTS.md - Agent operating constraints and authority hierarchy
