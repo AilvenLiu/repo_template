@@ -15,6 +15,9 @@ activation helpers, runtime services, ingress, and rollback storage.
 1. Read `.agents/constraints/common/github-actions-cicd.md`. For auto-deployment or
    host rollback, also read `.agents/constraints/common/service-deployment.md`;
    skill guidance does not replace either mandatory constraint.
+   For a master-bound PR/MR, also read
+   `.agents/constraints/common/master-merge-policy.md` and apply the
+   `branch-governance` skill.
 2. Read the repository entrypoints, `.agents/project.yml`, build and test commands,
    existing workflows, package metadata, host interface, and release policy.
 3. Record the events and approvals for each channel: pull request, merge,
@@ -35,10 +38,27 @@ Stop for operator direction before changing release-channel semantics,
 production approvals, credentials, public package ownership, destructive
 retention, or which refs may deploy.
 
+## Resolve automatic promotion authority
+
+Before creating a release or deployment workflow, find any durable,
+project-specific release policy. If none exists, automatic publication and
+production deployment run only on an update to `master`; on GitHub this is a
+`push` restricted to `master`, using the exact event `github.sha`. The workflow
+builds or promotes only the immutable artefact for that SHA. Do not give a pull
+request, tag, scheduled run, manual dispatch, `develop`, `release/*`, or
+`hotfix/*` default automatic release/deployment authority. A release branch is
+a validation buffer, not a production trigger. For a dedicated server, the
+default deploy job targets a canonical root beneath `/data/`, `~/data/`, or
+another operator-approved dedicated data volume. It MUST NOT target `/var/`,
+`/srv/`, `/opt/`, `/usr/`, `/usr/local/`, or another system-owned hierarchy
+unless the durable project-specific deployment policy explicitly permits it.
+
 ## Preserve these invariants
 
 - Pull-request CI runs without production secrets or write permissions and
   cannot execute untrusted code in a privileged `pull_request_target` context.
+- A master-bound PR/MR validates the allowed same-repository source branch and
+  development-stage path deny list before release, build, or deployment work.
 - Every third-party action is pinned to a reviewed full commit SHA. Mutable tags
   and branches may appear only as explanatory comments, never as the pin.
 - Workflow and job permissions are explicit and least-privilege. Production

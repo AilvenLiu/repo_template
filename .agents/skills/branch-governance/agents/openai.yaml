@@ -1,0 +1,4 @@
+interface:
+  display_name: "Branch Governance"
+  short_description: "Protect master PRs and release shims"
+  default_prompt: "Use $branch-governance to design protected master PR gates and a release-shim workflow."

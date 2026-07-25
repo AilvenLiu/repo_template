@@ -11,23 +11,27 @@ existing service layout, and operator conventions. Select the deployment root
 deliberately, preserving a sound existing layout instead of moving a live
 service merely to match a template.
 
-For a new service, prefer these locations in order:
+Unless a durable, reviewed project-specific deployment policy explicitly
+states otherwise, automatic server deployment MUST use an operator-approved,
+dedicated data filesystem. Choose in this order:
 
-1. An independently mounted, operator-approved data filesystem, normally
-   `/data/www/<service>` or another `www/` directory beneath the mounted data
-   root. A stable path may point to that filesystem when the mount is elsewhere.
-2. A user-owned data filesystem for a rootless or single-user service, normally
-   `~/data/www/<service>` or the equivalent approved `~/data/` path.
-3. An operator-owned local `www/<service>` path when the service and its
-   lifecycle are intentionally local to that project or account.
-4. `/var/www/<service>` as a compatibility alternative when the host already
-   uses that system convention or the preceding options are unsuitable. Do not
-   introduce system-wide layout changes solely to force `/var/www`.
+1. An independently mounted data root, normally `/data/www/<service>` or
+   another canonical path beneath `/data/`.
+2. A user-owned dedicated data root for rootless or single-user operation,
+   normally `~/data/www/<service>` or another approved path beneath `~/data/`.
+3. Another independently mounted, operator-approved dedicated data volume with
+   an explicit canonical root, such as `/mnt/<data-volume>/www/<service>`.
+
+Do not use `/var/`, `/srv/`, `/opt/`, `/usr/`, `/usr/local/`, or another
+system-owned hierarchy as the default service deployment root. An existing
+system-path layout requires a durable, reviewed project-specific policy stating
+its reason, ownership boundary, migration/rollback plan, and explicit operator
+approval; host convention alone is not an exception.
 
 The chosen root MUST be absolute in host configuration, resolve beneath the
-approved root after symlink resolution, have explicit ownership and modes, and
-have enough capacity for staging plus rollback. User-controlled release input
-MUST NOT select or interpolate the root.
+approved dedicated data root after symlink resolution, have explicit ownership
+and modes, and have enough capacity for staging plus rollback. User-controlled
+release input MUST NOT select or interpolate the root.
 
 ## Release and State Boundaries
 
@@ -46,6 +50,25 @@ MUST NOT select or interpolate the root.
 - Stage and verify the full release before activation. Activation MUST be atomic
   where the platform supports it, so traffic sees either the old complete
   release or the new complete release.
+
+## Default Automatic Promotion Authority
+
+Unless a durable, reviewed project-specific release policy states otherwise,
+automatic production activation is authorised only by an update to `master`.
+The deployment manifest and host record MUST identify the exact updated
+`master` SHA and its immutable artefact digest. A `develop`, `release/*`, or
+`hotfix/*` update may produce a validation candidate, but it has no default
+authority to activate a production service or publish a release version.
+
+A manual deployment or rollback is an explicitly approved operator action, not
+an automatic channel. It MUST promote a verified artefact from `master` and use
+the same activation, health, and rollback controls.
+
+The default automated deploy job and host helper MUST reject a release metadata
+root beneath a system-owned hierarchy. They MAY accept such a root only when the
+reviewed project-specific deployment policy is supplied to the trusted host
+configuration; a workflow input, branch, release id, or event payload cannot
+create that exception.
 
 ## Identity and Privilege
 

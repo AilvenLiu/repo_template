@@ -581,7 +581,7 @@ documentation:
   stage: deploy
   script:
     - doxygen Doxyfile
-    - rsync -av docs/html/ /var/www/docs/
+    - rsync -av docs/html/ /data/www/docs/
 ```
 
 ## 17. Examples

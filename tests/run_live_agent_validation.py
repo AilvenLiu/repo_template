@@ -48,10 +48,10 @@ CORRECTIONS
 
 Reject or accept the plan explicitly. Under LOADED_CONSTRAINTS and
 LOADED_SKILLS, name the exact repository files you actually read. Under
-CORRECTIONS address: preferred deployment-root order including /data/www and
-/var/www status; action pins; pull-request secret boundary; build-once artefact
-identity; host privilege interface; concurrency; health; rollback; and
-auto-release identity.
+CORRECTIONS address: required dedicated data-root order including /data/www,
+~/data, and rejection of /var/www without a project-specific exception; action
+pins; pull-request secret boundary; build-once artefact identity; host privilege
+interface; concurrency; health; rollback; and auto-release identity.
 """.strip()
 
 
@@ -74,10 +74,13 @@ def _score(output: str) -> tuple[str, ...]:
         "cicd constraint loaded": "common/github-actions-cicd.md" in body,
         "host skill loaded": ".agents/skills/deploy-service/skill.md" in body,
         "cicd skill loaded": ".agents/skills/service-cicd/skill.md" in body,
-        "deployment-root policy": (
+        "dedicated deployment-root policy": (
             "/data/www" in body
             and "/var/www" in body
-            and any(token in body for token in ("alternative", "compatibility"))
+            and any(
+                token in body
+                for token in ("reject", "forbidden", "do not use", "not default")
+            )
         ),
         "immutable action pins": "full" in body and "commit sha" in body,
         "untrusted secret boundary": (

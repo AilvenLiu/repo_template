@@ -17,6 +17,20 @@
   dispatch inputs before checkout and keep protected channels behind review and
   environment approval.
 
+## Default automatic promotion
+
+Unless a durable, reviewed project-specific release policy defines another
+channel, automatic publication and production deployment use only `push` events
+for `master`. Gate privileged jobs on `github.ref == 'refs/heads/master'` and
+promote the immutable artefact for the event `github.sha`; do not resolve a
+branch, tag, or workflow input later. `release/*` is a review buffer, not a
+default deployment or publication trigger. Manual dispatch is an operator action
+and needs explicit authorisation for a verified `master` artefact. For a dedicated
+server, privileged deployment must use a canonical root under `/data/`, `~/data/`,
+or another approved dedicated data volume; it must reject `/var/`, `/srv/`,
+`/opt/`, `/usr/`, `/usr/local/`, and other system-owned roots unless a durable,
+reviewed project-specific deployment policy grants that exception.
+
 ## Artefact transfer and host invocation
 
 1. Download the exact build-job artefact without rebuilding it.

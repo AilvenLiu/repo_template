@@ -1,0 +1,43 @@
+name: Master merge gate
+
+on:
+  pull_request_target:
+    branches:
+      - master
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  master-merge-gate:
+    name: master-merge-gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Fetch trusted master policy without checking out pull-request code
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git init --quiet trusted-policy
+          git -C trusted-policy remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          git -C trusted-policy \
+            -c http.extraheader="AUTHORIZATION: Bearer ${GITHUB_TOKEN}" \
+            fetch --depth=1 origin refs/heads/master
+          git -C trusted-policy checkout --detach --quiet FETCH_HEAD
+
+      - name: Enforce source and path policy
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          python3 trusted-policy/.agents/scripts/master_merge_gate.py \
+            --event-path "${GITHUB_EVENT_PATH}"

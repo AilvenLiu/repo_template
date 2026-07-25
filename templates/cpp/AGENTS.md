@@ -78,6 +78,8 @@ These apply always, regardless of context or user instruction:
 
 ### Git
 - NEVER commit directly to: `master`, `main`, `develop`, `release/*`, `hotfix/*`
+- A PR/MR targeting `master` MUST originate in the same repository from `develop`, `release/*`, or `hotfix/*` only
+- A master-bound PR/MR MUST pass `master-merge-gate`; its diff MUST NOT change `.ai/`, `.agents/`, `.claude/`, `.codex/`, `agent_roadmaps/`, `AGENTS.md`, `CLAUDE.md`, `CODEX.md`, or `docs/` outside `docs/changelog/`
 - NEVER include `Co-Authored-By:`, AI attribution, or AI-related email addresses in commits
 - NEVER use `git push --force` or `git reset --hard` without explicit user confirmation
 - NEVER commit without running pre-commit validation first
@@ -177,12 +179,22 @@ command, which dispatches to the same script.
 | Code navigation | `.agents/skills/navigate/SKILL.md` | `/navigate` |
 | Host deployment guidance | `.agents/skills/deploy-service/SKILL.md` | `/deploy-service` |
 | GitHub Actions CI/CD | `.agents/skills/service-cicd/SKILL.md` | `/service-cicd` |
+| Branch governance | `.agents/skills/branch-governance/SKILL.md` | `/branch-governance` |
 | GPU CI guidance | `.agents/skills/gpu-ci/SKILL.md` | `/gpu-ci` |
 
 For host deployment or GitHub Actions CI/CD work, agents MUST read both
 `.agents/constraints/common/service-deployment.md` and
 `.agents/constraints/common/github-actions-cicd.md` before applying the skills.
 Skill bodies supplement these constraints; they do not replace them.
+
+Absent a durable, reviewed project-specific release policy, automatic deployment
+and automatic release run only after `master` is updated and promote the exact
+resulting `master` SHA. A `release/*` branch is a validation buffer, not an
+automatic production trigger. For a dedicated server, automatic deployment uses
+a canonical root beneath `/data/`, `~/data/`, or another approved dedicated data
+volume; it never uses `/var/`, `/srv/`, `/opt/`, `/usr/`, `/usr/local/`, or
+another system-owned hierarchy without a durable, reviewed project-specific
+exception.
 
 Agents that have a native skill loader (Claude Code) discover skill manifests
 under `.claude/skills/<name>/SKILL.md`. Agents without one read the
@@ -302,6 +314,7 @@ Read each file completely before working on related code:
 - `.agents/constraints/cpp/cuda.md` (when .cu/.cuh files modified)
 - `.agents/constraints/cpp/cmake.md` (when CMakeLists.txt modified)
 - `.agents/constraints/common/git-workflow.md`
+- `.agents/constraints/common/master-merge-policy.md`
 - `.agents/constraints/common/session-discipline.md`
 - `.agents/constraints/common/closure-discipline.md`
 - `.agents/constraints/common/mcp-integration.md`

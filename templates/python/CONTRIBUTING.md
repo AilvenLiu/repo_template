@@ -73,6 +73,10 @@ See AGENTS.md for details on the constraint system and authority hierarchy.
 
 Always work on feature branches: `feat/<description>`, `fix/<description>`, etc.
 
+### Master PR/MR Policy
+
+A PR/MR targeting `master` may originate only from same-repository `develop`, `release/*`, or `hotfix/*`. It MUST pass the required `master-merge-gate` and profile validation, and it MUST NOT change development-stage paths: `.ai/`, `.agents/`, `.claude/`, `.codex/`, `agent_roadmaps/`, `AGENTS.md`, `CLAUDE.md`, `CODEX.md`, or `docs/` outside `docs/changelog/`. For ordinary releases, use a reviewed `release/<name>` branch created from a recorded `develop` SHA as the buffer before `master`.
+
 ### Commit Message Format
 
 ```
@@ -134,6 +138,12 @@ Why is this change necessary? What problem does it solve?
 ```
 
 ### Before Opening a PR
+
+For a PR/MR targeting `master`, confirm all of the following before requesting review:
+- The source is same-repository `develop`, `release/*`, or `hotfix/*`.
+- The diff contains no development-stage paths; only `docs/changelog/` may change below `docs/`.
+- `master-merge-gate` and profile validation are configured as required hosted checks.
+- A normal `develop` promotion uses a validated `release/<name>` buffer branch.
 
 Run the pre-commit validation:
 
