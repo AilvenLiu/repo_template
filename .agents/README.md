@@ -124,6 +124,7 @@ Different platforms have different ways to invoke procedures:
 | Commit with policy | _(not exposed)_ | `.agents/bin/agent-commit -m "..." <files...>` |
 | Host deployment guidance | `/deploy-service` | `.agents/skills/deploy-service/SKILL.md` |
 | GitHub Actions CI/CD | `/service-cicd` | `.agents/skills/service-cicd/SKILL.md` |
+| Branch governance | `/branch-governance` | `.agents/skills/branch-governance/SKILL.md` |
 
 The constraint files describe **what** must be done; the wrappers implement
 **how** to do it.
@@ -132,6 +133,7 @@ The constraint files describe **what** must be done; the wrappers implement
 
 ### Common (all languages)
 - **git-workflow.md** - Branch policy, commit conventions, protected branches
+- **master-merge-policy.md** - Master PR/MR sources, forbidden paths, and release shim
 - **session-discipline.md** - Session continuity, decision hygiene
 - **closure-discipline.md** - Review, validation, and evidence required before closure
 - **roadmap-awareness.md** - Multi-session task management

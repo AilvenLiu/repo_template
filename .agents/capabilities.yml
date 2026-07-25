@@ -50,6 +50,10 @@ common_requirements:
     - id: service-cicd
       required: true
 
+    - id: branch-governance
+      required: true
+      notes: Master PR/MR admission rules, CI hard gate, and release-shim workflow
+
     - id: gpu-ci
       required: true
       when: distribution=pypi-wheel OR hardware_targets=cuda

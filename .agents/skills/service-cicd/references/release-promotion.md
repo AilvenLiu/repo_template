@@ -7,6 +7,15 @@ Emit a manifest containing source SHA, release id, digest, target compatibility,
 toolchain, dependency-lock identity, and build run. Downstream jobs verify and
 promote that manifest; they do not rebuild.
 
+## Default source authority
+
+Unless a durable, reviewed project-specific release policy explicitly defines a
+different channel, automatic publication and production deployment are
+authorised only by an update to `master`. The release manifest MUST record the
+exact updated `master` SHA, and every published or deployed artefact MUST match
+that SHA. A `release/*` branch is for validation and review; it does not
+independently authorise automatic release or deployment.
+
 ## Publication surfaces
 
 - GitHub Releases: attach the verified assets and checksums to an immutable tag

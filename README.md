@@ -14,7 +14,7 @@ guidance for previously generated repositories.
 Language-specific source files live under `templates/<language>/` with their
 generic names (`CLAUDE.md`, `AGENTS.md`, `CONTRIBUTING.md`, `.gitignore`,
 `project.yml`). The `/create-project` skill copies the shared template tree
-(`.agents/`, `.claude/`, `agent_roadmaps/`) and overlays the chosen
+(`.agents/`, `.claude/`, `.codex/`, `.github/`, `agent_roadmaps/`) and overlays the chosen
 language's directory onto the target. The copied `agent_roadmaps/` directory is
 an empty placeholder for temporary roadmap state only; generated projects must
 not inherit historical roadmap files.
@@ -79,6 +79,7 @@ templates/
 - `.agents/scripts/` -- shared runtime tools used by `.agents/bin/agent-*` wrappers
 - `.agents/bin/` -- platform-neutral guarded workflow commands (`agent-*`)
 - `.claude/` -- Claude Code skill stubs, hooks, and settings (native loader)
+- `.github/` -- GitHub Actions policy gates copied into generated projects
 - `agent_roadmaps/` -- temporary multi-session workflow workspace
 
 ### Claude Code Skills
@@ -98,6 +99,7 @@ templates/
 | `/python-env-setup` | Diagnose/fix pyenv+Poetry environment issues |
 | `/deploy-service` | Secure host deployment, activation, rollback, ingress, and data-root guidance |
 | `/service-cicd` | GitHub Actions CI, auto-deployment, auto-release, and artefact promotion |
+| `/branch-governance` | Master PR/MR gates, branch rules, and release-shim design |
 | `/gpu-ci` | Profile-aware CUDA CI, GPU test, cache, and wheel-release guidance |
 
 ## Architecture

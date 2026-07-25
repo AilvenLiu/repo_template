@@ -114,6 +114,7 @@ def _expected_constraints(project_type: str) -> set[str]:
         "common/ascii-only",
         "common/agentic-team",
         "common/service-deployment",
+        "common/master-merge-policy",
         "common/github-actions-cicd",
     }
     if project_type == "python":

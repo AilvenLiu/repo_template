@@ -132,6 +132,7 @@ ctest --test-dir build --output-on-failure
 ## Absolute Prohibitions
 
 - NEVER commit directly to `master`, `main`, `develop`, `release/*`, `hotfix/*`
+- NEVER open or merge a master-bound PR/MR except from same-repository `develop`, `release/*`, or `hotfix/*`; it must pass `master-merge-gate` and not change `.ai/`, `.agents/`, `.claude/`, `.codex/`, `agent_roadmaps/`, `AGENTS.md`, `CLAUDE.md`, `CODEX.md`, or `docs/` outside `docs/changelog/`
 - NEVER install C++ libraries via system package managers; NVIDIA/AMD GPU libraries and toolchains are discovered as external SDKs
 - NEVER add C++ dependencies outside `cmake/Dependencies.cmake` unless an ADR approves a system SDK or exceptional manager
 - NEVER use floating dependency branches such as `main`, `master`, or `develop`
@@ -173,6 +174,7 @@ When a slash command is unavailable or you need finer control, call the
 | Code navigation | `/navigate` | `.agents/skills/navigate/SKILL.md` |
 | Host deployment guidance | `/deploy-service` | `.agents/skills/deploy-service/SKILL.md` |
 | GitHub Actions CI/CD | `/service-cicd` | `.agents/skills/service-cicd/SKILL.md` |
+| Branch governance | `/branch-governance` | `.agents/skills/branch-governance/SKILL.md` |
 | GPU CI guidance | `/gpu-ci` | `.agents/skills/gpu-ci/SKILL.md` |
 | Build project | `/build` | — |
 
@@ -180,6 +182,15 @@ For host deployment or GitHub Actions CI/CD work, Claude MUST read both
 `.agents/constraints/common/service-deployment.md` and
 `.agents/constraints/common/github-actions-cicd.md` before applying the skills.
 Skill bodies supplement these constraints; they do not replace them.
+
+Absent a durable, reviewed project-specific release policy, automatic deployment
+and automatic release run only after `master` is updated and promote the exact
+resulting `master` SHA. A `release/*` branch is a validation buffer, not an
+automatic production trigger. For a dedicated server, automatic deployment uses
+a canonical root beneath `/data/`, `~/data/`, or another approved dedicated data
+volume; it never uses `/var/`, `/srv/`, `/opt/`, `/usr/`, `/usr/local/`, or
+another system-owned hierarchy without a durable, reviewed project-specific
+exception.
 
 ## Vendor-Neutral Constraints
 

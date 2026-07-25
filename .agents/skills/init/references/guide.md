@@ -115,6 +115,7 @@ Constraints are organized by topic in `.agents/constraints/`:
 
 ### Common Constraints
 - `common/git-workflow.md` - Branch policy, commit conventions
+- `common/master-merge-policy.md` - Master PR/MR admission, path gate, release shim
 - `common/mcp-integration.md` - Context7 MCP for external documentation
 - `common/roadmap-awareness.md` - Roadmap execution discipline
 - `common/session-discipline.md` - Session continuity, decision hygiene

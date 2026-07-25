@@ -109,6 +109,7 @@ change durable project policy.
 ## Absolute Prohibitions
 
 - NEVER commit directly to `master`, `main`, `develop`, `release/*`, `hotfix/*`
+- NEVER open or merge a master-bound PR/MR except from same-repository `develop`, `release/*`, or `hotfix/*`; it must pass `master-merge-gate` and not change `.ai/`, `.agents/`, `.claude/`, `.codex/`, `agent_roadmaps/`, `AGENTS.md`, `CLAUDE.md`, `CODEX.md`, or `docs/` outside `docs/changelog/`
 - NEVER run `pip` / `pip3` / `python -m pip` for any reason — use `poetry add` or `poetry run`
 - NEVER use `python` / `python3` / `pip` / `pip3` directly — use `poetry run python`
 - NEVER install Poetry via `curl -sSL https://install.python-poetry.org` or system package managers
@@ -153,12 +154,22 @@ When a slash command is unavailable or you need finer control, call the
 | Code navigation | `/navigate` | `.agents/skills/navigate/SKILL.md` |
 | Host deployment guidance | `/deploy-service` | `.agents/skills/deploy-service/SKILL.md` |
 | GitHub Actions CI/CD | `/service-cicd` | `.agents/skills/service-cicd/SKILL.md` |
+| Branch governance | `/branch-governance` | `.agents/skills/branch-governance/SKILL.md` |
 | Python env fix | `/python-env-setup` | `.agents/bin/agent-python-env-setup <diagnose|fix|verify>` |
 
 For host deployment or GitHub Actions CI/CD work, Claude MUST read both
 `.agents/constraints/common/service-deployment.md` and
 `.agents/constraints/common/github-actions-cicd.md` before applying the skills.
 Skill bodies supplement these constraints; they do not replace them.
+
+Absent a durable, reviewed project-specific release policy, automatic deployment
+and automatic release run only after `master` is updated and promote the exact
+resulting `master` SHA. A `release/*` branch is a validation buffer, not an
+automatic production trigger. For a dedicated server, automatic deployment uses
+a canonical root beneath `/data/`, `~/data/`, or another approved dedicated data
+volume; it never uses `/var/`, `/srv/`, `/opt/`, `/usr/`, `/usr/local/`, or
+another system-owned hierarchy without a durable, reviewed project-specific
+exception.
 
 ## Vendor-Neutral Constraints
 

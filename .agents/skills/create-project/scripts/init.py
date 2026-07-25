@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Initialize a new project from the repo_template.
 
-Copies the shared template tree (.agents/, .claude/, .codex/, agent_roadmaps/) verbatim,
+Copies the shared template tree (.agents/, .claude/, .codex/, .github/, agent_roadmaps/) verbatim,
 then overlays the language-specific files from
 templates/<language>/ onto the target directory using the language's
 generic file names (CLAUDE.md, AGENTS.md, CONTRIBUTING.md, .gitignore).
@@ -60,7 +60,7 @@ _FILE_MAP = {
 }
 
 # Directories to copy verbatim
-_COPY_DIRS = [".agents", ".claude", ".codex", "agent_roadmaps"]
+_COPY_DIRS = [".agents", ".claude", ".codex", ".github", "agent_roadmaps"]
 _COPY_IGNORE = shutil.ignore_patterns(
     "__pycache__", "*.pyc", "*.pyo", ".DS_Store", "session_state.json"
 )

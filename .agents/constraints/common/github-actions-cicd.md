@@ -18,6 +18,45 @@ governed separately by `common/service-deployment.md`.
 - CUDA execution may be separated into labelled GPU runners, but skipping it
   requires an explicit documented compatibility/risk decision. CPU and
   non-CUDA native validation remain mandatory where applicable.
+- Every PR/MR targeting `master` MUST also run the read-only
+  `master-merge-gate` status. Configure it and the profile-authoritative
+  validation status as required hosted branch checks; CI configuration alone is
+  not a substitute for branch protection.
+
+## Master PR/MR Gate
+
+- Accept master-bound PRs/MRs only from same-repository `develop`, `release/*`,
+  or `hotfix/*` branches.
+- Reject every changed or renamed development-stage path listed in
+  `common/master-merge-policy.md`; permit only `docs/changelog/` below `docs/`.
+- On GitHub, the gate may use `pull_request_target` only to execute trusted
+  base-branch policy with read-only permissions. It MUST NOT check out, build,
+  or execute PR code, and it MUST NOT receive production secrets.
+- Direct `develop` to `master` is allowed but a release branch created from an
+  immutable reviewed develop SHA is strongly preferred as the buffer.
+
+## Default Automatic Release Authority
+
+Unless a durable, reviewed project-specific release policy explicitly defines a
+different authorisation, automatic publication and production deployment MAY run
+only after an update to `master`. On GitHub, use a `push` event restricted to
+`master` and promote the exact `github.sha` from that event.
+
+- Do not auto-publish or auto-deploy from pull requests, merge requests, tags,
+  scheduled runs, manual dispatches, `develop`, `release/*`, or `hotfix/*`.
+- Build and promote an immutable artefact whose manifest records that exact
+  `master` SHA. Do not resolve a mutable branch, tag, or workflow input later.
+- A `release/*` branch is a validation and review buffer; it has no default
+  authority to publish a version or activate a production service.
+- For a dedicated server, automatic deployment MUST target a canonical root on
+  `/data/`, `~/data/`, or another operator-approved dedicated data volume. It
+  MUST NOT use `/var/`, `/srv/`, `/opt/`, `/usr/`, `/usr/local/`, or another
+  system-owned hierarchy without a durable, reviewed project-specific exception.
+- Manual release, deployment, or rollback is an operator action. It needs
+  explicit approval and still promotes a verified artefact from `master`; it
+  cannot silently become an automatic alternative channel.
+- A project-specific exception MUST be durable, reviewed, and explicit about
+  the alternate event/ref, environments, approvals, and artefact provenance.
 
 ## Workflow Trust Boundary
 

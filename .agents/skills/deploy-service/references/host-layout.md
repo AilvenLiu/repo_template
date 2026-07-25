@@ -6,21 +6,27 @@ Inspect mounts, filesystem type, free space, inode capacity, ownership, backup,
 restore evidence, and existing operator conventions. Preserve a secure working
 layout instead of relocating production solely to satisfy this preference.
 
-For a new service, choose in order:
+Unless a durable, reviewed project-specific deployment policy explicitly
+states otherwise, automatic server deployment must use a dedicated data
+filesystem. Choose in order:
 
 1. An independently mounted or linked operator-approved data filesystem,
-   normally `/data/www/<service>` or another `www/` path beneath the data mount.
+   normally `/data/www/<service>` or another canonical path beneath `/data/`.
 2. A user-owned data filesystem for rootless/single-user operation, normally
    `~/data/www/<service>` or an approved equivalent beneath `~/data/`.
-3. An operator-owned local `www/<service>` path when project-local lifecycle and
-   capacity are intentional.
-4. `/var/www/<service>` when it is the existing host convention or the earlier
-   choices are unsuitable. It is an alternative, not a mandatory migration.
+3. Another independently mounted operator-approved dedicated data volume, such
+   as `/mnt/<data-volume>/www/<service>`.
+
+Do not select `/var/`, `/srv/`, `/opt/`, `/usr/`, `/usr/local/`, or another
+system-owned hierarchy as the default service root. A legacy system path may be
+used only when a durable, reviewed project-specific deployment policy records
+its reason, ownership boundary, migration/rollback plan, and operator approval.
+Existing host convention alone is not an exception.
 
 Resolve `~` during provisioning and write absolute paths into service and proxy
 configuration. If a stable path is a symlink to a separate disk, resolve it and
-verify every managed path stays on the approved filesystem. Never derive the
-root from release input.
+verify every managed path stays on the approved dedicated data filesystem. Never
+derive the root from release input.
 
 ## Recommended shape
 

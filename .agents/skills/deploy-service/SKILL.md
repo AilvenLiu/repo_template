@@ -26,11 +26,12 @@ auto-deployment, and auto-release.
    deployment root, runtime identity, persistent state, compatibility, health
    surfaces, rollback objective, retention, and privilege boundary.
 5. Select and document the deployment root using
-   [host-layout.md](references/host-layout.md). For a new service prefer an
-   independently mounted `/data/www/<service>`-style root, then an approved
-   `~/data/www/<service>` root, then a local `www/<service>` root. Treat
-   `/var/www/<service>` as a compatibility alternative, not a reason to change
-   an otherwise sound system layout.
+   [host-layout.md](references/host-layout.md). Unless a durable, reviewed
+   project-specific deployment policy says otherwise, use an independently
+   mounted `/data/www/<service>`-style root, an approved `~/data/www/<service>`
+   root, or another explicitly approved dedicated data volume. Do NOT use
+   `/var/`, `/srv/`, `/opt/`, `/usr/`, `/usr/local/`, or another system-owned
+   hierarchy as the default deployment root.
 6. Select the activation model:
    - Static files: read [static-releases.md](references/static-releases.md).
    - Containers, native binaries, Python runtimes, or long-running services:
@@ -43,6 +44,22 @@ auto-deployment, and auto-release.
 Stop for approval before changing public DNS, firewall policy, credentials,
 production data, privileged command boundaries, destructive retention, or an
 existing live layout.
+
+## Resolve automatic promotion authority
+
+Before designing or enabling automatic host activation, resolve the release
+authorisation. Unless a durable, reviewed project-specific release policy says
+otherwise, automation runs only after `master` is updated and deploys the
+immutable artefact built from that exact `master` SHA. `develop`, `release/*`,
+and `hotfix/*` may validate candidates but MUST NOT automatically activate a
+production service or publish a version. Manual deployment and rollback remain
+explicit operator actions and promote verified `master` artefacts only.
+
+Unless the project-specific policy grants an explicit reviewed exception, the
+automated deploy workflow and host helper MUST use a canonical dedicated data
+root and reject `/var/`, `/srv/`, `/opt/`, `/usr/`, `/usr/local/`, and other
+system-owned deployment roots. A workflow input or existing host convention is
+not an exception.
 
 ## Enforce these invariants
 

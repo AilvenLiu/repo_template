@@ -2,8 +2,10 @@
 
 Use this model when the deployable artefact is a complete static directory.
 Select `<deployment-root>` through [host-layout.md](host-layout.md); typical new
-roots are `/data/www/<service>`, `~/data/www/<service>`, or local
-`www/<service>`, with `/var/www/<service>` as a compatibility alternative.
+roots are `/data/www/<service>`, `~/data/www/<service>`, or another
+operator-approved dedicated data volume. Do not use `/var/`, `/srv/`, `/opt/`,
+`/usr/`, `/usr/local/`, or another system-owned hierarchy unless a durable,
+reviewed project-specific deployment policy explicitly permits that exception.
 
 ## Layout
 

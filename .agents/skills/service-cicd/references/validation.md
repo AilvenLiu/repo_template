@@ -25,6 +25,10 @@
 
 - [ ] The protected deploy job verifies server identity, artefact digest, and
       provenance before invoking one fixed narrow host interface.
+- [ ] Without a durable, reviewed project-specific exception, the canonical
+      deployment root is on `/data/`, `~/data/`, or another approved dedicated
+      data volume; no `/var/`, `/srv/`, `/opt/`, `/usr/`, or `/usr/local/` root
+      is accepted.
 - [ ] Environment concurrency prevents overlap and out-of-order activation.
 - [ ] Release-specific health failure fails the job and preserves the last
       known-good release and diagnostic evidence.

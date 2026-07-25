@@ -28,6 +28,15 @@ absolutely forbidden.
 - Trivial changes (typos, formatting)
 - ANY modification whatsoever
 
+### Master PR/MR Admission
+
+`master` accepts PRs/MRs only from same-repository `develop`, `release/*`, or
+`hotfix/*` branches. The master diff must exclude development-stage policy and
+agent paths; `docs/changelog/` is the sole allowed `docs/` subtree. Read
+`master-merge-policy.md` for the exact deny list and release-shim procedure.
+The `master-merge-gate` CI status and profile-authoritative validation MUST be
+required in hosted branch rules.
+
 ## 2. Mandatory Branch-Based Workflow
 
 **REQUIRED WORKFLOW**: All changes MUST follow this process:

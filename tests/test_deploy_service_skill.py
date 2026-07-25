@@ -42,6 +42,10 @@ def test_generated_project_loads_split_service_skills(
         body = (target / entrypoint).read_text()
         assert "common/service-deployment.md" in body
         assert "common/github-actions-cicd.md" in body
+        assert "automatic deployment" in body
+        assert "automatic release run only after `master` is updated" in body
+        assert "canonical root beneath `/data/`, `~/data/`" in body
+        assert "never uses `/var/`, `/srv/`, `/opt/`, `/usr/`, `/usr/local/`" in body
 
 
 def test_host_deployment_skill_owns_host_contract() -> None:
@@ -49,8 +53,8 @@ def test_host_deployment_skill_owns_host_contract() -> None:
     required = (
         "/data/www/<service>",
         "~/data/www/<service>",
-        "local `www/<service>`",
-        "`/var/www/<service>` as a compatibility alternative",
+        "dedicated data volume",
+        "reject `/var/`",
         "immutable CI-built artefact",
         "Never run a newly uploaded script as root",
         "activation atomic",
@@ -112,3 +116,52 @@ def test_both_service_contracts_are_required_and_always_loaded() -> None:
     assert '"common/github-actions-cicd"' in init_source
     assert (ROOT / ".agents/constraints/common/service-deployment.md").is_file()
     assert (ROOT / ".agents/constraints/common/github-actions-cicd.md").is_file()
+
+
+def test_default_automatic_promotion_is_master_only() -> None:
+    cicd_constraint = (
+        ROOT / ".agents/constraints/common/github-actions-cicd.md"
+    ).read_text()
+    assert "only after an update to `master`" in cicd_constraint
+    assert "exact `github.sha`" in cicd_constraint
+    assert "has no default" in cicd_constraint
+    assert "authority to publish a version" in cicd_constraint
+
+    deployment_constraint = (
+        ROOT / ".agents/constraints/common/service-deployment.md"
+    ).read_text()
+    assert "authorised only by an update to `master`" in deployment_constraint
+    assert "exact updated" in deployment_constraint
+    assert "`master` SHA" in deployment_constraint
+    assert "Do not use `/var/`, `/srv/`, `/opt/`, `/usr/`, `/usr/local/`" in (
+        deployment_constraint
+    )
+
+    deploy_skill = (ROOT / ".agents/skills/deploy-service/SKILL.md").read_text()
+    cicd_skill = (ROOT / ".agents/skills/service-cicd/SKILL.md").read_text()
+    governance_skill = (ROOT / ".agents/skills/branch-governance/SKILL.md").read_text()
+    for body in (deploy_skill, cicd_skill, governance_skill):
+        assert "project-specific" in body
+        assert "policy" in body
+        assert "`master`" in body
+        assert "release" in body
+
+    github_reference = (
+        ROOT / ".agents/skills/service-cicd/references/github-actions.md"
+    ).read_text()
+    promotion_reference = (
+        ROOT / ".agents/skills/service-cicd/references/release-promotion.md"
+    ).read_text()
+    host_reference = (
+        ROOT / ".agents/skills/deploy-service/references/service-releases.md"
+    ).read_text()
+    assert "github.ref == 'refs/heads/master'" in github_reference
+    assert "exact updated `master` SHA" in promotion_reference
+    assert "exact SHA produced by" in host_reference
+    assert "`master` update" in host_reference
+
+    for profile in ("python", "cpp", "hybrid"):
+        for entrypoint in ("AGENTS.md", "CLAUDE.md"):
+            body = (ROOT / "templates" / profile / entrypoint).read_text()
+            assert "automatic deployment" in body
+            assert "automatic release run only after `master` is updated" in body

@@ -45,10 +45,14 @@ def _assert_common_generated_assets(target: Path, project_type: str) -> None:
     assert (
         target / ".agents" / "constraints" / "common" / "karpathy-guidelines.md"
     ).exists()
+    assert (
+        target / ".agents" / "constraints" / "common" / "master-merge-policy.md"
+    ).exists()
     assert (target / ".agents" / "project.yml").exists()
     assert (target / ".agents" / "scripts" / "session_init.py").exists()
     assert (target / ".codex" / "hooks.json").exists()
     assert (target / ".codex" / "hooks" / "pre_tool_use.py").exists()
+    assert (target / ".github" / "workflows" / "master-merge-gate.yml").exists()
     assert not (target / ".codex" / "skills").exists()
     assert not (target / ".agents" / "skills" / "bazel").exists()
     assert not (target / ".claude" / "skills" / "bazel").exists()
