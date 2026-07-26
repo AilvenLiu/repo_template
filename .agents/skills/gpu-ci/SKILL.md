@@ -12,13 +12,18 @@ not create a second build system.
 ## Load the contract
 
 1. Read `.agents/project.yml`, the session constraint manifest, and the `build`,
-   `dependency`, and `service-cicd` skills when release automation is in scope. Read `deploy-service` as well when host activation is in scope.
+   `dependency`, and `service-cicd` skills when release automation is in scope.
+   Read `deploy-service` as well when host activation is in scope.
 2. Read the applicable CMake, CUDA, hybrid bridge, dependency, and testing
    constraints before drafting jobs.
-3. Classify each job as CPU validation, CUDA compilation, GPU execution,
+3. When GPU work uses a persistent self-hosted runner, read
+   `service-cicd/references/self-hosted-runners.md` and record its identity,
+   labels, device access, service policy, persistent state, and separation from
+   any co-located production service.
+4. Classify each job as CPU validation, CUDA compilation, GPU execution,
    wheel repair, or publication. Do not disguise a missing GPU runner by silently
    skipping a required release gate.
-4. Record the supported OS, compiler, CUDA toolkit, GPU architecture, Python ABI,
+5. Record the supported OS, compiler, CUDA toolkit, GPU architecture, Python ABI,
    and wheel-platform matrix. Every axis must map to a supported product target.
 
 ## Preserve build ownership
@@ -60,6 +65,9 @@ profile workflow. Add Python build tools through `.agents/bin/agent-dependency`.
   appropriate, and environment-scoped concurrency.
 - Pin runner images, CUDA containers, compiler toolchains, and Python versions to
   reviewed versions or immutable digests where the platform supports it.
+- A self-hosted GPU runner uses a dedicated unprivileged identity, specific
+  hardware and trust labels, and only the device/group access required for the
+  job. It holds no deployment credential or production activation authority.
 - Upload immutable outputs once. Carry digests and provenance between jobs; do not
   rebuild for publication.
 
@@ -102,6 +110,12 @@ compiler identity, CUDA toolkit version, target architectures, build type, and
 ABI-affecting options. Treat remote cache credentials as write-capable secrets;
 do not expose them to forked pull requests. A cache miss must affect performance,
 not correctness.
+
+On a persistent self-hosted runner, a directly configured local cache may
+replace remote cache transfer. Preserve the same key completeness, partition
+state by repository and trust class, verify ownership from the runner identity,
+and exercise consecutive jobs for contamination. Persistence is an
+optimisation, not evidence that an output is valid.
 
 ## Test the hardware matrix honestly
 

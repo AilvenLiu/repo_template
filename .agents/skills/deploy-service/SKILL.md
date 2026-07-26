@@ -8,7 +8,9 @@ description: Design, implement, review, or troubleshoot secure host-side deploym
 Deploy a verified immutable artefact into a deliberately selected host root,
 then activate it through a narrow persistent interface. This skill owns the
 host. Read `$service-cicd` for GitHub Actions validation, build, publication,
-auto-deployment, and auto-release.
+auto-deployment, and auto-release. A self-hosted CI runner provides compute; it
+does not replace the separate restricted SSH deployment identity and host
+activation boundary.
 
 ## Start with the host contract
 
@@ -78,6 +80,10 @@ not an exception.
 - Keep the deploy principal unprivileged. Privileged activation uses a narrow,
   persistent, root-owned helper through an exact forced-command or `sudo -n`
   allow-list. Never run a newly uploaded script as root.
+- If self-hosted CI shares the production machine, give its runner and deploy
+  path separate principals with no overlapping credentials, privileged groups,
+  helpers, control sockets, or writable paths. The runner MUST NOT modify live
+  releases or persistent production state.
 - Pin SSH host identity and restrict deployment keys: no general shell, PTY,
   forwarding, agent forwarding, X11, or user-selected command.
 - Serialize activation and pruning per environment with a host-side lock.

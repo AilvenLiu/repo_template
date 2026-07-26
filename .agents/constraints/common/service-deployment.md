@@ -73,6 +73,11 @@ create that exception.
 ## Identity and Privilege
 
 - Run the service and deployment as dedicated, least-privilege identities.
+- Self-hosted CI compute is not a deployment identity. If a persistent Actions
+  runner shares the production machine, its principal, credentials, privileged
+  groups, helpers, control sockets, and writable paths MUST NOT overlap the
+  deploy principal or production service state. Restricted SSH deployment from
+  an isolated GitHub-hosted job remains a separate boundary.
 - A privileged transition MUST use a persistent, reviewed, root-owned helper
   with an exact non-interactive sudo or forced-command boundary. Never execute
   a newly uploaded script as root and never grant CI a general root shell,

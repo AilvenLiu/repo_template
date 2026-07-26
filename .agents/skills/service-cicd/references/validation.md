@@ -10,6 +10,13 @@
       release names, or environment selection.
 - [ ] The matrix invokes the authoritative Poetry and/or CMake build graph for
       the active profile.
+- [ ] A persistent self-hosted runner follows
+      `self-hosted-runners.md`: narrow labels and scope, pinned verified
+      bootstrap, unprivileged identity, explicit service/PATH/ownership policy,
+      busy restart guard, and no per-job privileged host provisioning.
+- [ ] When self-hosted CI and production share a machine, CI and SSH deployment
+      use separate principals with no overlapping credentials, privilege,
+      helpers, groups, sockets, or writable paths.
 
 ## Artefact and release review
 
@@ -39,6 +46,9 @@
 - [ ] Exercise forked PRs, hostile dispatch inputs, mismatched refs/digests,
       missing secrets, cancelled and overlapping jobs, truncated transfer,
       failed health, partial publication, and missing rollback artefacts.
+- [ ] For a persistent runner, re-run bootstrap and the authoritative workflow
+      to expose stale state, duplicate swap/resources, cache contamination,
+      root-owned parents, captured PATH, and unsafe maintenance restarts.
 - [ ] Confirm logs redact secrets and still identify the exact source, artefact,
       environment, approval, and result.
 - [ ] Record each check not run and the resulting operational or supply-chain

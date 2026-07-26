@@ -1,6 +1,6 @@
 ---
 name: service-cicd
-description: "Design, implement, review, or troubleshoot GitHub Actions CI, auto-deployment, auto-release, artefact promotion, protected environments, provenance, concurrency, and rollback for Python, C++/CUDA, and hybrid services."
+description: "Design, implement, review, or troubleshoot GitHub Actions CI, hosted or self-hosted runners, auto-deployment, auto-release, artefact promotion, protected environments, provenance, concurrency, and rollback for Python, C++/CUDA, and hybrid services."
 ---
 
 # /service-cicd

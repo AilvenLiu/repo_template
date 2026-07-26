@@ -38,6 +38,10 @@ def test_generated_project_loads_split_service_skills(
         assert skill in (target / "AGENTS.md").read_text()
         assert skill in (target / "CLAUDE.md").read_text()
 
+    assert (
+        target / ".agents/skills/service-cicd/references/self-hosted-runners.md"
+    ).is_file()
+
     for entrypoint in ("AGENTS.md", "CLAUDE.md"):
         body = (target / entrypoint).read_text()
         assert "common/service-deployment.md" in body
@@ -96,10 +100,45 @@ def test_service_cicd_skill_owns_github_actions_contract() -> None:
     for reference in (
         "project-profiles.md",
         "github-actions.md",
+        "self-hosted-runners.md",
         "release-promotion.md",
         "validation.md",
     ):
         assert (references / reference).is_file()
+
+
+def test_self_hosted_ci_and_ssh_deploy_have_separate_contracts() -> None:
+    runner_reference = (
+        ROOT / ".agents/skills/service-cicd/references/self-hosted-runners.md"
+    ).read_text()
+    required = (
+        "Pattern A: CI compute",
+        "Pattern B: deployment",
+        "different operating-system principals",
+        "no interactive login and no sudo",
+        "SHA-256",
+        "Restart=on-failure",
+        "OOMScoreAdjust",
+        "~/.local/bin",
+        "active job worker",
+        "per-run swapfile",
+        "toolchain",
+    )
+    for phrase in required:
+        assert phrase in runner_reference
+
+    cicd_constraint = (
+        ROOT / ".agents/constraints/common/github-actions-cicd.md"
+    ).read_text()
+    deployment_constraint = (
+        ROOT / ".agents/constraints/common/service-deployment.md"
+    ).read_text()
+    assert "Pattern A" in cicd_constraint
+    assert "Pattern B" in cicd_constraint
+    assert "MUST NOT overlap" in cicd_constraint
+    assert "self-hosted ci compute is not a deployment identity" in (
+        deployment_constraint.lower()
+    )
 
 
 def test_both_service_contracts_are_required_and_always_loaded() -> None:

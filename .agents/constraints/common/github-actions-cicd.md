@@ -23,6 +23,36 @@ governed separately by `common/service-deployment.md`.
   validation status as required hosted branch checks; CI configuration alone is
   not a substitute for branch protection.
 
+## CI Compute and Deployment Boundaries
+
+Self-hosted CI compute and SSH deployment solve separate concerns and MAY be
+used independently or together:
+
+- Pattern A moves build, test, lint, package, or hardware-specific compute to a
+  persistent self-hosted Actions runner. That runner MUST use a dedicated
+  unprivileged identity, narrow labels and repository scope, and no deployment
+  key, production secret, sudo rule, or production activation authority.
+- Pattern B promotes an immutable verified artefact from an isolated
+  GitHub-hosted deploy job through a repository- and environment-scoped SSH
+  identity and one narrow host interface. It remains the deployment mechanism
+  even when Pattern A built the artefact.
+
+When both patterns involve the same machine, their operating-system principals,
+credentials, privileged groups, helpers, control sockets, and writable paths
+MUST NOT overlap. Treat self-hosted workflow execution as arbitrary repository
+code, not as a trusted host operator. Container-daemon membership is
+root-equivalent and therefore does not provide process-only separation from
+co-located production.
+
+A persistent runner MUST be installed and maintained by a committed, idempotent
+host bootstrap that pins and verifies the runner release, provisions privileged
+dependencies outside workflow steps, sets explicit service restart, PATH, and
+ownership policy, and refuses to restart during an active job. Workflow jobs
+MUST NOT use sudo or create accumulating host resources such as per-run swap
+devices. Read
+`.agents/skills/service-cicd/references/self-hosted-runners.md` for the
+procedural and validation contract.
+
 ## Master PR/MR Gate
 
 - Accept master-bound PRs/MRs only from same-repository `develop`, `release/*`,
@@ -67,6 +97,10 @@ only after an update to `master`. On GitHub, use a `push` event restricted to
 - Untrusted pull-request jobs MUST NOT receive production secrets, deployment
   identities, release credentials, or write-capable tokens. Never execute
   untrusted checkout contents in a privileged `pull_request_target` job.
+- A persistent self-hosted runner SHOULD be private-repository scoped. A public
+  repository MUST NOT route arbitrary fork code to persistent owned
+  infrastructure without a reviewed approval and disposable-isolation model
+  that prevents access to secrets and host state.
 - Resolve requested refs, tags, channels, and manual inputs to validated,
   immutable values before checkout or interpolation. Treat event fields as
   untrusted input and avoid constructing shell or SSH programs from them.

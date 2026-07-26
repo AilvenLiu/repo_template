@@ -1,4 +1,4 @@
 interface:
   display_name: "Service CI/CD"
-  short_description: "Design GitHub Actions release automation"
-  default_prompt: "Use $service-cicd to design secure CI, deployment, and release automation."
+  short_description: "Design GitHub Actions CI/CD and runners"
+  default_prompt: "Use $service-cicd to design secure GitHub Actions CI/CD, runner, deployment, and release automation."

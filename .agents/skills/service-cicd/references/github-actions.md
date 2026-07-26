@@ -1,5 +1,17 @@
 # GitHub Actions trust and deployment boundary
 
+## Select compute and deployment independently
+
+Self-hosted CI compute (Pattern A) and restricted SSH deployment (Pattern B)
+solve different problems and may be used together. Read
+[self-hosted-runners.md](self-hosted-runners.md) for Pattern A. Pattern B below
+remains the deployment boundary whether the immutable artefact was built on a
+GitHub-hosted runner or a self-hosted runner.
+
+When both patterns involve the same machine, the self-hosted CI identity and
+the deployment identity MUST be separate principals with no overlapping
+credentials, privilege, helpers, production groups, or writable paths.
+
 ## Events and workflow structure
 
 - Give `GITHUB_TOKEN` explicit least-privilege `permissions` and isolate jobs
@@ -32,6 +44,10 @@ or another approved dedicated data volume; it must reject `/var/`, `/srv/`,
 reviewed project-specific deployment policy grants that exception.
 
 ## Artefact transfer and host invocation
+
+Pattern B uses an isolated GitHub-hosted deploy job with a repository- and
+environment-scoped SSH identity. Do not run this job as the Pattern A
+self-hosted CI principal, including when CI and production share a machine.
 
 1. Download the exact build-job artefact without rebuilding it.
 2. Verify its digest and provenance in the privileged job.
