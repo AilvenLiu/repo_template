@@ -37,6 +37,8 @@ activation helpers, runtime services, ingress, and rollback storage.
    promotion, read [release-promotion.md](references/release-promotion.md).
 9. For an auto-deployment job, also read
    `.agents/skills/deploy-service/SKILL.md` and its applicable host references.
+10. For any deployment claim, read
+    [deployment-evidence.md](references/deployment-evidence.md).
 
 Stop for operator direction before changing release-channel semantics,
 production approvals, credentials, public package ownership, destructive

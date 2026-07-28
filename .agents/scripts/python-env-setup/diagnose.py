@@ -9,6 +9,16 @@ from pathlib import Path
 from typing import List, Optional, Tuple
 
 
+def parent_virtual_env() -> Optional[str]:
+    """Return the externally activated environment, not Poetry's child venv."""
+    marker = os.environ.get("AGENT_PARENT_VIRTUAL_ENV_SET")
+    if marker == "0":
+        return None
+    if marker == "1":
+        return os.environ.get("AGENT_PARENT_VIRTUAL_ENV")
+    return os.environ.get("VIRTUAL_ENV")
+
+
 class Issue:
     """Represents an environment issue."""
 
@@ -304,16 +314,16 @@ class EnvironmentDiagnostics:
     # ------------------------------------------------------------------
 
     def check_virtual_env_variable(self) -> None:
-        """Check if VIRTUAL_ENV environment variable is set."""
-        virtual_env = os.environ.get("VIRTUAL_ENV")
+        """Check whether the calling shell activated an external environment."""
+        virtual_env = parent_virtual_env()
         if virtual_env:
             self.issues.append(
                 Issue(
                     severity=Issue.CRITICAL,
-                    message="VIRTUAL_ENV is set to system Python",
+                    message="Calling shell has an active VIRTUAL_ENV",
                     details=(
                         f"Current value: {virtual_env}\n"
-                        "  Impact: Poetry will always detect the system Python instead of pyenv Python"
+                        "  Impact: it can shadow the intended pyenv Python selection"
                     ),
                     fix='unset VIRTUAL_ENV && echo "unset VIRTUAL_ENV" >> ~/.zshrc',
                 )
@@ -322,7 +332,7 @@ class EnvironmentDiagnostics:
             self.issues.append(
                 Issue(
                     severity=Issue.OK,
-                    message="VIRTUAL_ENV is not set",
+                    message="Calling shell has no active VIRTUAL_ENV",
                 )
             )
 

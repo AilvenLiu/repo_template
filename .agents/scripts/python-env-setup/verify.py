@@ -8,6 +8,8 @@ import sys
 from pathlib import Path
 from typing import Tuple
 
+from diagnose import parent_virtual_env
+
 
 class EnvironmentVerifier:
     """Verify Python environment configuration."""
@@ -52,10 +54,10 @@ class EnvironmentVerifier:
         print("=" * 70)
         print()
 
-        # Check VIRTUAL_ENV is unset
-        virtual_env = os.environ.get("VIRTUAL_ENV")
+        # Check the caller's shell, not Poetry's child-process environment.
+        virtual_env = parent_virtual_env()
         self.check(
-            "VIRTUAL_ENV is unset",
+            "Calling shell has no active VIRTUAL_ENV",
             virtual_env is None,
             f"Current value: {virtual_env}" if virtual_env else "",
         )

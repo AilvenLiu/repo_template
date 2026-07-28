@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
 """Fix pyenv+Poetry environment configuration issues."""
 
-import os
 import subprocess
 import sys
 from pathlib import Path
 
 # Import diagnostics
 sys.path.insert(0, str(Path(__file__).parent))
-from diagnose import EnvironmentDiagnostics
+from diagnose import EnvironmentDiagnostics, parent_virtual_env
 
 
 class EnvironmentFixer:
@@ -44,13 +43,13 @@ class EnvironmentFixer:
         """Fix VIRTUAL_ENV variable issue."""
         print("[1/5] Checking VIRTUAL_ENV variable...")
 
-        virtual_env = os.environ.get("VIRTUAL_ENV")
+        virtual_env = parent_virtual_env()
         if not virtual_env:
-            print("  [OK] VIRTUAL_ENV is not set")
+            print("  [OK] Calling shell has no active VIRTUAL_ENV")
             return True
 
-        print(f"  [ISSUE] VIRTUAL_ENV is set to: {virtual_env}")
-        print("  This prevents Poetry from detecting pyenv Python")
+        print(f"  [ISSUE] Calling shell has an active VIRTUAL_ENV: {virtual_env}")
+        print("  This can shadow the intended pyenv Python selection")
         print()
 
         if not self.confirm("  Unset VIRTUAL_ENV and add to ~/.zshrc?"):

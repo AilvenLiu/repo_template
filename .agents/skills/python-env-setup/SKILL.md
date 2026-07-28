@@ -13,7 +13,7 @@ enforcing the mandatory Poetry environment policy:
 1. Poetry available from an approved isolated installation (normally pipx or a pinned tool image)
 2. `poetry.toml` exists with `in-project = true`
 3. Custom package sources, when present, use HTTPS, contain no credentials, and declare reviewed priority
-4. `VIRTUAL_ENV` not interfering with pyenv Python selection
+4. The calling shell has no unwanted `VIRTUAL_ENV` that interferes with pyenv selection
 5. Python 3.10+ available via pyenv
 
 ## Execution
@@ -33,7 +33,7 @@ enforcing the mandatory Poetry environment policy:
 1. **Check 1**: Poetry is available on PATH from the approved isolated tool installation
 2. **Check 2**: `poetry.toml` exists and contains `in-project = true`
 3. **Check 3**: declared package sources use HTTPS, contain no embedded credentials, and set an approved priority
-4. **Check 4**: `VIRTUAL_ENV` env var not set (would shadow pyenv Python)
+4. **Check 4**: caller `VIRTUAL_ENV`, captured before Poetry starts, does not shadow pyenv
 5. **Check 5**: Python version in Poetry venv matches `pyproject.toml` requirement
 6. **Check 6**: pyenv installed and shims on PATH
 7. **Check 7**: `~/.local/bin` on PATH before system directories
@@ -65,5 +65,6 @@ If any of checks 1–3 fail, the agent MUST:
 
 ## Detailed reference
 
-Read [references/quick-reference.md](references/quick-reference.md) only when
-the standard diagnose/fix/verify workflow needs expanded troubleshooting.
+Read [references/pyenv-poetry-recovery.md](references/pyenv-poetry-recovery.md)
+when a login-shell environment, zsh initialisation, incomplete pyenv build, or
+Poetry-environment rebuild needs expanded troubleshooting.

@@ -16,6 +16,17 @@ main() {
   local command="${1:-}"
   shift || true
 
+  # Poetry sets VIRTUAL_ENV for its child process. Preserve whether the caller
+  # had an externally activated environment so Python checks do not mistake
+  # Poetry's own venv for a shell-configuration fault.
+  if [[ -n "${VIRTUAL_ENV:-}" ]]; then
+    export AGENT_PARENT_VIRTUAL_ENV_SET=1
+    export AGENT_PARENT_VIRTUAL_ENV="$VIRTUAL_ENV"
+  else
+    export AGENT_PARENT_VIRTUAL_ENV_SET=0
+    unset AGENT_PARENT_VIRTUAL_ENV
+  fi
+
   case "$command" in
     diagnose)
       run_agent_python "$REPO_ROOT" "$REPO_ROOT/.agents/scripts/python-env-setup/diagnose.py" "$@"

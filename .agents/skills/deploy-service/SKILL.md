@@ -42,6 +42,8 @@ activation boundary.
    artefact/host compatibility boundary.
 8. For fresh host, reverse proxy, TLS, DNS, firewall, VPN, or systemd work, read
    [host-bootstrap.md](references/host-bootstrap.md).
+9. For dual-stack reverse-proxy or Cloudflare-origin failures, read
+   [dual-stack-ingress.md](references/dual-stack-ingress.md).
 
 Stop for approval before changing public DNS, firewall policy, credentials,
 production data, privileged command boundaries, destructive retention, or an

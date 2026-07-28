@@ -6,10 +6,16 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+from pytest import MonkeyPatch
+
 ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(ROOT / ".agents" / "scripts" / "python-env-setup"))
 
-from diagnose import EnvironmentDiagnostics, Issue  # type: ignore[import-not-found]  # noqa: E402
+from diagnose import (  # type: ignore[import-not-found]  # noqa: E402
+    EnvironmentDiagnostics,
+    Issue,
+    parent_virtual_env,
+)
 
 
 def test_hybrid_scikit_build_still_requires_poetry_toml(tmp_path: Path) -> None:
@@ -67,3 +73,17 @@ def test_reviewed_custom_source_passes(tmp_path: Path) -> None:
         'priority = "supplemental"\n',
     )
     assert not any(issue.severity == Issue.CRITICAL for issue in issues)
+
+
+def test_parent_virtual_env_ignores_poetry_child_environment(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("VIRTUAL_ENV", "/project/.venv")
+    monkeypatch.setenv("AGENT_PARENT_VIRTUAL_ENV_SET", "0")
+
+    assert parent_virtual_env() is None
+
+    diagnostics = EnvironmentDiagnostics()
+    diagnostics.check_virtual_env_variable()
+
+    assert diagnostics.issues[0].severity == Issue.OK
