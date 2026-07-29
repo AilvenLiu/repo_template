@@ -53,7 +53,7 @@ The skill analyzes:
 
 ## Installation
 
-The skill is included in the repository template. When you copy the template to a new project:
+The skill is included in Agent Foundry's project template. When you copy the template to a new project:
 
 ```bash
 # The skill is already included in .claude/skills/init/
@@ -273,4 +273,4 @@ To improve the `/init` skill:
 
 ## License
 
-This skill is part of the repository template and follows the same license (CC BY-NC-SA 4.0).
+This skill is part of Agent Foundry and follows the same licence (CC BY-NC-SA 4.0).

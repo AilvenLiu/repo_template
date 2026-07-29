@@ -386,7 +386,7 @@ def _audit_project_skills(
         required = bool(entry.get("required", False))
         # Every enabled skill has one canonical body under .agents/skills.
         # template_only controls generated-project inclusion, not native Codex
-        # discovery inside this template repository.
+        # discovery inside this Agent Foundry source repository.
         agents_skill_md = agents_skills_root / skill_id / "SKILL.md"
 
         claude_skill_md = claude_skills_root / skill_id / "SKILL.md"

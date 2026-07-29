@@ -36,5 +36,5 @@ one-line fixes, use judgment.
 
 ## Source
 
-Adapted for this repository template from
+Adapted for Agent Foundry from
 `forrestchang/andrej-karpathy-skills` (MIT).

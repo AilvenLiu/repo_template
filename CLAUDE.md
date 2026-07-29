@@ -65,7 +65,7 @@ validation command or explain why it could not be run:
 
 ## Bundled Behavioural Skill
 
-This template vendors `karpathy-guidelines` locally under `.claude/skills/`.
+Agent Foundry vendors `karpathy-guidelines` locally under `.claude/skills/`.
 
 Use it for non-trivial coding, debugging, review, and refactor work to keep
 assumptions explicit, changes surgical, and completion criteria verifiable.
@@ -92,8 +92,8 @@ described there using Claude Code's tool and hook system.
 
 ## Project-Specific Instructions
 
-This is the **template repository**. Language-specific source files for
-generated projects live under `templates/`:
+This is the **Agent Foundry source repository**. Its project-template source
+files for generated projects live under `templates/`:
 
 - **Python projects**: see `templates/python/CLAUDE.md` and `templates/python/AGENTS.md`
 - **C++/CUDA projects**: see `templates/cpp/CLAUDE.md` and `templates/cpp/AGENTS.md`

@@ -4,7 +4,7 @@ This directory is a temporary workspace for multi-session roadmaps.
 
 ## Current State
 
-No roadmap is active in the template repository.
+No roadmap is active in the Agent Foundry source repository.
 
 ## Rules
 

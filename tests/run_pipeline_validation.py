@@ -186,7 +186,7 @@ def main() -> int:
         for platform in ("claude", "codex")
     ]
 
-    with tempfile.TemporaryDirectory(prefix="repo-template-pipeline-") as tmp:
+    with tempfile.TemporaryDirectory(prefix="agent-foundry-pipeline-") as tmp:
         base = Path(tmp)
         for scenario in scenarios:
             print(validate_scenario(base, scenario))

@@ -62,7 +62,7 @@ common_requirements:
     - id: create-project
       required: true
       template_only: true
-      notes: Removed by the project generator; required only in template repo
+      notes: Removed by the project generator; required only in Agent Foundry
 
   repo_commands:
     - id: agent-init

@@ -1,6 +1,6 @@
 # Karpathy-Inspired Execution Guidelines
 
-> Adapted for this template from `forrestchang/andrej-karpathy-skills` (MIT).
+> Adapted for Agent Foundry from `forrestchang/andrej-karpathy-skills` (MIT).
 > These guidelines apply to all non-trivial coding, debugging, review, and refactor work.
 
 ## Overview

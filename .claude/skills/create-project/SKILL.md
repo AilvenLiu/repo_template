@@ -1,6 +1,6 @@
 ---
 name: create-project
-description: "Create a new Python, C++/CUDA, or hybrid project from this repository template. Use only in the template repository when initializing a new project tree."
+description: "Create a new Python, C++/CUDA, or hybrid project from Agent Foundry. Use only in the Agent Foundry source repository when initialising a new project tree."
 ---
 
 # /create-project
