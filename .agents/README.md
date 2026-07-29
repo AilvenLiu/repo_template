@@ -88,7 +88,7 @@ artifacts, but must not become the owner of compiler flags, CUDA architecture
 policy, native dependency discovery, native tests, benchmarks, or install/export
 targets.
 
-Run the fast policy sweep with:
+Run the fast policy sweep from the Agent Foundry root with:
 
 ```bash
 .agents/bin/agent-check-constraints

@@ -1,17 +1,19 @@
-# Agent Operating Constraints: Template Repository
+# Agent Foundry: Agent Operating Constraints
 
 ## About This File
 
-This is the **template repository**. In real projects created from this template,
-this file contains vendor-neutral agent operating constraints that work across
-different AI agent platforms (Claude Code, Codex, Cursor, etc.).
+This is the **Agent Foundry source repository**: a personal, vendor-neutral hub
+for reusable agent skills, constraints, runtime checks, and project blueprints.
+Its project-template capability creates real projects whose `AGENTS.md` files
+contain vendor-neutral operating constraints for Claude Code, Codex, Cursor,
+and other compatible agent platforms.
 
 The template maintains language-specific overlays under `templates/`:
 - `templates/python/AGENTS.md` — becomes `AGENTS.md` in Python projects
 - `templates/cpp/AGENTS.md` — becomes `AGENTS.md` in C++/CUDA projects
 - `templates/hybrid/AGENTS.md` — becomes `AGENTS.md` in hybrid Python/C++/CUDA projects
 
-When you create a project using `/create-project`, the appropriate overlay
+When you create a project from Agent Foundry using `/create-project`, the appropriate overlay
 is copied to the project root with the generic name `AGENTS.md`.
 
 ## Purpose
@@ -128,12 +130,12 @@ C++/Python hybrid templates are CMake first, CPM first, scikit-build-core bridge
 
 Conan, vcpkg, Bazel, and git submodules are exceptional choices for these templates and require an ADR.
 
-## For Template Users
+## Creating a Project from Agent Foundry
 
-To create a new project from this template:
+To create a new project from Agent Foundry's project template:
 
 ```bash
-# From a Claude Code session inside this template repo:
+# From a Claude Code session inside Agent Foundry:
 /create-project /path/to/new/project
 
 # Or manually:
@@ -157,5 +159,6 @@ copied from `templates/python/AGENTS.md`, `templates/cpp/AGENTS.md`, or
 
 ---
 
-**Note**: The sections below this line are template-only documentation. In real
-projects, this file contains the actual operating constraints for that project.
+**Note**: The sections below this line document the project-template source
+repository only. In generated projects, this file contains that project's
+actual operating constraints.

@@ -177,7 +177,7 @@ def main() -> int:
         )
         return 2
 
-    with tempfile.TemporaryDirectory(prefix="repo-template-live-agent-") as tmp:
+    with tempfile.TemporaryDirectory(prefix="agent-foundry-live-agent-") as tmp:
         base = Path(tmp)
         scenarios: list[tuple[str, str, Path]] = []
         for platform in platforms:

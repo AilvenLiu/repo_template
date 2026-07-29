@@ -1,9 +1,10 @@
-# Repository Template
+# Agent Foundry
 
-A repository template for Python, C++/CUDA, and hybrid AI-infra projects with
-vendor-neutral AI agent constraints and development standards. Copy it, pick a
-project profile, and get a working repo with `CLAUDE.md`, `AGENTS.md`, and full
-skill support across Claude Code and Codex-style `agents.md` consumers.
+Agent Foundry is a personal, cross-platform agent-engineering hub: reusable
+skills, constraints, runtime checks, and project blueprints for Python,
+C++/CUDA, and hybrid repositories. Its project-template capability lets you
+generate a working repository with `CLAUDE.md`, `AGENTS.md`, and full skill
+support across Claude Code and Codex-style `agents.md` consumers.
 
 ## Overview
 
@@ -11,20 +12,21 @@ See [Agent instruction compatibility](docs/agent-instruction-compatibility.md)
 for the cross-platform hierarchy model, validation procedure, and migration
 guidance for previously generated repositories.
 
-Language-specific source files live under `templates/<language>/` with their
-generic names (`CLAUDE.md`, `AGENTS.md`, `CONTRIBUTING.md`, `.gitignore`,
-`project.yml`). The `/create-project` skill copies the shared template tree
-(`.agents/`, `.claude/`, `.codex/`, `.github/`, `agent_roadmaps/`) and overlays the chosen
-language's directory onto the target. The copied `agent_roadmaps/` directory is
-an empty placeholder for temporary roadmap state only; generated projects must
-not inherit historical roadmap files.
+Language-specific project-blueprint files live under `templates/<language>/`
+with their generic names (`CLAUDE.md`, `AGENTS.md`, `CONTRIBUTING.md`,
+`.gitignore`, `project.yml`). The `/create-project` skill copies the shared
+template tree (`.agents/`, `.claude/`, `.codex/`, `.github/`,
+`agent_roadmaps/`) and overlays the chosen language's directory onto the
+target. The copied `agent_roadmaps/` directory is an empty placeholder for
+temporary roadmap state only; generated projects must not inherit historical
+roadmap files.
 
 The recommended way to create a project is `/create-project` (see below).
 
 ## Quick Start
 
 ```bash
-# From a Claude Code session inside this template repo:
+# From a Claude Code session inside Agent Foundry:
 /create-project /path/to/new/project
 
 # Or manually:
@@ -38,10 +40,10 @@ initial git commit.
 
 ## Contents
 
-### Template-Level Files (this repo only, not copied to generated projects)
+### Foundry-Level Files (this repository only, not copied to generated projects)
 
-- `AGENTS.md` -- describes the architecture for humans browsing the template
-- `CLAUDE.md` -- explains the template structure and points at `templates/`
+- `AGENTS.md` -- describes the architecture for people browsing Agent Foundry
+- `CLAUDE.md` -- explains the project-template structure and points at `templates/`
 - `README.md` -- this file
 
 ### Language-Specific Overlays
@@ -70,7 +72,7 @@ templates/
     project.yml       -> .agents/project.yml
 ```
 
-### Shared Infrastructure (copied verbatim into generated projects)
+### Shared Agent Infrastructure (copied verbatim into generated projects)
 
 - `.agents/project.yml` -- machine-readable project type (source of truth, set
   by `/create-project` from `templates/<language>/project.yml`)
@@ -103,6 +105,11 @@ templates/
 | `/gpu-ci` | Profile-aware CUDA CI, GPU test, cache, and wheel-release guidance |
 
 ## Architecture
+
+Agent Foundry has two connected roles: it is the canonical home for reusable
+agent-engineering capabilities, and it distributes those capabilities through
+project blueprints. The generator is one part of the system, rather than the
+definition of the repository.
 
 In a real (non-template) repo, the key entrypoints are:
 

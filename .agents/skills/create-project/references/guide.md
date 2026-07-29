@@ -1,6 +1,6 @@
 # Create Project Skill
 
-A Claude Code skill for initializing new projects from the repo_template.
+A Claude Code skill for initialising new projects from Agent Foundry.
 
 ## Overview
 
@@ -8,7 +8,7 @@ This skill automates the process of creating a new Python, C++/CUDA, or Hybrid (
 
 ## Installation
 
-This skill is part of the repo_template and should be used from within the template directory.
+This skill is part of Agent Foundry and should be used from within its source repository.
 
 ## Quick Start
 
@@ -143,4 +143,4 @@ project/
 
 ## License
 
-This skill is part of the repo_template project and follows the same license (Creative Commons BY-NC-SA 4.0).
+This skill is part of Agent Foundry and follows the same licence (Creative Commons BY-NC-SA 4.0).

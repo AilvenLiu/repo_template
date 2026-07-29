@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Initialize a new project from the repo_template.
+"""Initialise a new project from Agent Foundry.
 
 Copies the shared template tree (.agents/, .claude/, .codex/, .github/, agent_roadmaps/) verbatim,
 then overlays the language-specific files from
@@ -334,7 +334,7 @@ def create_project(template_root: Path, target_dir: Path, project_type: str) -> 
             ["git", "add", "."], cwd=target_dir, capture_output=True, check=True
         )
         subprocess.run(
-            ["git", "commit", "-m", "chore: initialise project from repo_template"],
+            ["git", "commit", "-m", "chore: initialise project from agent-foundry"],
             cwd=target_dir,
             capture_output=True,
             check=True,

@@ -1,1 +1,1 @@
-"""Test suite for repo_template."""
+"""Test suite for Agent Foundry."""

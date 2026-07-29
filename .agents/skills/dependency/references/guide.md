@@ -121,4 +121,4 @@ See [SKILL.md](SKILL.md) for comprehensive documentation including:
 
 ## Licence
 
-This skill is part of the repo_template project and follows the same licence (Creative Commons BY-NC-SA 4.0).
+This skill is part of Agent Foundry and follows the same licence (Creative Commons BY-NC-SA 4.0).

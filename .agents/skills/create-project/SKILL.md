@@ -1,6 +1,6 @@
 ---
 name: create-project
-description: "Create a new project from the repo_template. Supports Python, C++/CUDA, and Hybrid projects. Template-only skill."
+description: "Create a new project from Agent Foundry. Supports Python, C++/CUDA, and hybrid projects. Source-repository-only skill."
 ---
 
 # /create-project

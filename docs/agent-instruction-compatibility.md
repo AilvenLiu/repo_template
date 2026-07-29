@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This template supports Claude Code, Codex, and agents that read `AGENTS.md`.
+Agent Foundry supports Claude Code, Codex, and agents that read `AGENTS.md`.
 Repository policy must remain strong without claiming authority that a local
 file cannot have. This document records the compatibility model, validation
 procedure, and migration path for projects generated before this hardening.
@@ -86,7 +86,7 @@ but they are excluded from the scanner's production-source scope.
 
 ## Validation
 
-Run the static checks from the template root:
+Run the static checks from the Agent Foundry root:
 
 ```bash
 .agents/bin/agent-check-constraints
