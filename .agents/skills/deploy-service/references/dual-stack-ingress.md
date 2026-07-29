@@ -64,6 +64,52 @@ edge. Interpret the first failing layer rather than applying unrelated fixes:
 Run the probes from the host and from an external client where feasible. A VPN
 resolver can prove private DNS, but it cannot prove public edge reachability.
 
+## Diagnose a Cloudflare 525 without guessing
+
+An edge `525` means the TLS handshake between Cloudflare and the origin did
+not complete. Do not immediately change DNS records, reissue an Origin CA
+certificate, or weaken the edge TLS mode. First collect evidence that separates
+a shared origin failure from a hostname-specific virtual-host difference.
+
+1. Record the failing hostname, UTC timestamp, Cloudflare Ray ID, and edge
+   status. Test both the apex and canonical host when one redirects to the
+   other.
+2. Bypass Cloudflare while retaining the real hostname and SNI. Test every
+   published origin address explicitly:
+
+   ```bash
+   curl -kI --resolve 'example.com:443:203.0.113.10' https://example.com/
+   curl -g -kI --resolve 'example.com:443:[2001:db8::10]' https://example.com/
+   ```
+
+   `-k` is expected for a direct request to a Cloudflare Origin CA
+   certificate; it is not appropriate for the public edge check.
+3. If the direct requests succeed and another proxied hostname on the same
+   origin succeeds, compare the effective TLS settings of the working and
+   failing Nginx virtual hosts. Inspect `nginx -T`, not only the expected
+   configuration file. Compare certificate and key paths, protocol versions,
+   `ssl_ciphers`, `ssl_prefer_server_ciphers`, `ssl_ecdh_curve`, client-certificate
+   verification, `ssl_conf_command`, `ssl_reject_handshake`, listener/default
+   server selection, and included files.
+4. Use one reviewed TLS policy for equivalent virtual hosts. When the working
+   host has an explicit compatible policy that the failing host lacks, add the
+   same policy to the failing host, validate with `sudo nginx -t`, then reload
+   Nginx. For example, a policy already used by a working host may be:
+
+   ```nginx
+   ssl_ciphers HIGH:!aNULL:!MD5;
+   ssl_prefer_server_ciphers on;
+   ```
+
+   This is a configuration-normalisation step, not a reason to disable Full
+   (strict) or expose an Origin CA certificate directly to browsers.
+5. Recheck the public path over IPv4 and IPv6 after the reload, including the
+   redirect target. Keep the configuration backup until both paths have passed.
+
+If a packet capture is needed, verify that it is non-empty before drawing any
+conclusion. A zero-byte `.pcap` means the capture did not initialise; it is not
+evidence that Cloudflare sent no traffic.
+
 ## Confirm the runtime, not only the proxy
 
 Check the expected topology and loopback endpoint before treating a `502` as an

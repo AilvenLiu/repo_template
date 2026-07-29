@@ -81,6 +81,23 @@ def test_host_deployment_skill_owns_host_contract() -> None:
     assert not (references / "github-actions.md").exists()
 
 
+def test_dual_stack_ingress_covers_cloudflare_525_vhost_diagnosis() -> None:
+    reference = (
+        ROOT / ".agents/skills/deploy-service/references/dual-stack-ingress.md"
+    ).read_text()
+    required = (
+        "Diagnose a Cloudflare 525 without guessing",
+        "edge `525`",
+        "another proxied hostname",
+        "failing Nginx virtual hosts",
+        "Inspect `nginx -T`",
+        "ssl_prefer_server_ciphers",
+        "zero-byte `.pcap`",
+    )
+    for phrase in required:
+        assert phrase in reference
+
+
 def test_service_cicd_skill_owns_github_actions_contract() -> None:
     skill = (ROOT / ".agents/skills/service-cicd/SKILL.md").read_text()
     required = (
