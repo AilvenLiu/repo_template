@@ -20,11 +20,22 @@ listener even when the new website itself works.
 
 ## Identities and filesystem boundaries
 
-- Use a dedicated service or deployment account with no broad sudo access.
+- Unless durable reviewed project policy says otherwise, create one
+  unprivileged deployment account named `deploy` with no interactive shell or
+  broad sudo access. Make it own the approved service deployment root; keep
+  privileged helpers and host policy root-owned.
+- GitHub Actions deploys through a repository- and environment-scoped
+  credential for `deploy` and one fixed forced command or exact `sudo -n`
+  allow-list. A self-hosted runner uses a different identity and cannot write
+  `deploy`-owned production paths.
 - Keep private keys and privileged configuration root-owned with restrictive
   modes.
 - Give the runtime only the read/write paths it needs. Keep releases immutable
   and persistent state outside release directories.
+- If a local database is required, create a deploy-managed root beneath
+  `/data/database/`, `~/data/database/`, or another approved data volume.
+  Delegate only the engine child that its runtime identity must own, and verify
+  backup and restore before cutover.
 - Verify directory traversal permissions for the reverse-proxy worker without
   making unrelated directories broadly writable.
 

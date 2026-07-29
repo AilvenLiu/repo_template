@@ -6,6 +6,9 @@ roots are `/data/www/<service>`, `~/data/www/<service>`, or another
 operator-approved dedicated data volume. Do not use `/var/`, `/srv/`, `/opt/`,
 `/usr/`, `/usr/local/`, or another system-owned hierarchy unless a durable,
 reviewed project-specific deployment policy explicitly permits that exception.
+Unless that policy also says otherwise, the canonical unprivileged `deploy`
+account owns the selected deployment root and privileged helpers remain
+root-owned.
 
 ## Layout
 

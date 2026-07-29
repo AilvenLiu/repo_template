@@ -26,7 +26,11 @@ an approved operator action using a verified `master` artefact. Unless a durable
 reviewed project-specific policy says otherwise, activation metadata must name a
 canonical dedicated data root beneath `/data/`, `~/data/`, or another approved
 data volume; it must reject system-owned roots such as `/var/`, `/srv/`, or
-`/opt/`.
+`/opt/`. The root must be owned by the canonical unprivileged `deploy` account.
+If the service uses a local database, activation metadata must also identify its
+separate deploy-managed root beneath `/data/database/`, `~/data/database/`, or
+another approved data volume without granting the release workflow permission
+to alter database contents.
 
 ## Privileged activation
 

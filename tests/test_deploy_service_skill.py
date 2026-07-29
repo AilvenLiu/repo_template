@@ -50,6 +50,11 @@ def test_generated_project_loads_split_service_skills(
         assert "automatic release run only after `master` is updated" in body
         assert "canonical root beneath `/data/`, `~/data/`" in body
         assert "never uses `/var/`, `/srv/`, `/opt/`, `/usr/`, `/usr/local/`" in body
+        assert "GitHub Actions is the recommended automatic-deployment" in body
+        assert "host account named `deploy`" in body
+        assert "`deploy` owns the approved service root" in body
+        assert "/data/database/<service-or-engine>" in body
+        assert "~/data/database/<service-or-engine>" in body
 
 
 def test_host_deployment_skill_owns_host_contract() -> None:
@@ -59,6 +64,10 @@ def test_host_deployment_skill_owns_host_contract() -> None:
         "~/data/www/<service>",
         "dedicated data volume",
         "reject `/var/`",
+        "canonical unprivileged deployment account",
+        "`deploy`-owned root",
+        "/data/database/<service-or-engine>",
+        "~/data/database/<service-or-engine>",
         "immutable CI-built artefact",
         "Never run a newly uploaded script as root",
         "activation atomic",
@@ -156,6 +165,44 @@ def test_self_hosted_ci_and_ssh_deploy_have_separate_contracts() -> None:
     assert "self-hosted ci compute is not a deployment identity" in (
         deployment_constraint.lower()
     )
+
+
+def test_default_deploy_identity_and_local_database_root_are_consistent() -> None:
+    deployment_constraint = (
+        ROOT / ".agents/constraints/common/service-deployment.md"
+    ).read_text()
+    cicd_constraint = (
+        ROOT / ".agents/constraints/common/github-actions-cicd.md"
+    ).read_text()
+    host_layout = (
+        ROOT / ".agents/skills/deploy-service/references/host-layout.md"
+    ).read_text()
+    github_actions = (
+        ROOT / ".agents/skills/service-cicd/references/github-actions.md"
+    ).read_text()
+
+    for body in (
+        deployment_constraint,
+        cicd_constraint,
+        host_layout,
+        github_actions,
+    ):
+        assert "`deploy`" in body
+        assert "/data/database/<service-or-engine>" in body
+        assert "~/data/database/<service-or-engine>" in body
+
+    assert "MUST own the approved service deployment root" in deployment_constraint
+    assert "owns the approved dedicated" in cicd_constraint
+    assert "service root" in cicd_constraint
+    assert "must be owned by `deploy`" in host_layout
+    assert "owns the approved" in github_actions
+    assert "service root" in github_actions
+    assert "GitHub Actions is the recommended automatic-deployment" in (
+        deployment_constraint
+    )
+    assert "different principal" in deployment_constraint
+    assert "privileged helpers remain root-owned" in cicd_constraint
+    assert "engine-specific child directory" in deployment_constraint
 
 
 def test_both_service_contracts_are_required_and_always_loaded() -> None:

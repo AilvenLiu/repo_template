@@ -28,6 +28,22 @@ configuration. If a stable path is a symlink to a separate disk, resolve it and
 verify every managed path stays on the approved dedicated data filesystem. Never
 derive the root from release input.
 
+## Canonical ownership
+
+Unless a durable, reviewed project-specific deployment policy says otherwise,
+create one unprivileged host deployment account named `deploy`. The approved
+service root and its staging, releases, metadata, locks, and deploy-managed
+persistent paths must be owned by `deploy`. For a rootless path, `~/data/`
+means this account's home data root, normally `/home/deploy/data/`, and must be
+resolved before it is written to configuration.
+
+Keep privileged activation helpers, sudoers rules, unit policy, and proxy
+configuration root-owned. A service runtime account receives only its required
+read, traversal, or writable-state access. A self-hosted CI runner uses a
+different principal and has no writable path beneath the `deploy`-owned root.
+Scope each repository and environment to a separate credential and fixed helper
+allow-list even when several services share the canonical account name.
+
 ## Recommended shape
 
 ```text
@@ -50,6 +66,30 @@ data root. Document ownership and backup for each writable path.
 Staging and final releases should share a filesystem when activation depends on
 atomic rename. Capacity planning must allow the new staged release, live
 release, rollback target, retained evidence, and growth during activation.
+
+## Local database namespace
+
+When the service requires a database on the host, keep it outside
+`<deployment-root>` in a unified database namespace:
+
+```text
+<data-root>/
+|-- www/<service>/
+`-- database/<service-or-engine>/
+```
+
+Prefer `/data/database/<service-or-engine>`. For rootless or single-user
+operation, use `~/data/database/<service-or-engine>` where `~` resolves to the
+`deploy` account's home. Another dedicated data volume may use the same
+`database/` namespace. Do not default to `/var/lib/`, `/srv/`, or a release
+directory.
+
+The database management root is created, maintained, and owned by `deploy`.
+Database engines commonly need their own least-privilege runtime identity to
+own raw data files; if so, delegate only the engine-specific child directory
+and record its modes, backup, restore, retention, monitoring, and migration
+boundary. Do not give the release workflow general read/write access to the
+database merely because `deploy` maintains the parent namespace.
 
 ## Containment and modes
 

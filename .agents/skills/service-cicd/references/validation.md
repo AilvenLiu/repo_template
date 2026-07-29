@@ -17,6 +17,10 @@
 - [ ] When self-hosted CI and production share a machine, CI and SSH deployment
       use separate principals with no overlapping credentials, privilege,
       helpers, groups, sockets, or writable paths.
+- [ ] Unless durable reviewed project policy says otherwise, the protected
+      deploy job authenticates as the unprivileged `deploy` account with a
+      repository- and environment-scoped credential; `deploy` owns the approved
+      service root and privileged helpers remain root-owned.
 
 ## Artefact and release review
 
@@ -36,6 +40,9 @@
       deployment root is on `/data/`, `~/data/`, or another approved dedicated
       data volume; no `/var/`, `/srv/`, `/opt/`, `/usr/`, or `/usr/local/` root
       is accepted.
+- [ ] A required local database uses a separate deploy-managed root beneath
+      `/data/database/`, `~/data/database/`, or another approved data volume,
+      outside releases and pruning, with engine-owned child delegation recorded.
 - [ ] Environment concurrency prevents overlap and out-of-order activation.
 - [ ] Release-specific health failure fails the job and preserves the last
       known-good release and diagnostic evidence.

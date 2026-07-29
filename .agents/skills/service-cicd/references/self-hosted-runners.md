@@ -27,6 +27,9 @@ sudo rules, privileged groups, writable directories, helpers, or production
 control sockets. Treat the CI principal as arbitrary code execution by anyone
 who can cause an authorised workflow to run. It MUST NOT read the deployment
 key, invoke the activation helper, or modify production releases or state.
+The deployment principal is named `deploy` by default and owns the approved
+service root; the runner principal must not be `deploy` and must not write that
+root or a deploy-managed database namespace.
 
 Membership of a container-daemon group is root-equivalent. A runner with that
 access does not satisfy process-only separation from production on the same

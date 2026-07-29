@@ -25,8 +25,9 @@ activation boundary.
    ownership, existing release layout, persistent data, backups, listeners,
    services, containers, routes, firewall, VPN, DNS, TLS, and recovery access.
 4. Record assumptions affecting availability or security: target hosts,
-   deployment root, runtime identity, persistent state, compatibility, health
-   surfaces, rollback objective, retention, and privilege boundary.
+   deployment root, `deploy` identity, runtime identity, persistent state,
+   local database root where applicable, compatibility, health surfaces,
+   rollback objective, retention, and privilege boundary.
 5. Select and document the deployment root using
    [host-layout.md](references/host-layout.md). Unless a durable, reviewed
    project-specific deployment policy says otherwise, use an independently
@@ -34,16 +35,23 @@ activation boundary.
    root, or another explicitly approved dedicated data volume. Do NOT use
    `/var/`, `/srv/`, `/opt/`, `/usr/`, `/usr/local/`, or another system-owned
    hierarchy as the default deployment root.
-6. Select the activation model:
+6. Unless a durable, reviewed project-specific deployment policy says
+   otherwise, provision the canonical unprivileged deployment account as
+   `deploy`, make it own the approved service root, and keep privileged helpers
+   root-owned. When a local database is required, reserve a separately managed
+   `deploy`-owned root such as `/data/database/<service-or-engine>` or
+   `~/data/database/<service-or-engine>`; document any narrowly delegated
+   engine-owned child directory.
+7. Select the activation model:
    - Static files: read [static-releases.md](references/static-releases.md).
    - Containers, native binaries, Python runtimes, or long-running services:
      read [service-releases.md](references/service-releases.md).
-7. Read [project-profiles.md](references/project-profiles.md) to verify the
+8. Read [project-profiles.md](references/project-profiles.md) to verify the
    artefact/host compatibility boundary.
-8. For fresh host, reverse proxy, TLS, DNS, firewall, VPN, or systemd work, read
+9. For fresh host, reverse proxy, TLS, DNS, firewall, VPN, or systemd work, read
    [host-bootstrap.md](references/host-bootstrap.md).
-9. For dual-stack reverse-proxy or Cloudflare-origin failures, read
-   [dual-stack-ingress.md](references/dual-stack-ingress.md).
+10. For dual-stack reverse-proxy or Cloudflare-origin failures, read
+    [dual-stack-ingress.md](references/dual-stack-ingress.md).
 
 Stop for approval before changing public DNS, firewall policy, credentials,
 production data, privileged command boundaries, destructive retention, or an
@@ -63,7 +71,10 @@ Unless the project-specific policy grants an explicit reviewed exception, the
 automated deploy workflow and host helper MUST use a canonical dedicated data
 root and reject `/var/`, `/srv/`, `/opt/`, `/usr/`, `/usr/local/`, and other
 system-owned deployment roots. A workflow input or existing host convention is
-not an exception.
+not an exception. GitHub Actions is the recommended automatic-deployment
+orchestrator; its protected deploy job uses a scoped credential for the
+canonical unprivileged `deploy` account and never the self-hosted runner
+identity.
 
 ## Enforce these invariants
 
@@ -79,9 +90,15 @@ not an exception.
   digest, host metadata, activation status, rollback target, and retention.
 - Verify digest, provenance when available, archive paths, and host compatibility
   before activation.
-- Keep the deploy principal unprivileged. Privileged activation uses a narrow,
-  persistent, root-owned helper through an exact forced-command or `sudo -n`
-  allow-list. Never run a newly uploaded script as root.
+- Keep the canonical `deploy` principal unprivileged and make it own the
+  approved service root. Privileged activation uses a narrow, persistent,
+  root-owned helper through an exact forced-command or `sudo -n` allow-list.
+  Never run a newly uploaded script as root.
+- Keep local database state in a separately managed `deploy`-owned root beneath
+  `/data/database/`, `~/data/database/`, or another approved data volume.
+  Delegate only an engine-specific child directory when its runtime identity
+  must own raw files; deployment, rollback, and pruning never imply permission
+  to mutate database state.
 - If self-hosted CI shares the production machine, give its runner and deploy
   path separate principals with no overlapping credentials, privileged groups,
   helpers, control sockets, or writable paths. The runner MUST NOT modify live
@@ -151,6 +168,7 @@ evidence, and make the failure actionable.
 
 Deliver or update host helpers, service/reverse-proxy configuration, tests, and
 operator runbooks actually required. Report the selected deployment root and
-why, ownership and privilege boundary, artefact contract, activation, health,
+why, the `deploy` account and ownership/privilege boundary, any local database
+root and delegated engine ownership, artefact contract, activation, health,
 rollback, retention, ingress, bootstrap steps still requiring an operator, and
 validation evidence. Use [validation.md](references/validation.md) for closure.

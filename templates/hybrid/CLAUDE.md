@@ -205,7 +205,14 @@ automatic production trigger. For a dedicated server, automatic deployment uses
 a canonical root beneath `/data/`, `~/data/`, or another approved dedicated data
 volume; it never uses `/var/`, `/srv/`, `/opt/`, `/usr/`, `/usr/local/`, or
 another system-owned hierarchy without a durable, reviewed project-specific
-exception.
+exception. GitHub Actions is the recommended automatic-deployment orchestrator.
+Its protected deploy job uses a scoped credential for the canonical unprivileged
+host account named `deploy`, and `deploy` owns the approved service root while
+privileged helpers remain root-owned. A required local database uses a separate
+deploy-managed root such as `/data/database/<service-or-engine>` or
+`~/data/database/<service-or-engine>`, outside immutable releases. The
+management root is owned and maintained by `deploy`; any engine-owned child
+directory must be narrowly delegated and documented.
 
 ## Vendor-Neutral Constraints
 

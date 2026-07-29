@@ -33,6 +33,56 @@ approved dedicated data root after symlink resolution, have explicit ownership
 and modes, and have enough capacity for staging plus rollback. User-controlled
 release input MUST NOT select or interpolate the root.
 
+## Default Deployment Identity and Ownership
+
+Unless a durable, reviewed project-specific deployment policy explicitly
+states otherwise, automatic deployment to a dedicated server MUST use one
+canonical, unprivileged host account named `deploy`.
+GitHub Actions is the recommended automatic-deployment orchestrator: an
+isolated, protected deploy
+job authenticates as `deploy` with a repository- and environment-scoped
+credential and invokes one fixed host interface. Reusing the account name
+across services does not permit shared credentials, unrestricted shell access,
+or a helper that can select arbitrary services or paths.
+
+The `deploy` account MUST own the approved service deployment root and the
+staging, release, metadata, lock, and deploy-managed persistent-state paths
+beneath it. It MUST NOT own privileged activation helpers, sudoers policy,
+service-manager policy, reverse-proxy configuration, or other root trust
+boundaries. A separate runtime identity MAY receive only the read, traversal,
+or writable-state access its service needs. A co-located self-hosted Actions
+runner MUST use a different principal and MUST NOT be able to write any
+`deploy`-owned production path.
+
+For rootless operation, `~/data/` means the `deploy` account's home data root,
+normally `/home/deploy/data/`; provisioning MUST resolve it to an absolute
+path. An alternate deployment account or ownership model requires the same
+durable, reviewed project-specific exception as an alternate deployment root.
+
+## Local Database Root
+
+When a deployed project requires a database on the same host, its database
+state MUST use a separately managed canonical root on the approved data
+filesystem, outside every release directory. Choose in this order:
+
+1. `/data/database/<service-or-engine>` or another canonical path beneath
+   `/data/database/`.
+2. `~/data/database/<service-or-engine>` beneath the `deploy` account's home
+   for rootless or single-user operation.
+3. A documented `database/` namespace on another operator-approved dedicated
+   data volume.
+
+Do not default local database state to `/var/lib/`, `/srv/`, an application
+release, or another system-owned hierarchy. The canonical database management
+root MUST be created, maintained, and owned by `deploy`, with explicit modes,
+capacity, backup, restore, retention, and monitoring policy. When a database
+engine requires its own runtime identity to own raw data files, delegate only
+the engine-specific child directory, record that ownership boundary, and keep
+the parent management root under `deploy`; do not broaden the deployment
+workflow's access to database contents. Schema migration, database deletion,
+restore, and retention remain separate explicitly authorised state operations,
+not implied deployment permissions.
+
 ## Release and State Boundaries
 
 - Production deploys MUST consume an immutable, CI-built artefact. Do not run
@@ -72,7 +122,8 @@ create that exception.
 
 ## Identity and Privilege
 
-- Run the service and deployment as dedicated, least-privilege identities.
+- Use the canonical `deploy` account for automated host deployment and a
+  separate least-privilege runtime identity where the service needs one.
 - Self-hosted CI compute is not a deployment identity. If a persistent Actions
   runner shares the production machine, its principal, credentials, privileged
   groups, helpers, control sockets, and writable paths MUST NOT overlap the

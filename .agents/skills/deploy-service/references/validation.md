@@ -4,6 +4,16 @@
 
 - [ ] The selected deployment root follows the documented mount/ownership
       decision and is absolute in host configuration.
+- [ ] Unless a durable reviewed exception applies, the unprivileged deployment
+      account is named `deploy` and owns the approved service root; privileged
+      helpers remain root-owned.
+- [ ] GitHub Actions uses a repository- and environment-scoped credential for
+      `deploy`; any co-located self-hosted runner uses a different principal
+      and cannot write production paths.
+- [ ] A required local database has a separate deploy-managed root beneath
+      `/data/database/`, `~/data/database/`, or another approved data volume,
+      with any engine-owned child delegation and backup/restore boundary
+      documented.
 - [ ] Capacity supports staging, live, rollback, evidence, and expected growth.
 - [ ] Canonical path checks reject traversal, absolute archive entries, symlink
       escape, device files, and cleanup outside the approved root.
@@ -44,6 +54,7 @@
 
 ## Closure evidence
 
-- [ ] Record root decision, ownership, release id, source SHA, digest, host
-      status, health results, cleanup output, disk usage, and rollback evidence.
+- [ ] Record root decision, `deploy` ownership, any database root/delegation,
+      release id, source SHA, digest, host status, health results, cleanup
+      output, disk usage, and rollback evidence.
 - [ ] State every check not run and the resulting production risk.

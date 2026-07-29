@@ -7,6 +7,8 @@ Bind every deployment claim to the following tuple:
 - workflow run and immutable source SHA
 - release identifier and artefact digest
 - protected environment and deployment target identity
+- canonical host account (`deploy` by default), approved service-root
+  ownership, and any separately managed local database root
 - host activation timestamp and previous release
 - service, worker, loopback, origin, and public ingress evidence
 
@@ -16,7 +18,8 @@ Configure the deployment target through protected environment secrets or an
 approved identity mechanism. Do not print the host value, SSH private key,
 environment file, or certificate material. The fixed host helper should return
 a non-secret host identity such as a configured target label and hostname, plus
-the activated release identifier and UTC timestamp.
+the activated release identifier, canonical deployment account, approved root
+identifier, and UTC timestamp.
 
 The CI summary should compare that result with the intended environment and
 release. If the reported host identity, release identifier, or activation time

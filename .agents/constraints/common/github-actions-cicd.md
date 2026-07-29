@@ -34,8 +34,10 @@ used independently or together:
   key, production secret, sudo rule, or production activation authority.
 - Pattern B promotes an immutable verified artefact from an isolated
   GitHub-hosted deploy job through a repository- and environment-scoped SSH
-  identity and one narrow host interface. It remains the deployment mechanism
-  even when Pattern A built the artefact.
+  credential to the canonical unprivileged host account named `deploy` and one
+  narrow host interface. The `deploy` account owns the approved dedicated
+  service root; privileged helpers remain root-owned. Pattern B remains the
+  deployment mechanism even when Pattern A built the artefact.
 
 When both patterns involve the same machine, their operating-system principals,
 credentials, privileged groups, helpers, control sockets, and writable paths
@@ -72,6 +74,10 @@ different authorisation, automatic publication and production deployment MAY run
 only after an update to `master`. On GitHub, use a `push` event restricted to
 `master` and promote the exact `github.sha` from that event.
 
+- GitHub Actions is the recommended automatic-deployment orchestrator for this
+  policy. The protected deploy job MUST authenticate as `deploy` by default,
+  use a repository- and environment-scoped credential, and invoke only the
+  fixed host interface.
 - Do not auto-publish or auto-deploy from pull requests, merge requests, tags,
   scheduled runs, manual dispatches, `develop`, `release/*`, or `hotfix/*`.
 - Build and promote an immutable artefact whose manifest records that exact
@@ -82,6 +88,13 @@ only after an update to `master`. On GitHub, use a `push` event restricted to
   `/data/`, `~/data/`, or another operator-approved dedicated data volume. It
   MUST NOT use `/var/`, `/srv/`, `/opt/`, `/usr/`, `/usr/local/`, or another
   system-owned hierarchy without a durable, reviewed project-specific exception.
+  The root MUST be owned by `deploy`; for `~/data/`, `~` is the `deploy`
+  account's home and MUST be resolved before use.
+- When the service needs a local database, the host contract MUST reserve a
+  separate deploy-managed root such as `/data/database/<service-or-engine>` or
+  `~/data/database/<service-or-engine>`. Database state MUST remain outside
+  release artefacts and deployment pruning; engine-specific ownership is
+  delegated only as documented by `common/service-deployment.md`.
 - Manual release, deployment, or rollback is an operator action. It needs
   explicit approval and still promotes a verified artefact from `master`; it
   cannot silently become an automatic alternative channel.

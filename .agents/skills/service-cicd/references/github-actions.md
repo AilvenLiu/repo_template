@@ -11,6 +11,9 @@ GitHub-hosted runner or a self-hosted runner.
 When both patterns involve the same machine, the self-hosted CI identity and
 the deployment identity MUST be separate principals with no overlapping
 credentials, privilege, helpers, production groups, or writable paths.
+Unless durable reviewed project policy says otherwise, the deployment identity
+is the canonical unprivileged host account named `deploy`; it owns the approved
+service root while privileged helpers remain root-owned.
 
 ## Events and workflow structure
 
@@ -41,13 +44,20 @@ and needs explicit authorisation for a verified `master` artefact. For a dedicat
 server, privileged deployment must use a canonical root under `/data/`, `~/data/`,
 or another approved dedicated data volume; it must reject `/var/`, `/srv/`,
 `/opt/`, `/usr/`, `/usr/local/`, and other system-owned roots unless a durable,
-reviewed project-specific deployment policy grants that exception.
+reviewed project-specific deployment policy grants that exception. GitHub
+Actions is the recommended automatic-deployment orchestrator. Its protected job
+authenticates as `deploy` with a repository- and environment-scoped credential,
+and `deploy` owns the approved service root. When the service needs a local
+database, use a separate deploy-managed root such as
+`/data/database/<service-or-engine>` or
+`~/data/database/<service-or-engine>` and keep it outside release pruning.
 
 ## Artefact transfer and host invocation
 
 Pattern B uses an isolated GitHub-hosted deploy job with a repository- and
-environment-scoped SSH identity. Do not run this job as the Pattern A
-self-hosted CI principal, including when CI and production share a machine.
+environment-scoped SSH credential for `deploy`. Do not run this job as the
+Pattern A self-hosted CI principal, including when CI and production share a
+machine.
 
 1. Download the exact build-job artefact without rebuilding it.
 2. Verify its digest and provenance in the privileged job.

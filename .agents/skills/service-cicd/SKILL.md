@@ -58,6 +58,13 @@ default deploy job targets a canonical root beneath `/data/`, `~/data/`, or
 another operator-approved dedicated data volume. It MUST NOT target `/var/`,
 `/srv/`, `/opt/`, `/usr/`, `/usr/local/`, or another system-owned hierarchy
 unless the durable project-specific deployment policy explicitly permits it.
+GitHub Actions is the recommended automatic-deployment orchestrator. Its
+protected deploy job uses a repository- and environment-scoped credential for
+the canonical unprivileged host account named `deploy`, which owns the approved
+service root. A local database uses a separate deploy-managed root such as
+`/data/database/<service-or-engine>` or
+`~/data/database/<service-or-engine>`; engine-owned children follow the host
+contract in `$deploy-service`.
 
 ## Preserve these invariants
 
@@ -73,6 +80,9 @@ unless the durable project-specific deployment policy explicitly permits it.
   holds no deployment key or production activation authority. When CI compute
   and the deployment target share a host, their principals, credentials,
   privileged groups, helpers, and writable paths do not overlap.
+- The protected deploy job authenticates as `deploy` by default and invokes one
+  fixed host interface. It does not share credentials between repositories or
+  environments, and it does not use the self-hosted runner identity.
 - The deployable artefact is built and tested once. Publishing and deployment
   promote the same verified bytes; neither job rebuilds from source.
 - A validated release id joins source SHA, artefact digest, workflow run,
@@ -147,5 +157,6 @@ risk rather than claiming unverified coverage.
 Deliver the workflow files, reusable workflow contracts, release metadata,
 tests, policy configuration, and operator documentation actually required.
 Report the event/channel model, build matrix, permission and secret boundaries,
-artefact/provenance identity, deployment interface, release and rollback flow,
-concurrency policy, and validation evidence.
+artefact/provenance identity, the `deploy` credential and host ownership
+boundary, any local database root contract, deployment interface, release and
+rollback flow, concurrency policy, and validation evidence.
