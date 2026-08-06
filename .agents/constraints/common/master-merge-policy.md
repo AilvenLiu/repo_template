@@ -19,8 +19,9 @@ arrive through their own reviewed PR/MR workflow.
 
 ## 2. Development-stage paths forbidden from master
 
-For a PR/MR targeting `master`, the diff MUST NOT add, modify, delete, or
-rename into or out of any of these paths:
+For a PR/MR targeting `master`, the source branch's file tree MUST NOT contain
+any of these paths — regardless of whether the paths were introduced in this
+PR's diff or in an earlier commit:
 
 - `.ai/`
 - `.agents/`
@@ -32,22 +33,32 @@ rename into or out of any of these paths:
 - `CODEX.md`
 - `docs/`, except `docs/changelog/`
 
-The policy applies to both the current and previous name of a renamed file.
-It is deliberately diff-based: a repository may have inherited development
-assets in its historical `master` tree, but no master-bound PR/MR may carry a
-change to one of these paths.
+The policy is **presence-based**: the gate enumerates every file in the source
+branch tree via the Git Trees API. If a forbidden path exists anywhere in the
+tree, the gate blocks. Historical master trees that already contain these
+assets are unaffected; the gate only applies to future PRs.
 
-## 3. Release-shim workflow
+To pass the gate, the source branch must be sanitised — see §3 below.
 
-Direct `develop` to `master` PRs/MRs are allowed by the source rule, but a
-release branch is the strongly preferred buffer:
+## 3. Release-shim workflow with mandatory sanitisation
+
+Direct `develop` to `master` PRs/MRs are allowed by the source rule, but are
+*practically* blocked by the tree check because `develop` always carries
+agent tooling (`.agents/`, `.claude/`, etc.). Only `release/*` and `hotfix/*`
+can pass after sanitisation.
+
+The required release-shim workflow:
 
 1. Select and record an immutable reviewed commit SHA on `develop`.
 2. Create `release/<name>` from that exact commit; do not force-update it.
-3. Run the profile-authoritative validation and the master merge gate.
-4. Open a same-repository `release/<name>` to `master` PR/MR with the source
-   SHA, validation evidence, and release notes.
-5. Merge only after required checks and independent approval pass.
+3. **Strip development-stage assets:** delete all forbidden paths from the
+   release branch tree and commit the cleanup before opening the master PR.
+   See the branch-governance skill for the exact command.
+4. Run the master merge gate and full profile validation against the release
+   branch.
+5. Open `release/<name>` to `master` PR/MR with the source SHA, validation
+   evidence, and release notes.
+6. Merge only after required checks and independent approval pass.
 
 An automated projection may create the release branch after a `develop` to
 `master` request is opened, but it MUST validate the source SHA and ancestry,
@@ -65,7 +76,7 @@ exact `master` SHA.
 Every generated repository MUST configure the `master-merge-gate` CI status as
 a required check for `master`, alongside the profile-authoritative validation
 status. The gate validates source branch, same-repository ownership, and the
-full paginated changed-file list.
+full recursive source-branch tree.
 
 For GitHub, use the checked-in `pull_request_target` workflow only to fetch and
 run the trusted `master` policy; it MUST NOT check out or execute pull-request
@@ -76,3 +87,18 @@ verify those hosted controls on their own.
 
 Read `.agents/skills/branch-governance/SKILL.md` before changing this policy,
 the workflow, hosted branch rules, or release-shim automation.
+
+## 5. Bootstrap: two-phase initial commit
+
+When a new project is created from the template, the initial commit uses a
+two-phase strategy so that `master` is clean of agent tooling from the start:
+
+- **Phase 1 (master):** commit only production files — no `docs/` (except
+  `docs/changelog/`), no `.agents/`, `.claude/`, `.codex/`, `.ai/`,
+  `agent_roadmaps/`, `AGENTS.md`, `CLAUDE.md`, or `CODEX.md`.
+- **Phase 2 (develop):** commit all remaining files including agent tooling
+  on the `develop` branch.
+
+This means `master` never contains development-stage assets, even in the
+initial commit. See `init.py` in the create-project skill for the
+implementation.

@@ -39,5 +39,5 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          python3 trusted-policy/.agents/scripts/master_merge_gate.py \
+          python3 trusted-policy/.github/scripts/master-merge-gate.py \
             --event-path "${GITHUB_EVENT_PATH}"

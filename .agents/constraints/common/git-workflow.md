@@ -31,9 +31,18 @@ absolutely forbidden.
 ### Master PR/MR Admission
 
 `master` accepts PRs/MRs only from same-repository `develop`, `release/*`, or
-`hotfix/*` branches. The master diff must exclude development-stage policy and
-agent paths; `docs/changelog/` is the sole allowed `docs/` subtree. Read
-`master-merge-policy.md` for the exact deny list and release-shim procedure.
+`hotfix/*` branches. The master merge gate uses a **presence-based** check:
+it enumerates every file in the source branch's tree via the Git Trees API
+and rejects the PR if any development-stage path exists — regardless of
+which commit introduced it. `docs/changelog/` is the sole allowed `docs/`
+subtree. Read `master-merge-policy.md` for the exact deny list and release-shim
+procedure.
+
+Note that `develop` → `master` is *technically* allowed by the source-rule
+but *practically* blocked by the tree check because `develop` always carries
+agent tooling (`.agents/`, `.claude/`, etc.). Only `release/*` and `hotfix/*`
+branches can pass after sanitisation.
+
 The `master-merge-gate` CI status and profile-authoritative validation MUST be
 required in hosted branch rules.
 

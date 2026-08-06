@@ -41,10 +41,26 @@ When a `develop` to `master` PR/MR is requested, strongly prefer a release shim:
 
 1. Validate and record the immutable reviewed `develop` SHA.
 2. Create `release/<name>` from that SHA without force-updating an existing ref.
-3. Run the master gate and full profile validation against the release branch.
-4. Open `release/<name>` to `master`, carrying source SHA, validation evidence,
+3. **Strip development-stage assets:** before opening the master PR, delete all
+   paths forbidden by the master merge policy from the release branch tree and
+   commit the cleanup. The master-merge-gate will reject any PR whose source
+   tree contains these paths:
+
+   ```bash
+   rm -rf .ai .agents .claude .codex agent_roadmaps
+   rm -f AGENTS.md CLAUDE.md CODEX.md
+   # Remove docs/ content except docs/changelog/
+   if [ -d docs ]; then
+     find docs -mindepth 1 -maxdepth 1 ! -name changelog -exec rm -rf {} +
+   fi
+   git add -A
+   git commit -m "chore: strip development-stage assets for master"
+   ```
+
+4. Run the master gate and full profile validation against the release branch.
+5. Open `release/<name>` to `master`, carrying source SHA, validation evidence,
    changelog, and rollback/release notes.
-5. Merge only after the protected checks and independent approval pass.
+6. Merge only after the protected checks and independent approval pass.
 
 An automated shim creator needs an identity that can create a new release
 branch and PR, but cannot force-update branches or merge to `master`. Validate

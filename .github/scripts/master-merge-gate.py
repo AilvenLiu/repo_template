@@ -1,5 +1,15 @@
 #!/usr/bin/env python3
-"""Validate the source branch and changed paths of a master-bound pull request."""
+"""Validate the source branch tree of a master-bound pull request.
+
+This is a **presence-based** gate, not a diff-based gate. It enumerates every
+file in the source branch's tree via the Git Trees API
+(GET /repos/{owner}/{repo}/git/trees/{sha}?recursive=1) and rejects the PR
+if any development-stage path exists in that tree — even if the file was
+introduced in an earlier commit and this PR's diff is empty for that path.
+
+The gate script is self-contained (stdlib only) because it lives in
+.github/scripts/ and must not depend on .agents/ packages.
+"""
 
 from __future__ import annotations
 
@@ -58,12 +68,13 @@ def validate_master_pull_request(
     head_ref: str,
     base_repository: str,
     head_repository: str,
-    changed_paths: Iterable[str],
+    source_tree_paths: Iterable[str],
 ) -> list[str]:
     """Return violations for a master-bound pull request.
 
-    The caller should include both current and previous names for renamed files.
-    A non-master target is outside this gate's scope and therefore has no findings.
+    Unlike the old diff-based gate, this checks the **source branch tree**
+    for forbidden paths. A path that exists in the source tree (even if it
+    was committed before this PR's diff range) is flagged as a violation.
     """
     if base_ref != MASTER_BRANCH:
         return []
@@ -76,10 +87,11 @@ def validate_master_pull_request(
 
     if not is_allowed_master_source(head_ref):
         violations.append(
-            "master accepts only develop, release/<name>, or hotfix/<name> as pull-request sources"
+            "master accepts only develop, release/<name>, or hotfix/<name> as "
+            "pull-request sources"
         )
 
-    for path in sorted(set(changed_paths)):
+    for path in sorted(set(source_tree_paths)):
         if is_development_only_path(path):
             violations.append(
                 f"development-stage path is forbidden in a master PR: {path}"
@@ -101,55 +113,66 @@ def _repository_name(value: Any, label: str) -> str:
     return _require_string(value, "full_name", label)
 
 
-def _fetch_changed_paths(
-    repository: str, pull_number: int, token: str
+def _fetch_source_tree(
+    repository: str, head_sha: str, token: str
 ) -> Sequence[str]:
+    """Enumerate every file path in the source branch tree via the Git Trees API.
+
+    Uses GET /repos/{owner}/{repo}/git/trees/{sha}?recursive=1 to retrieve
+    the full recursive tree for the given commit SHA.
+
+    Returns a list of file paths (not tree entries such as directories).
+    Raises RuntimeError if the tree is truncated (>100K entries) or the API
+    call fails.
+    """
     api_url = os.environ.get("GITHUB_API_URL", "https://api.github.com").rstrip("/")
     encoded_repository = quote(repository, safe="/")
-    paths: list[str] = []
+    encoded_sha = quote(head_sha, safe="")
 
-    for page in range(1, 101):
-        request = Request(
-            f"{api_url}/repos/{encoded_repository}/pulls/{pull_number}/files?per_page=100&page={page}",
-            headers={
-                "Accept": "application/vnd.github+json",
-                "Authorization": f"Bearer {token}",
-                "X-GitHub-Api-Version": "2022-11-28",
-            },
-        )
-        try:
-            with urlopen(request, timeout=30) as response:  # noqa: S310
-                response_data = json.load(response)
-        except (HTTPError, URLError, OSError, json.JSONDecodeError) as error:
-            raise RuntimeError(f"could not read pull-request files: {error}") from error
-
-        if not isinstance(response_data, list):
-            raise RuntimeError("pull-request files API returned an unexpected response")
-
-        for item in response_data:
-            if not isinstance(item, dict):
-                raise RuntimeError(
-                    "pull-request files API returned an invalid file entry"
-                )
-            paths.append(_require_string(item, "filename", "changed filename"))
-            previous_name = item.get("previous_filename")
-            if previous_name is not None:
-                if not isinstance(previous_name, str) or not previous_name:
-                    raise RuntimeError(
-                        "pull-request files API returned an invalid previous filename"
-                    )
-                paths.append(previous_name)
-
-        if len(response_data) < 100:
-            return paths
-
-    raise RuntimeError(
-        "pull request has more than 10,000 changed files; refusing to truncate validation"
+    request = Request(
+        f"{api_url}/repos/{encoded_repository}/git/trees/{encoded_sha}?recursive=1",
+        headers={
+            "Accept": "application/vnd.github+json",
+            "Authorization": f"Bearer {token}",
+            "X-GitHub-Api-Version": "2022-11-28",
+        },
     )
+    try:
+        with urlopen(request, timeout=30) as response:  # noqa: S310
+            response_data = json.load(response)
+    except (HTTPError, URLError, OSError, json.JSONDecodeError) as error:
+        raise RuntimeError(f"could not read source tree: {error}") from error
+
+    if not isinstance(response_data, dict):
+        raise RuntimeError("Git Trees API returned an unexpected response")
+
+    if response_data.get("truncated", False):
+        raise RuntimeError(
+            "source branch tree is too large (truncated by API); "
+            "refusing to validate on an incomplete tree"
+        )
+
+    tree = response_data.get("tree")
+    if not isinstance(tree, list):
+        raise RuntimeError("Git Trees API response missing 'tree' array")
+
+    paths: list[str] = []
+    for entry in tree:
+        if not isinstance(entry, dict):
+            raise RuntimeError("Git Trees API returned an invalid tree entry")
+        entry_path = entry.get("path")
+        if not isinstance(entry_path, str) or not entry_path:
+            raise RuntimeError("Git Trees API returned an entry without a path")
+        entry_type = entry.get("type")
+        # Only include blob entries (files), not trees (directories)
+        if entry_type == "blob":
+            paths.append(entry_path)
+
+    return paths
 
 
 def validate_event(event: dict[str, Any], token: str) -> list[str]:
-    """Validate a GitHub pull-request event payload using the REST files API."""
+    """Validate a GitHub pull-request event payload using the Git Trees API."""
     pull_request = event.get("pull_request")
     if not isinstance(pull_request, dict):
         raise ValueError("event payload is not a pull-request event")
@@ -163,21 +186,21 @@ def validate_event(event: dict[str, Any], token: str) -> list[str]:
     if base_ref != MASTER_BRANCH:
         return []
 
-    head_ref = _require_string(head, "ref", "pull-request head ref")
     base_repository = _repository_name(base.get("repo"), "pull-request base repository")
     head_repository = _repository_name(head.get("repo"), "pull-request head repository")
+    head_ref = _require_string(head, "ref", "pull-request head ref")
+    head_sha = _require_string(head, "sha", "pull-request head SHA")
 
-    pull_number = event.get("number")
-    if not isinstance(pull_number, int) or pull_number <= 0:
-        raise ValueError("event payload is missing a valid pull-request number")
-
-    changed_paths = _fetch_changed_paths(base_repository, pull_number, token)
+    # Fetch the tree from the head repository — the head SHA lives there.
+    # If the PR is cross-repo, validate_master_pull_request still rejects it
+    # via the repository ownership check below.
+    source_tree_paths = _fetch_source_tree(head_repository, head_sha, token)
     return validate_master_pull_request(
         base_ref=base_ref,
         head_ref=head_ref,
         base_repository=base_repository,
         head_repository=head_repository,
-        changed_paths=changed_paths,
+        source_tree_paths=source_tree_paths,
     )
 
 
@@ -190,7 +213,7 @@ def main() -> int:
     token = os.environ.get("GITHUB_TOKEN")
     if not token:
         print(
-            "BLOCKED: GITHUB_TOKEN is required to enumerate pull-request files.",
+            "BLOCKED: GITHUB_TOKEN is required to enumerate the source tree.",
             file=sys.stderr,
         )
         return 1

@@ -326,22 +326,100 @@ def create_project(template_root: Path, target_dir: Path, project_type: str) -> 
 
     # For hybrid projects, keep all skills (both Python and C++ are needed)
 
-    # 7. Git init + initial commit
+    # 7. Git init + two-phase bootstrap
+    # Phase 1: commit only production files to master
+    # Phase 2: commit agent tooling to develop
+    # This ensures master never contains development-stage assets.
     print(f"[{step}] Initializing git repository...")
     try:
         subprocess.run(["git", "init"], cwd=target_dir, capture_output=True, check=True)
         subprocess.run(
             ["git", "add", "."], cwd=target_dir, capture_output=True, check=True
         )
+
+        # Remove development-stage paths from the index before committing to master.
+        # All files remain in the working tree for the develop commit.
+        master_forbidden_roots = [
+            ".ai",
+            ".agents",
+            ".claude",
+            ".codex",
+            "agent_roadmaps",
+        ]
+        master_forbidden_files = ["AGENTS.md", "CLAUDE.md", "CODEX.md"]
+
+        removed_any = False
+        for root in master_forbidden_roots:
+            result = subprocess.run(
+                ["git", "rm", "--cached", "-r", "--ignore-unmatch", root],
+                cwd=target_dir,
+                capture_output=True,
+            )
+            if result.returncode == 0 and result.stdout.strip():
+                removed_any = True
+
+        for fname in master_forbidden_files:
+            result = subprocess.run(
+                ["git", "rm", "--cached", "--ignore-unmatch", fname],
+                cwd=target_dir,
+                capture_output=True,
+            )
+            if result.returncode == 0 and result.stdout.strip():
+                removed_any = True
+
+        # Remove docs/ (except docs/changelog/) from the index
+        docs_result = subprocess.run(
+            ["git", "rm", "--cached", "-r", "--ignore-unmatch", "docs"],
+            cwd=target_dir,
+            capture_output=True,
+        )
+        if docs_result.returncode == 0 and docs_result.stdout.strip():
+            removed_any = True
+            # Re-add docs/changelog/ which is exempted from the forbidden list
+            changelog_dir = target_dir / "docs" / "changelog"
+            if changelog_dir.is_dir():
+                subprocess.run(
+                    ["git", "add", "docs/changelog"],
+                    cwd=target_dir,
+                    capture_output=True,
+                )
+
+        if removed_any:
+            print("  Removed development-stage paths from master commit")
+
+        # Phase 1: commit production files to master
         subprocess.run(
             ["git", "commit", "-m", "chore: initialise project from agent-foundry"],
             cwd=target_dir,
             capture_output=True,
             check=True,
         )
-        print("  Git repository initialized with initial commit")
-    except subprocess.CalledProcessError:
-        print("  Warning: git init/commit failed")
+        print("  Phase 1: committed production files to master")
+
+        # Phase 2: create develop branch with all agent scaffolding
+        subprocess.run(
+            ["git", "checkout", "-b", "develop"],
+            cwd=target_dir,
+            capture_output=True,
+            check=True,
+        )
+        # Stage all files again (the working tree still has everything)
+        subprocess.run(
+            ["git", "add", "."],
+            cwd=target_dir,
+            capture_output=True,
+            check=True,
+        )
+        subprocess.run(
+            ["git", "commit", "-m", "chore: add agent tooling scaffolding"],
+            cwd=target_dir,
+            capture_output=True,
+            check=True,
+        )
+        print("  Phase 2: committed agent tooling scaffolding to develop")
+        print("  Git repository initialized with two-phase bootstrap")
+    except subprocess.CalledProcessError as init_error:
+        print(f"  Warning: git init/commit failed: {init_error}")
 
     print()
     print("=" * 50)
