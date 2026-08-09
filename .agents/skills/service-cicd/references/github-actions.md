@@ -7,6 +7,9 @@ solve different problems and may be used together. Read
 [self-hosted-runners.md](self-hosted-runners.md) for Pattern A. Pattern B below
 remains the deployment boundary whether the immutable artefact was built on a
 GitHub-hosted runner or a self-hosted runner.
+When Pattern A is the triggering server, also read
+[artifact-storage.md](artifact-storage.md): the primary bytes remain in its
+fixed server-local store and are not uploaded to GitHub Actions.
 
 When both patterns involve the same machine, the self-hosted CI identity and
 the deployment identity MUST be separate principals with no overlapping
@@ -59,17 +62,24 @@ environment-scoped SSH credential for `deploy`. Do not run this job as the
 Pattern A self-hosted CI principal, including when CI and production share a
 machine.
 
-1. Download the exact build-job artefact without rebuilding it.
-2. Verify its digest and provenance in the privileged job.
-3. Transfer it to a release-specific temporary location beneath the host's
-   approved staging boundary.
-4. Verify the server host key and transferred digest.
-5. Pass only validated scalar arguments to one fixed host command.
-6. Wait for activation and release-specific health evidence.
+1. Resolve the exact server-local record id and digest without rebuilding it.
+2. Ask the fixed host interface to read that record; do not accept a mutable
+   branch, tag, `latest` path, or arbitrary archive path.
+3. Verify its digest, provenance, and compatibility in the protected boundary.
+4. Transfer it to a release-specific temporary location beneath the host's
+   approved staging boundary, or let the fixed host helper perform that copy.
+5. Verify the server host key and transferred digest.
+6. Pass only validated scalar arguments to one fixed host command.
+7. Wait for activation and release-specific health evidence.
 
 Do not embed secrets or unchecked event data into a remote shell program.
 Prefer short-lived identity federation when available. For SSH-only hosts, use
 one restricted, rotated key per repository and environment.
+
+Do not use `actions/upload-artifact` or `actions/download-artifact` for the
+primary build, release, or deployment bytes. An explicitly approved temporary
+cross-host exception must expire within one day and must not be the rollback
+source.
 
 ## Secrets and evidence
 
@@ -79,7 +89,8 @@ one restricted, rotated key per repository and environment.
   credential-bearing command lines.
 - Record workflow run, release id, source SHA, digest, approvals, activation and
   smoke results, rollback result, and cleanup plan.
-- Set explicit workflow and artefact retention. Host rollback must not rely on
+- Set explicit server-local rolling retention as described in
+  [artifact-storage.md](artifact-storage.md). Host rollback must not rely on
   an expired Actions upload.
 
 ## Rollback

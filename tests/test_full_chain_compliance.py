@@ -533,10 +533,9 @@ def test_check_constraints_flags_protected_branch(
 ) -> None:
     project = _make_project(tmp_path, project_type)
     # The fixture left us on feat/sweep -- switch back to the default protected branch.
-    # Modern git defaults to 'main'; fall back to 'master' for older configs.
-    r = _run(["git", "checkout", "main", "-q"], project)
-    if r.returncode != 0:
-        _run(["git", "checkout", "master", "-q"], project)
+    # Agent tooling is present on develop after the two-phase bootstrap.
+    r = _run(["git", "checkout", "develop", "-q"], project)
+    assert r.returncode == 0, r.stderr
     res = _run(["bash", ".agents/bin/agent-check-constraints"], project)
     assert res.returncode != 0
     assert "protected branch" in (res.stdout + res.stderr).lower()

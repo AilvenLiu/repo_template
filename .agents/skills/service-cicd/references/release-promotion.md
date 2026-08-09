@@ -7,6 +7,11 @@ Emit a manifest containing source SHA, release id, digest, target compatibility,
 toolchain, dependency-lock identity, and build run. Downstream jobs verify and
 promote that manifest; they do not rebuild.
 
+When the build runs on the triggering self-hosted server, commit the bytes and
+manifest to the fixed server-local artefact store described in
+[artifact-storage.md](artifact-storage.md). Do not use a GitHub Actions
+artefact upload as the normal hand-off or rollback store.
+
 ## Default source authority
 
 Unless a durable, reviewed project-specific release policy explicitly defines a

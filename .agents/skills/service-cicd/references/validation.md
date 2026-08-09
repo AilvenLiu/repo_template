@@ -26,6 +26,14 @@
 
 - [ ] Validation precedes build; deploy and publish consume the same immutable
       build artefact without rebuilding.
+- [ ] When a persistent runner triggers CI, the primary artefact is committed
+      to a separate server-local store with an immutable manifest and digest;
+      the normal workflow does not use GitHub Actions artefact storage.
+- [ ] Server-local cleanup is locked, dry-run capable, fail-closed, and keeps
+      only the three newest verified `master` records and two newest verified
+      `develop` records by default, plus live/rollback/pinned/held records.
+- [ ] Promotion marks its selected record `activating` or `held` under the
+      cleanup lock before pruning can run.
 - [ ] Source SHA, release id, digests, compatibility, provenance, workflow run,
       and target surface are joined in durable evidence.
 - [ ] GitHub Release, package, container, and deployment identifiers agree.

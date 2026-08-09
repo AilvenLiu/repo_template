@@ -134,9 +134,13 @@ pytest tests/benchmarks/test_kernels.py \
     --benchmark-compare-fail=mean:10%
 ```
 
-### Benchmark Artifact Storage
+### Benchmark Artefact Storage
 
-Store benchmark results as JSON artifacts:
+Store benchmark results as JSON records in the triggering server's local
+artefact store. Keep the baseline, the latest verified `master` result, and
+the latest verified `develop` result; prune other branch records under the
+repository lock. Do not use GitHub Actions artefact uploads as an unbounded
+benchmark history. Each record should contain:
 
 ```json
 {

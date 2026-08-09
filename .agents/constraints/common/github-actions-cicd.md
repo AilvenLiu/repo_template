@@ -129,11 +129,25 @@ only after an update to `master`. On GitHub, use a `push` event restricted to
   produce provenance or attestations when supported. Record target OS,
   architecture, language ABI, compiler/runtime ABI, and GPU compatibility as
   applicable.
+- When CI runs on a persistent self-hosted runner or triggering server, store
+  primary build and release bytes in the fixed server-local artefact store
+  described by `service-cicd/references/artifact-storage.md`. Do not use
+  GitHub Actions artefact uploads as the normal release transport.
+- Apply a small rolling policy to that store: retain the three newest verified
+  `master` records and two newest verified `develop` records by default, plus
+  live, rollback, pinned, held, or activating records. Do not retain release
+  artefacts from pull requests, tags, or arbitrary refs by default.
+- Cleanup must be locked, dry-run capable, fail closed on malformed or unknown
+  metadata, and unable to escape the canonical store. Mark a selected record
+  `activating` or `held` under the same lock before cleanup or promotion. It
+  must never remove a record needed by a live service or a verified rollback.
 - Auto-release MUST publish only after required tests, policy gates, and
   environment protections pass. Published packages, images, release assets,
   and deployment inputs MUST refer to the same verified digests.
-- Set explicit workflow and artefact retention. Host rollback safety MUST NOT
-  depend solely on an expiring GitHub Actions upload.
+- Set explicit server-local retention and monitor capacity. Host rollback
+  safety MUST NOT depend on an expiring GitHub Actions upload. A temporary
+  GitHub artefact used only for an approved cross-host transport has a maximum
+  one-day retention and is never the rollback authority.
 - Logs and summaries MUST preserve the source SHA, release id, digests,
   approvals, deployment result, health evidence, and rollback outcome without
   exposing secrets.

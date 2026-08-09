@@ -110,6 +110,27 @@ does not replace alerting, capacity monitoring, or a safe maintenance window.
   one self-hosted machine is not evidence for another OS, architecture, ABI, or
   GPU generation.
 
+## Store release artefacts on the triggering server
+
+When this runner triggers the CI jobs, its server-local artefact store is the
+primary hand-off between validation, build, publication, and deployment. Use
+the contract in [artifact-storage.md](artifact-storage.md).
+
+- Configure one fixed repository store beneath an approved data root, such as
+  `/data/ci-artifacts/<repository>`, outside the runner workspace and outside
+  every production release or persistent-state root.
+- Commit a complete artefact and manifest atomically after validation. Record
+  the source SHA, workflow run, release id, digest, compatibility, and status.
+- Do not call `actions/upload-artifact` or `actions/download-artifact` for the
+  primary bytes. A protected deploy boundary reads the committed record via a
+  fixed host helper and verifies the digest again.
+- Keep, by default, only the three newest verified `master` records and two
+  newest verified `develop` records, plus live, rollback, pinned, held, and
+  activating records. Prune under a repository lock; never prune an active
+  job's staging directory or an unknown-state record.
+- Run and monitor cleanup on the host. A runner restart, workspace cleanup, or
+  GitHub Actions retention event must not decide whether a rollback is valid.
+
 ## Validate installation and maintenance
 
 - Re-run bootstrap and verify it converges without duplicating registration,

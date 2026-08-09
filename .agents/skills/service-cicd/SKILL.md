@@ -5,10 +5,13 @@ description: Design, implement, review, or troubleshoot GitHub Actions CI/CD and
 
 # Service CI/CD
 
-Use GitHub Actions to validate source, build one immutable artefact, and promote
-that exact artefact through protected release and deployment boundaries. This
-skill owns automation; read the separate `$deploy-service` skill for host paths,
-activation helpers, runtime services, ingress, and rollback storage.
+Use GitHub Actions to validate source, build one immutable artefact on the
+triggering self-hosted server where that is the project contract, and promote
+that exact artefact through protected release and deployment boundaries. Keep
+the primary bytes in the server-local artefact store, not GitHub Actions
+artefact storage. This skill owns automation; read the separate
+`$deploy-service` skill for host paths, activation helpers, runtime services,
+ingress, and rollback storage.
 
 ## Establish the release contract
 
@@ -35,9 +38,11 @@ activation helpers, runtime services, ingress, and rollback storage.
    complementary trust boundaries.
 8. For packages, images, GitHub Releases, provenance, or cross-platform
    promotion, read [release-promotion.md](references/release-promotion.md).
-9. For an auto-deployment job, also read
+9. For a self-hosted triggering server or any artefact retention decision, read
+   [artifact-storage.md](references/artifact-storage.md).
+10. For an auto-deployment job, also read
    `.agents/skills/deploy-service/SKILL.md` and its applicable host references.
-10. For any deployment claim, read
+11. For any deployment claim, read
     [deployment-evidence.md](references/deployment-evidence.md).
 
 Stop for operator direction before changing release-channel semantics,
@@ -83,8 +88,13 @@ contract in `$deploy-service`.
 - The protected deploy job authenticates as `deploy` by default and invokes one
   fixed host interface. It does not share credentials between repositories or
   environments, and it does not use the self-hosted runner identity.
-- The deployable artefact is built and tested once. Publishing and deployment
-  promote the same verified bytes; neither job rebuilds from source.
+- The deployable artefact is built and tested once on the triggering server.
+  Publishing and deployment promote the same verified bytes; neither job
+  rebuilds from source or depends on a GitHub Actions artefact upload.
+- The primary artefact record lives in a fixed server-local store with an
+  immutable manifest and a bounded rolling policy: by default three verified
+  `master` records and two verified `develop` records, plus live, rollback,
+  pinned, or held records.
 - A validated release id joins source SHA, artefact digest, workflow run,
   target compatibility, approvals, host metadata, and rollback evidence.
 - Deployments are serialized per environment. An older or cancelled run cannot
@@ -116,8 +126,9 @@ Recommended ownership:
 
 - `validate`: formatting, lint, static analysis, unit/integration tests; no
   production secrets.
-- `build`: profile-authoritative build and packaging; uploads immutable
-  artefacts, digests, compatibility metadata, and test evidence.
+- `build`: profile-authoritative build and packaging; commits one immutable
+  server-local artefact record with its digest, compatibility metadata, and
+  test evidence.
 - `attest`: provenance or GitHub artefact attestation with minimal write scope.
 - `publish`: signs or publishes the already-built package, image, or release
   asset after channel checks.
@@ -146,6 +157,8 @@ Challenge at least these cases:
 - activation succeeds but release identity, a worker, ingress, FFI, or package
   verification fails
 - attestations, signatures, retained artefacts, or rollback targets are absent
+- rolling cleanup races with a build, activation, or rollback and removes an
+  unprotected record
 - auto-release partially publishes and a retry would duplicate or mutate it
 
 Use [validation.md](references/validation.md) for the final static, behavioural,
@@ -157,6 +170,7 @@ risk rather than claiming unverified coverage.
 Deliver the workflow files, reusable workflow contracts, release metadata,
 tests, policy configuration, and operator documentation actually required.
 Report the event/channel model, build matrix, permission and secret boundaries,
-artefact/provenance identity, the `deploy` credential and host ownership
-boundary, any local database root contract, deployment interface, release and
-rollback flow, concurrency policy, and validation evidence.
+server-local artefact store and rolling counts, artefact/provenance identity,
+the `deploy` credential and host ownership boundary, any local database root
+contract, deployment interface, release and rollback flow, concurrency policy,
+and validation evidence.

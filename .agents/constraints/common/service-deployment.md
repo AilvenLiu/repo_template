@@ -91,6 +91,12 @@ not implied deployment permissions.
 - Use versioned release directories, release metadata, and a stable activation
   pointer or equivalent platform-native indirection. Keep transfer and staging
   paths outside the live document root.
+- When CI runs on a self-hosted triggering server, keep its server-local
+  immutable artefact store in a separate approved data root, outside releases
+  and persistent state. The `deploy` identity may promote a selected digest
+  through the fixed host interface but must not write or prune the runner-owned
+  store. Apply the small rolling policy from
+  `service-cicd/references/artifact-storage.md`.
 - Keep writable application state, databases, uploads, credentials, and logs
   outside immutable release directories. Deployment, rollback, and pruning do
   not imply permission to alter or delete persistent data.

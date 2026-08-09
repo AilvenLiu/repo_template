@@ -41,6 +41,9 @@ def test_generated_project_loads_split_service_skills(
     assert (
         target / ".agents/skills/service-cicd/references/self-hosted-runners.md"
     ).is_file()
+    assert (
+        target / ".agents/skills/service-cicd/references/artifact-storage.md"
+    ).is_file()
 
     for entrypoint in ("AGENTS.md", "CLAUDE.md"):
         body = (target / entrypoint).read_text()
@@ -127,10 +130,35 @@ def test_service_cicd_skill_owns_github_actions_contract() -> None:
         "project-profiles.md",
         "github-actions.md",
         "self-hosted-runners.md",
+        "artifact-storage.md",
         "release-promotion.md",
         "validation.md",
     ):
         assert (references / reference).is_file()
+
+
+def test_server_local_artifact_contract_is_bounded_and_separate() -> None:
+    root = ROOT / ".agents"
+    artifact_storage = (
+        root / "skills/service-cicd/references/artifact-storage.md"
+    ).read_text()
+    cicd_skill = (root / "skills/service-cicd/SKILL.md").read_text()
+    cicd_constraint = (root / "constraints/common/github-actions-cicd.md").read_text()
+    deployment_constraint = (
+        root / "constraints/common/service-deployment.md"
+    ).read_text()
+
+    for body in (artifact_storage, cicd_skill, cicd_constraint, deployment_constraint):
+        assert "server-local" in body.lower()
+
+    assert "/data/ci-artifacts/<repository>" in artifact_storage
+    assert "three newest successful, verified `master` records" in artifact_storage
+    assert "two newest successful, verified `develop` records" in artifact_storage
+    assert "tags, other refs" in artifact_storage
+    assert "mark the selected record `activating` or `held`" in artifact_storage
+    assert "actions/upload-artifact" in artifact_storage
+    assert "actions/download-artifact" in artifact_storage
+    assert "must not write or prune the runner-owned" in deployment_constraint
 
 
 def test_self_hosted_ci_and_ssh_deploy_have_separate_contracts() -> None:

@@ -7,7 +7,9 @@ root.
 
 Deploy a CI-built container image by immutable digest or a CI-built native
 release archive with a recorded checksum. Do not deploy a floating image tag as
-the only identity. Store release metadata separately from writable runtime
+the only identity. When CI runs on a self-hosted triggering server, resolve the
+record from its separate server-local artefact store and verify the manifest and
+digest before staging. Store release metadata separately from writable runtime
 state.
 
 For containers, give the application stack a stable project name and stable

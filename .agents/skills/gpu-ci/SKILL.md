@@ -13,6 +13,8 @@ not create a second build system.
 
 1. Read `.agents/project.yml`, the session constraint manifest, and the `build`,
    `dependency`, and `service-cicd` skills when release automation is in scope.
+   Read `service-cicd/references/artifact-storage.md` when a persistent runner
+   is the triggering server.
    Read `deploy-service` as well when host activation is in scope.
 2. Read the applicable CMake, CUDA, hybrid bridge, dependency, and testing
    constraints before drafting jobs.
@@ -68,8 +70,9 @@ profile workflow. Add Python build tools through `.agents/bin/agent-dependency`.
 - A self-hosted GPU runner uses a dedicated unprivileged identity, specific
   hardware and trust labels, and only the device/group access required for the
   job. It holds no deployment credential or production activation authority.
-- Upload immutable outputs once. Carry digests and provenance between jobs; do not
-  rebuild for publication.
+- Commit immutable outputs once to the triggering server's local artefact store.
+  Carry record ids, digests, and provenance between jobs; do not rebuild for
+  publication or use GitHub Actions artefact storage as the normal hand-off.
 
 Use this shape, replacing each placeholder with a reviewed current full SHA:
 
@@ -85,16 +88,21 @@ jobs:
       - uses: actions/checkout@<FULL_40_CHARACTER_COMMIT_SHA> # reviewed release
       - name: Validate native build
         run: .agents/bin/agent-build full
-      - uses: actions/upload-artifact@<FULL_40_CHARACTER_COMMIT_SHA> # reviewed release
-        with:
-          name: wheels-${{ matrix.python }}-${{ matrix.cuda }}
-          path: dist/*.whl
-          if-no-files-found: error
+      - name: Commit tested wheel to the server-local artefact store
+        run: >-
+          ./ci/commit-artifact --path dist --source-sha "${GITHUB_SHA}"
+          --workflow-run-id "${GITHUB_RUN_ID}" --source-ref "${GITHUB_REF}"
 ```
 
 Never copy placeholder SHAs into a real workflow. Resolve them from the official
 action repository at implementation time and preserve the tag annotation for
 automated update tooling.
+
+The `ci/commit-artifact` path is illustrative: each project must provide its
+reviewed fixed host helper. It must validate the immutable event identity,
+write an immutable manifest, derive the release id, and apply the rolling
+policy; do not replace it with a GitHub artefact upload or use the supplied ref
+to select or escape the trusted store.
 
 ## Cache CUDA compilation safely
 
@@ -145,7 +153,8 @@ For hybrid wheels:
    runtime support contracts.
 5. Install the final wheel in a clean test environment and run import, CPU fallback,
    GPU smoke, ABI, and minimal application tests against the repaired artefact.
-6. Sign or attest the exact digest that publication consumes.
+6. Sign or attest the exact digest that publication consumes. The immutable
+   record remains in the server-local store under the rolling retention policy.
 
 Never rename a built wheel by string substitution to change its version or ABI
 tags. Set versions through packaging metadata before the build and let the backend

@@ -1,11 +1,13 @@
 """Tests for the deterministic master pull-request policy."""
 
-import sys
+import importlib.util
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent / ".agents" / "scripts"))
-
-import master_merge_gate  # type: ignore[import-not-found]
+_SCRIPT = Path(__file__).parent.parent / ".github" / "scripts" / "master-merge-gate.py"
+_SPEC = importlib.util.spec_from_file_location("master_merge_gate", _SCRIPT)
+assert _SPEC is not None and _SPEC.loader is not None
+master_merge_gate = importlib.util.module_from_spec(_SPEC)
+_SPEC.loader.exec_module(master_merge_gate)
 
 
 def _violations(
@@ -19,7 +21,7 @@ def _violations(
         head_ref=head_ref,
         base_repository="example/project",
         head_repository=head_repository,
-        changed_paths=changed_paths or [],
+        source_tree_paths=changed_paths or [],
     )
 
 
@@ -83,7 +85,7 @@ def test_non_master_target_is_outside_the_gate_scope() -> None:
         head_ref="feat/example",
         base_repository="example/project",
         head_repository="fork/project",
-        changed_paths=[".agents/scripts/policy_gate.py"],
+        source_tree_paths=[".agents/scripts/policy_gate.py"],
     )
 
 
@@ -96,5 +98,5 @@ def test_workflow_uses_trusted_policy_and_read_only_permissions() -> None:
     assert "- master" in workflow
     assert "contents: read" in workflow
     assert "pull-requests: read" in workflow
-    assert "trusted-policy/.agents/scripts/master_merge_gate.py" in workflow
+    assert "trusted-policy/.github/scripts/master-merge-gate.py" in workflow
     assert "actions/checkout" not in workflow

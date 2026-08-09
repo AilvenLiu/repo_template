@@ -52,6 +52,9 @@ activation boundary.
    [host-bootstrap.md](references/host-bootstrap.md).
 10. For dual-stack reverse-proxy or Cloudflare-origin failures, read
     [dual-stack-ingress.md](references/dual-stack-ingress.md).
+11. When CI runs on a self-hosted triggering server, also read
+    `.agents/skills/service-cicd/references/artifact-storage.md` for the
+    server-local artefact store and rolling retention contract.
 
 Stop for approval before changing public DNS, firewall policy, credentials,
 production data, privileged command boundaries, destructive retention, or an

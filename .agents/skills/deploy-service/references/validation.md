@@ -15,6 +15,9 @@
       with any engine-owned child delegation and backup/restore boundary
       documented.
 - [ ] Capacity supports staging, live, rollback, evidence, and expected growth.
+- [ ] If CI runs on the host, its server-local artefact store is separate from
+      releases and persistent state; `deploy` can promote a selected digest but
+      cannot write or prune the runner-owned store.
 - [ ] Canonical path checks reject traversal, absolute archive entries, symlink
       escape, device files, and cleanup outside the approved root.
 - [ ] Release ids, paths, channels, SHAs, and digests are validated again by the

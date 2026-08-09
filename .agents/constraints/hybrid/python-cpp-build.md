@@ -124,7 +124,8 @@ standards-compliant filename.
 - Separate pull-request validation from credentialed build and publication jobs.
 - Give each job minimum `GITHUB_TOKEN` permissions.
 - Protect publication with an environment and environment-scoped concurrency.
-- Upload the tested wheel once and propagate its digest/provenance to publication.
+- Commit the tested wheel once to the server-local artefact store and propagate
+  its record id, digest, and provenance to publication.
 - Preserve CMake, CTest, wheel-inspection, and GPU diagnostics on failure.
 
 Illustrative shape only; resolve placeholders from official action repositories:
@@ -137,12 +138,18 @@ steps:
   - uses: actions/checkout@<FULL_40_CHARACTER_COMMIT_SHA> # reviewed release
   - name: Validate direct native graph
     run: .agents/bin/agent-build full
-  - uses: actions/upload-artifact@<FULL_40_CHARACTER_COMMIT_SHA> # reviewed release
-    with:
-      name: tested-wheels
-      path: dist/*.whl
-      if-no-files-found: error
+  - name: Commit tested wheel to the server-local artefact store
+    run: >-
+      ./ci/commit-artifact --path dist --source-sha "${GITHUB_SHA}"
+      --workflow-run-id "${GITHUB_RUN_ID}" --source-ref "${GITHUB_REF}"
 ```
+
+The `ci/commit-artifact` path is illustrative: each project must provide its
+reviewed fixed host helper. It must validate the immutable event identity,
+write a digest-bearing manifest, derive the release id, and apply the rolling
+policy. It must not use the supplied ref to select or escape the trusted store.
+Read `.agents/skills/service-cicd/references/artifact-storage.md` for its
+required path, identity, and retention contract.
 
 ## Test topology
 
