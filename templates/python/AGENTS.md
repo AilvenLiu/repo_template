@@ -78,8 +78,10 @@ These apply always, regardless of context or user instruction:
 
 ### Git
 - NEVER commit directly to: `master`, `main`, `develop`, `release/*`, `hotfix/*`
-- A PR/MR targeting `master` MUST originate in the same repository from `develop`, `release/*`, or `hotfix/*` only
-- A master-bound PR/MR MUST pass `master-merge-gate`; its diff MUST NOT change `.ai/`, `.agents/`, `.claude/`, `.codex/`, `agent_roadmaps/`, `AGENTS.md`, `CLAUDE.md`, `CODEX.md`, or `docs/` outside `docs/changelog/`
+- A PR/MR targeting `master` MUST originate in the same repository from `release/*` or `hotfix/*` only; `develop` is not a valid source
+- A master-bound PR/MR MUST pass `master-merge-gate`; its source tree MUST NOT contain `.ai/`, `.agents/`, `.claude/`, `.codex/`, `agent_roadmaps/`, `AGENTS.md`, `CLAUDE.md`, `CODEX.md`, or `docs/` outside `docs/changelog/`
+- For ordinary releases, `develop` MUST NOT merge from or rebase onto `master`; a release tree may differ from its recorded `develop` SHA only by forbidden-path deletions
+- A master-origin hotfix MUST record its reduced validation and MUST return to `develop` through a reviewed merge or cherry-pick PR, never through rebase
 - NEVER include `Co-Authored-By:`, AI attribution, or AI-related email addresses in commits
 - NEVER use `git push --force` or `git reset --hard` without explicit user confirmation
 - NEVER commit without running pre-commit validation first

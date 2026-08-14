@@ -109,7 +109,9 @@ change durable project policy.
 ## Absolute Prohibitions
 
 - NEVER commit directly to `master`, `main`, `develop`, `release/*`, `hotfix/*`
-- NEVER open or merge a master-bound PR/MR except from same-repository `develop`, `release/*`, or `hotfix/*`; it must pass `master-merge-gate` and not change `.ai/`, `.agents/`, `.claude/`, `.codex/`, `agent_roadmaps/`, `AGENTS.md`, `CLAUDE.md`, `CODEX.md`, or `docs/` outside `docs/changelog/`
+- NEVER open or merge a master-bound PR/MR except from same-repository `release/*` or `hotfix/*`; `develop` is categorically invalid, and the source tree must pass the presence-based `master-merge-gate`
+- NEVER merge `master` into or rebase `develop` onto `master` for an ordinary release; release trees contain only forbidden-path deletions relative to their recorded `develop` SHA
+- A master-origin hotfix MUST record reduced validation and return to `develop` through a reviewed merge or cherry-pick PR, never through rebase
 - NEVER run `pip` / `pip3` / `python -m pip` for any reason — use `poetry add` or `poetry run`
 - NEVER use `python` / `python3` / `pip` / `pip3` directly — use `poetry run python`
 - NEVER install Poetry via `curl -sSL https://install.python-poetry.org` or system package managers

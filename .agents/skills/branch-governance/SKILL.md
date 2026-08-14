@@ -1,6 +1,6 @@
 ---
 name: branch-governance
-description: Design, implement, review, or troubleshoot protected branch policies, master-bound pull-request or merge-request gates, GitHub branch rules, changed-path deny lists, and release-shim branches. Use when changing master/develop/release/hotfix flow, GitHub Actions PR policy, required checks, or release promotion entry rules.
+description: Design, implement, review, or troubleshoot protected branch policies, master-bound pull-request or merge-request gates, GitHub branch rules, presence-based deny lists, and release-shim branches. Use when changing master/develop/release/hotfix flow, GitHub Actions PR policy, required checks, or release promotion entry rules.
 ---
 
 # Branch Governance
@@ -14,7 +14,7 @@ constraints before editing policy or workflow files.
 | Target | Allowed source | Required purpose |
 |---|---|---|
 | `develop` | feature/fix/docs/chore branches | normal integration |
-| `master` | same-repository `develop`, `release/*`, `hotfix/*` | reviewed production entry |
+| `master` | same-repository `release/*`, `hotfix/*` | reviewed production entry |
 
 For every target, state whether direct pushes are denied, which approvals are
 independent, which status checks are required, and which file paths cannot
@@ -23,8 +23,9 @@ event data until the gate validates them.
 
 ## Implement the master hard gate
 
-1. Keep the deterministic policy in `master_merge_gate.py` and add tests for
-   every allowed source, forbidden path, changelog exception, and rename case.
+1. Keep the deterministic policy in `master-merge-gate.py` and add tests for
+   every allowed source, forbidden tree path, changelog exception, release
+   projection change type, required PR body field, and hotfix trade-off.
 2. Run the gate for master-bound PRs/MRs and configure its status check as
    required in the hosting provider's branch rules.
 3. Run profile-authoritative format, lint, static analysis, build, and test
@@ -37,14 +38,23 @@ event data until the gate validates them.
 
 ## Use a release shim
 
-When a `develop` to `master` PR/MR is requested, strongly prefer a release shim:
+`develop` is the source of truth and `master` is a derived, sanitised
+publication. `develop` MUST NOT target `master` directly. For an ordinary
+release, it also MUST NOT merge from or rebase onto `master`.
 
-1. Validate and record the immutable reviewed `develop` SHA.
-2. Create `release/<name>` from that SHA without force-updating an existing ref.
-3. **Strip development-stage assets:** before opening the master PR, delete all
-   paths forbidden by the master merge policy from the release branch tree and
-   commit the cleanup. The master-merge-gate will reject any PR whose source
-   tree contains these paths:
+Promote reviewed `develop` content through a release shim:
+
+1. Author and review every functional change through `develop`, then run the
+   repository-owned validation there while the complete tooling is present.
+2. Validate and record the immutable reviewed `develop` SHA. The master PR
+   body MUST contain `Develop-Source-SHA: <full 40-character SHA>`.
+3. Create the protected `release/<name>` ref at that SHA without force-updating
+   an existing ref.
+4. Create an unprotected `chore/release-<name>` staging branch from the same
+   SHA. Before opening the master PR, delete only the paths forbidden by the
+   master merge policy and commit the cleanup on that staging branch. The
+   master-merge-gate will reject any master PR whose source tree contains these
+   paths:
 
    ```bash
    rm -rf .ai .agents .claude .codex agent_roadmaps
@@ -57,16 +67,52 @@ When a `develop` to `master` PR/MR is requested, strongly prefer a release shim:
    git commit -m "chore: strip development-stage assets for master"
    ```
 
-4. Run the master gate and full profile validation against the release branch.
-5. Open `release/<name>` to `master`, carrying source SHA, validation evidence,
-   changelog, and rollback/release notes.
-6. Merge only after the protected checks and independent approval pass.
+   The source SHA MUST pass the full repository-owned validation before this
+   step. Because the deletion deliberately removes the wrappers, ordinary Git
+   is permitted only for this mechanical deletion-only staging commit.
 
-An automated shim creator needs an identity that can create a new release
-branch and PR, but cannot force-update branches or merge to `master`. Validate
-the supplied SHA, its ancestry in `develop`, branch name, and existing remote
-ref before any write. Preserve a deterministic source-SHA-to-release-branch
-mapping so retries cannot create different candidates.
+5. Merge the staging branch into `release/<name>` through a normal reviewed
+   PR/MR. Never commit the cleanup directly on the protected release branch.
+6. Run the master gate and full profile validation against the release branch.
+7. Open `release/<name>` to `master`, carrying source SHA, validation evidence,
+   changelog, and rollback/release notes.
+8. Merge only after the protected checks and independent approval pass.
+
+The release branch MUST contain only deletions of paths forbidden by the
+master policy relative to the recorded `develop` SHA. It MUST NOT contain a
+functional change, addition, rename, mode change, or any other deletion. The
+gate verifies the recorded SHA's ancestry and compares leaf tree entries by
+path, mode, type, and object SHA as a hard failure. This invariant makes the
+validated `develop` content, modulo removals, the content that ships.
+
+An automated shim creator needs an identity that can create the new release
+and staging branches and PRs, but cannot force-update branches or merge to
+`master`. Validate the supplied SHA, its ancestry in `develop`, branch names,
+and existing remote refs before any write. Preserve a deterministic
+source-SHA-to-release-branch mapping so retries cannot create different
+candidates.
+
+## Handle an emergency hotfix
+
+Prefer a fix based on `develop` followed by the release-shim workflow, even
+when the fix is urgent. Reserve `hotfix/*` for an incident where `develop` has
+diverged too far to ship safely.
+
+A true hotfix is cut from sanitised `master` and therefore has no `.agents/`,
+`.claude/`, `CLAUDE.md`, `agent-precommit`, or `agent-commit`. Changes MUST
+arrive on the protected hotfix branch through a reviewed PR from an
+unprotected working branch. Run every standalone profile check that is
+available and require hosted profile validation and `master-merge-gate`.
+Where the absent wrappers make ordinary Git unavoidable, record that reduced
+local validation explicitly; do not claim the wrappers ran.
+
+The master PR body MUST contain exactly one non-empty
+`Hotfix-Validation-Tradeoff: <checks run and omissions>` field, which the gate
+enforces as a hard failure. After the hotfix reaches `master`, its functional
+change MUST return to `develop` through a normal reviewed merge or cherry-pick
+PR, never by rebase. Preserve all development-stage tooling; prefer
+cherry-picking the functional commit if merging the sanitised branch would
+carry deletions.
 
 ## Default automatic promotion
 

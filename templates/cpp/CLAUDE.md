@@ -132,7 +132,9 @@ ctest --test-dir build --output-on-failure
 ## Absolute Prohibitions
 
 - NEVER commit directly to `master`, `main`, `develop`, `release/*`, `hotfix/*`
-- NEVER open or merge a master-bound PR/MR except from same-repository `develop`, `release/*`, or `hotfix/*`; it must pass `master-merge-gate` and not change `.ai/`, `.agents/`, `.claude/`, `.codex/`, `agent_roadmaps/`, `AGENTS.md`, `CLAUDE.md`, `CODEX.md`, or `docs/` outside `docs/changelog/`
+- NEVER open or merge a master-bound PR/MR except from same-repository `release/*` or `hotfix/*`; `develop` is categorically invalid, and the source tree must pass the presence-based `master-merge-gate`
+- NEVER merge `master` into or rebase `develop` onto `master` for an ordinary release; release trees contain only forbidden-path deletions relative to their recorded `develop` SHA
+- A master-origin hotfix MUST record reduced validation and return to `develop` through a reviewed merge or cherry-pick PR, never through rebase
 - NEVER install C++ libraries via system package managers; NVIDIA/AMD GPU libraries and toolchains are discovered as external SDKs
 - NEVER add C++ dependencies outside `cmake/Dependencies.cmake` unless an ADR approves a system SDK or exceptional manager
 - NEVER use floating dependency branches such as `main`, `master`, or `develop`

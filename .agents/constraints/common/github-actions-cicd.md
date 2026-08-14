@@ -57,15 +57,22 @@ procedural and validation contract.
 
 ## Master PR/MR Gate
 
-- Accept master-bound PRs/MRs only from same-repository `develop`, `release/*`,
-  or `hotfix/*` branches.
-- Reject every changed or renamed development-stage path listed in
+- Accept master-bound PRs/MRs only from same-repository `release/*` or
+  `hotfix/*` branches. Reject `develop` categorically because its required
+  tooling cannot pass the presence-based tree check.
+- Reject any source tree containing a development-stage path listed in
   `common/master-merge-policy.md`; permit only `docs/changelog/` below `docs/`.
+- For `release/*`, require the PR body to record `Develop-Source-SHA` and fail
+  unless the source SHA is reachable from `develop`, the release descends from
+  it, and the release tree differs only by forbidden-path deletions.
+- For `hotfix/*`, require the PR body to record the reduced local validation in
+  `Hotfix-Validation-Tradeoff`; a missing record is a hard failure.
 - On GitHub, the gate may use `pull_request_target` only to execute trusted
   base-branch policy with read-only permissions. It MUST NOT check out, build,
   or execute PR code, and it MUST NOT receive production secrets.
-- Direct `develop` to `master` is allowed but a release branch created from an
-  immutable reviewed develop SHA is strongly preferred as the buffer.
+- `develop` MUST NOT merge or rebase from `master` for ordinary releases. The
+  functional change from a master-origin hotfix MUST return to `develop`
+  through a reviewed merge or cherry-pick PR, never through rebase.
 
 ## Default Automatic Release Authority
 

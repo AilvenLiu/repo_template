@@ -75,7 +75,7 @@ Always work on feature branches: `feat/<description>`, `fix/<description>`, etc.
 
 ### Master PR/MR Policy
 
-A PR/MR targeting `master` may originate only from same-repository `develop`, `release/*`, or `hotfix/*`. It MUST pass the required `master-merge-gate` and profile validation, and it MUST NOT change development-stage paths: `.ai/`, `.agents/`, `.claude/`, `.codex/`, `agent_roadmaps/`, `AGENTS.md`, `CLAUDE.md`, `CODEX.md`, or `docs/` outside `docs/changelog/`. For ordinary releases, use a reviewed `release/<name>` branch created from a recorded `develop` SHA as the buffer before `master`.
+A PR/MR targeting `master` may originate only from same-repository `release/*` or `hotfix/*`; `develop` is categorically invalid because its required tooling cannot pass the presence-based tree check. An ordinary release MUST be created from a recorded `develop` SHA and may contain only deletions of master-forbidden paths relative to that SHA. `develop` MUST NOT merge from or rebase onto `master`. Prefer the same develop-to-release path for urgent fixes. Reserve a master-origin `hotfix/*` for emergencies where `develop` has diverged too far, record its reduced local validation, and return its functional fix to `develop` through a reviewed merge or cherry-pick PR, never through rebase.
 
 ### Commit Message Format
 
@@ -135,15 +135,21 @@ Why is this change necessary? What problem does it solve?
 ## Related
 - Related issues: #123, #456
 - Related PRs
+
+## Master Promotion (master-bound PRs only)
+Develop-Source-SHA:
+Hotfix-Validation-Tradeoff:
 ```
 
 ### Before Opening a PR
 
 For a PR/MR targeting `master`, confirm all of the following before requesting review:
-- The source is same-repository `develop`, `release/*`, or `hotfix/*`.
-- The diff contains no development-stage paths; only `docs/changelog/` may change below `docs/`.
+- The source is same-repository `release/*` or `hotfix/*`; it is not `develop`.
+- The complete source tree contains no development-stage paths; only `docs/changelog/` may exist below `docs/`.
+- A release PR records `Develop-Source-SHA` and differs from that SHA only by forbidden-path deletions.
+- A hotfix PR records `Hotfix-Validation-Tradeoff`, including checks run and omissions.
 - `master-merge-gate` and profile validation are configured as required hosted checks.
-- A normal `develop` promotion uses a validated `release/<name>` buffer branch.
+- A normal promotion uses a validated `release/<name>` buffer branch, and a master-origin hotfix has a reviewed back-merge plan for `develop`.
 
 Run the pre-commit validation:
 

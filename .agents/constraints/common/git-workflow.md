@@ -30,18 +30,27 @@ absolutely forbidden.
 
 ### Master PR/MR Admission
 
-`master` accepts PRs/MRs only from same-repository `develop`, `release/*`, or
-`hotfix/*` branches. The master merge gate uses a **presence-based** check:
+`master` accepts PRs/MRs only from same-repository `release/*` or `hotfix/*`
+branches. The master merge gate uses a **presence-based** check:
 it enumerates every file in the source branch's tree via the Git Trees API
 and rejects the PR if any development-stage path exists — regardless of
 which commit introduced it. `docs/changelog/` is the sole allowed `docs/`
 subtree. Read `master-merge-policy.md` for the exact deny list and release-shim
-procedure.
+procedure. `develop` is categorically rejected as a master source because its
+required tooling can never pass that check.
 
-Note that `develop` → `master` is *technically* allowed by the source-rule
-but *practically* blocked by the tree check because `develop` always carries
-agent tooling (`.agents/`, `.claude/`, etc.). Only `release/*` and `hotfix/*`
-branches can pass after sanitisation.
+The relationship is one-directional: `develop` is the source of truth and
+`master` is its derived, sanitised publication. For an ordinary release,
+`develop` MUST NOT rebase onto or merge from `master`. A `release/*` branch
+MUST contain only deletions of forbidden paths relative to the recorded
+`develop` SHA. A genuine `hotfix/*` cut from `master` is the only reverse-flow
+exception: after it reaches `master`, its functional fix MUST be back-merged
+into `develop` by a normal reviewed merge or cherry-pick PR, never by rebase.
+
+Prefer authoring urgent fixes from `develop` with the full tooling and shipping
+them through `release/*`. Because an emergency `hotfix/*` starts without agent
+tooling, its PR MUST record the checks run and omissions in the required
+`Hotfix-Validation-Tradeoff` field described by `master-merge-policy.md`.
 
 The `master-merge-gate` CI status and profile-authoritative validation MUST be
 required in hosted branch rules.
