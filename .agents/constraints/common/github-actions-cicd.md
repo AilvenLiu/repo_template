@@ -136,10 +136,32 @@ only after an update to `master`. On GitHub, use a `push` event restricted to
   produce provenance or attestations when supported. Record target OS,
   architecture, language ABI, compiler/runtime ABI, and GPU compatibility as
   applicable.
-- When CI runs on a persistent self-hosted runner or triggering server, store
-  primary build and release bytes in the fixed server-local artefact store
-  described by `service-cicd/references/artifact-storage.md`. Do not use
-  GitHub Actions artefact uploads as the normal release transport.
+- Every build, release, deployment, diagnostic, or test byte that must survive
+  a job or host boundary MUST use the fixed operator-controlled local artefact
+  store described by `service-cicd/references/artifact-storage.md`. A
+  GitHub-hosted runner without such a store must use a fixed direct transfer or
+  protected build-and-promote job, or stop for provisioning; it MUST NOT make
+  GitHub Actions artefact storage the default workaround.
+- GitHub Actions artefact storage is default-deny. Do not add or use
+  `actions/upload-artifact`, `actions/download-artifact`, the Actions artefact
+  API or CLI, or an equivalent GitHub byte-storage path for build, test,
+  diagnostics, release transport, deployment, or rollback merely for
+  convenience.
+- An exception requires both documented technical necessity (the exact
+  producer/consumer and why the local store, fixed direct transfer, or pull
+  interface cannot work) and a current user who explicitly requests that
+  specific GitHub upload. A workflow shape, GitHub-hosted runner, manual
+  dispatch, generic operator approval, or existing upload is not consent. A
+  durable reviewed project policy may carry prior explicit user authorisation
+  only when it names the exact GitHub surface and exception.
+- An approved exception contains only the necessary non-secret bytes, records
+  source SHA and digest, producer, consumer, environment, size, and reason,
+  expires within one day, and is never the release or rollback authority. Keep
+  the authoritative immutable local record until normal retention can safely
+  prune it.
+- A workflow exception MUST satisfy the exact durable record schema in
+  `artifact-storage.md`; an upload step sets `retention-days: 1` and the normal
+  constraint check fails closed without it.
 - Apply a small rolling policy to that store: retain the three newest verified
   `master` records and two newest verified `develop` records by default, plus
   live, rollback, pinned, held, or activating records. Do not retain release
@@ -152,12 +174,16 @@ only after an update to `master`. On GitHub, use a `push` event restricted to
   environment protections pass. Published packages, images, release assets,
   and deployment inputs MUST refer to the same verified digests.
 - Set explicit server-local retention and monitor capacity. Host rollback
-  safety MUST NOT depend on an expiring GitHub Actions upload. A temporary
-  GitHub artefact used only for an approved cross-host transport has a maximum
-  one-day retention and is never the rollback authority.
+  safety MUST NOT depend on an expiring GitHub Actions upload. GitHub
+  attestations and provenance are metadata, not permission to upload artefact
+  bytes. A GitHub Release asset is a public publication surface, not CI
+  transport, retention, or rollback storage. Attach it only when a current
+  user explicitly requests that publication or a durable reviewed policy
+  records prior explicit authorisation for that exact public surface.
 - Logs and summaries MUST preserve the source SHA, release id, digests,
   approvals, deployment result, health evidence, and rollback outcome without
-  exposing secrets.
+  exposing secrets. Prefer ordinary workflow logs and job summaries for
+  diagnostics; they MUST NOT become an artefact-upload workaround.
 
 ## Auto-Deployment and Rollback
 

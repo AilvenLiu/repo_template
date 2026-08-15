@@ -139,8 +139,13 @@ pytest tests/benchmarks/test_kernels.py \
 Store benchmark results as JSON records in the triggering server's local
 artefact store. Keep the baseline, the latest verified `master` result, and
 the latest verified `develop` result; prune other branch records under the
-repository lock. Do not use GitHub Actions artefact uploads as an unbounded
-benchmark history. Each record should contain:
+repository lock. GitHub Actions artefact storage is default-deny, including
+`actions/upload-artifact`, `actions/download-artifact`, and equivalent API or
+CLI routes. Use it only under the canonical **both-conditions** exception in
+`.agents/skills/service-cicd/references/artifact-storage.md`: documented
+technical necessity after the local store, fixed direct transfer, and approved
+pull interface fail, plus a current user who explicitly requests the exact
+one-day, non-rollback route. Each record should contain:
 
 ```json
 {
@@ -279,22 +284,15 @@ Run full coverage nightly:
 3. **All dtypes** - FP32, FP16, BF16, FP8 (if supported)
 4. **Stress tests** - 1000+ iterations to catch rare race conditions
 
-### Benchmark Tracking
+### Optional trend telemetry
 
-Store benchmark history in time-series database (e.g., InfluxDB) for trend analysis:
-
-```python
-# Post-benchmark hook
-def store_benchmark_result(result):
-    influxdb_client.write_point(
-        measurement="kernel_latency",
-        tags={"kernel": result.name, "sm": result.sm_version},
-        fields={"median_us": result.median, "p99_us": result.p99},
-        timestamp=datetime.utcnow()
-    )
-```
-
-Visualize trends in Grafana to detect gradual performance degradation.
+Do not use a time-series database as an unbounded benchmark artefact history.
+If a project needs durable performance telemetry, a current user or durable
+reviewed policy must explicitly authorise that separate non-secret telemetry
+system and its retention, access, and deletion limits. Store only aggregated
+metrics needed for the stated trend decision; it MUST NOT be a CI hand-off,
+release, deployment, or rollback store. Raw benchmark records still follow the
+bounded local selection above.
 
 ## Debugging Failed Correctness Tests
 
@@ -380,7 +378,7 @@ For every CUDA kernel implementation, ensure:
 - [ ] Tested on at least SM_80 (A100) and SM_90 (H100)
 - [ ] At least 3 shape buckets are covered (tiny, small, medium)
 - [ ] Edge cases are tested (power-of-2, non-power-of-2, odd dimensions)
-- [ ] Benchmark artifacts are stored for historical tracking
+- [ ] Benchmark records are stored locally for bounded historical tracking
 - [ ] CI pipeline enforces correctness and performance gates
 
 ---

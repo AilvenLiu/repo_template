@@ -7,10 +7,12 @@ root.
 
 Deploy a CI-built container image by immutable digest or a CI-built native
 release archive with a recorded checksum. Do not deploy a floating image tag as
-the only identity. When CI runs on a self-hosted triggering server, resolve the
-record from its separate server-local artefact store and verify the manifest and
-digest before staging. Store release metadata separately from writable runtime
-state.
+the only identity. Resolve the record from its separate local artefact store and
+verify the manifest and digest before staging. Store release metadata separately
+from writable runtime state. GitHub Actions artefact storage is not a default
+bridge; any unavoidable one-day cross-host exception needs documented technical
+necessity and a current user who explicitly requests it, and is never rollback
+authority.
 
 For containers, give the application stack a stable project name and stable
 labels for service, release, channel, source SHA, and image digest. For native

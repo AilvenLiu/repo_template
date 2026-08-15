@@ -13,8 +13,8 @@ not create a second build system.
 
 1. Read `.agents/project.yml`, the session constraint manifest, and the `build`,
    `dependency`, and `service-cicd` skills when release automation is in scope.
-   Read `service-cicd/references/artifact-storage.md` when a persistent runner
-   is the triggering server.
+   Read `service-cicd/references/artifact-storage.md` whenever artefacts cross
+   jobs or hosts, require retention, or might otherwise use GitHub storage.
    Read `deploy-service` as well when host activation is in scope.
 2. Read the applicable CMake, CUDA, hybrid bridge, dependency, and testing
    constraints before drafting jobs.
@@ -72,7 +72,11 @@ profile workflow. Add Python build tools through `.agents/bin/agent-dependency`.
   job. It holds no deployment credential or production activation authority.
 - Commit immutable outputs once to the triggering server's local artefact store.
   Carry record ids, digests, and provenance between jobs; do not rebuild for
-  publication or use GitHub Actions artefact storage as the normal hand-off.
+  publication.
+- GitHub Actions byte storage, including `actions/upload-artifact`, is
+  default-deny. Use it only under the documented technical-necessity and
+  explicit user-request exception in `service-cicd/references/artifact-storage.md`;
+  it expires within one day and is never release or rollback authority.
 
 Use this shape, replacing each placeholder with a reviewed current full SHA:
 
@@ -136,8 +140,10 @@ optimisation, not evidence that an output is valid.
   Optional informational coverage may skip only when the job is declared optional.
 - Test kernel launch errors, synchronization errors, boundary sizes, odd shapes,
   non-contiguous inputs, dtype/device mismatches, and CPU-reference correctness.
-- Preserve GPU diagnostics, test reports, and environment metadata as artefacts on
-  failure without leaking credentials.
+- Preserve GPU diagnostics, test reports, and environment metadata in ordinary
+  workflow logs, job summaries, or a bounded local diagnostic store without
+  leaking credentials. Do not use GitHub artefact storage unless the explicit
+  technical-necessity and user-request exception applies.
 
 ## Build and validate wheels
 

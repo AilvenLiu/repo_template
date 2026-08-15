@@ -22,6 +22,8 @@ Lightweight constraint compliance check without running full pre-commit.
 - Checks git workflow compliance (protected branches).
 - Checks Python version requirements.
 - Checks lock file synchronisation.
+- Fails closed on GitHub Actions artifact storage routes unless each exact
+  one-day, non-secret route has a reviewed `.agents/github-artifact-exceptions.json` record.
 
 Exit code:
 - `0` — no critical violations

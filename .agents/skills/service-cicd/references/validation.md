@@ -26,12 +26,25 @@
 
 - [ ] Validation precedes build; deploy and publish consume the same immutable
       build artefact without rebuilding.
-- [ ] When a persistent runner triggers CI, the primary artefact is committed
-      to a separate server-local store with an immutable manifest and digest;
-      the normal workflow does not use GitHub Actions artefact storage.
+- [ ] Every build, release, deployment, diagnostic, or test byte that must
+      survive a job or host boundary uses a fixed operator-controlled local
+      record, fixed direct transfer, or protected build-and-promote job; GitHub
+      Actions artefact storage is never the default workaround.
+- [ ] No `actions/upload-artifact`, `actions/download-artifact`, Actions
+      artefact API/CLI, or equivalent GitHub byte-storage route exists unless
+      documented technical necessity and an explicit user request authorise
+      that exact surface.
+- [ ] A GitHub Release asset is added only when a current user explicitly
+      requests that public publication or a durable reviewed policy records
+      prior explicit authorisation for that exact surface; it is never CI
+      transport, retention, or rollback storage.
+- [ ] Any authorised GitHub byte-upload exception records its producer,
+      consumer, SHA, digest, environment, non-secret contents, size, and why
+      local/direct/pull transfer cannot work; it expires within one day and is
+      never a release or rollback authority.
 - [ ] Server-local cleanup is locked, dry-run capable, fail-closed, and keeps
       only the three newest verified `master` records and two newest verified
-      `develop` records by default, plus live/rollback/pinned/held records.
+      `develop` records by default, plus live/rollback/pinned/held/activating records.
 - [ ] Promotion marks its selected record `activating` or `held` under the
       cleanup lock before pruning can run.
 - [ ] Source SHA, release id, digests, compatibility, provenance, workflow run,

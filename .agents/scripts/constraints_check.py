@@ -138,6 +138,448 @@ def _read_text(path: Path) -> str:
         return ""
 
 
+_ARTIFACT_EXCEPTION_PATH = Path(".agents/github-artifact-exceptions.json")
+_ARTIFACT_ACTION_RE = re.compile(
+    r"""(?im)^(?P<uses_indent>[ \t]*)(?:-[ \t]+)?uses:[ \t]*["']?(?P<surface>actions/(?:upload(?:-pages)?|download)-artifact)\b(?:@(?P<ref>[^ \t\r\n#"']+))?"""
+)
+_ARTIFACT_RUN_DOWNLOAD_RE = re.compile(r"(?im)^[^#\n]*\bgh[ \t]+run[ \t]+download\b")
+_ARTIFACT_API_RE = re.compile(
+    r"(?im)^[^#\n]*\b(?:repos/[^\s\"']+/actions/artifacts|actions/runs/[^/\s]+/artifacts)\b"
+)
+_UNINSPECTABLE_ARTIFACT_SURFACES = frozenset(
+    {"gh run download", "github-actions-artifact-api"}
+)
+_ARTIFACT_EXCEPTION_TEXT_FIELDS = (
+    "workflow",
+    "surface",
+    "technical_necessity",
+    "user_request",
+    "request_reference",
+    "producer",
+    "consumer",
+    "environment",
+    "contents",
+    "artifact_name",
+    "source_sha",
+    "digest",
+)
+
+
+@dataclass(frozen=True)
+class _ArtifactUsage:
+    workflow: str
+    surface: str
+    action_line: int
+    artifact_name: str | None
+    has_one_day_retention: bool
+    has_full_sha_pin: bool
+    is_upload: bool
+    is_workflow_source: bool
+
+
+def _indent_width(value: str) -> int:
+    return len(value.expandtabs(8))
+
+
+def _step_region(content: str, match: re.Match[str]) -> str | None:
+    """Return the YAML step containing a matched ``uses`` line."""
+    line_start = content.rfind("\n", 0, match.start()) + 1
+    line_end = content.find("\n", match.start())
+    if line_end < 0:
+        line_end = len(content)
+    line = content[line_start:line_end]
+    inline_step = re.match(r"(?P<indent>[ \t]*)-[ \t]+uses:[ \t]", line, re.I)
+    if inline_step:
+        step_start = line_start
+        step_indent = inline_step.group("indent")
+    else:
+        candidates = list(
+            re.finditer(r"(?m)^(?P<indent>[ \t]*)-[ \t]+", content[:line_start])
+        )
+        uses_indent = _indent_width(match.group("uses_indent"))
+        candidate = next(
+            (
+                item
+                for item in reversed(candidates)
+                if _indent_width(item.group("indent")) < uses_indent
+            ),
+            None,
+        )
+        if candidate is None:
+            return None
+        step_start = candidate.start()
+        step_indent = candidate.group("indent")
+
+    following = content[line_end + 1 :]
+    next_step = re.search(
+        rf"(?m)^{re.escape(step_indent)}-[ \t]+",
+        following,
+    )
+    step_end = line_end + 1 + next_step.start() if next_step else len(content)
+    return content[step_start:step_end]
+
+
+def _with_values(step: str, key: str) -> list[str]:
+    """Return scalar values of ``key`` in direct ``with:`` mappings of a step."""
+    values: list[str] = []
+    lines = step.splitlines()
+    for start, line in enumerate(lines):
+        with_match = re.match(r"^(?P<indent>[ \t]*)with:[ \t]*(?:#.*)?$", line)
+        if not with_match:
+            continue
+        with_indent = _indent_width(with_match.group("indent"))
+        field_pattern = re.compile(
+            rf"^[ \t]*{re.escape(key)}:[ \t]*[\"']?(?P<value>[^#\"']*?)[\"']?[ \t]*(?:#.*)?$",
+            re.I,
+        )
+        for nested in lines[start + 1 :]:
+            if not nested.strip() or nested.lstrip().startswith("#"):
+                continue
+            nested_indent = _indent_width(nested) - _indent_width(nested.lstrip())
+            if nested_indent <= with_indent:
+                break
+            field_match = field_pattern.match(nested)
+            if field_match:
+                value = field_match.group("value").strip()
+                if value:
+                    values.append(value)
+    return values
+
+
+def _upload_step_has_one_day_retention(content: str, match: re.Match[str]) -> bool:
+    step = _step_region(content, match)
+    return step is not None and _with_values(step, "retention-days") == ["1"]
+
+
+def _workflow_artifact_usages(repo_root: Path, source: Path) -> List[_ArtifactUsage]:
+    content = _read_text(source)
+    relative_path = source.relative_to(repo_root).as_posix()
+    is_workflow_source = relative_path.startswith(".github/workflows/")
+    usages: list[_ArtifactUsage] = []
+    for match in _ARTIFACT_ACTION_RE.finditer(content):
+        surface = match.group("surface").lower()
+        is_upload = surface.startswith("actions/upload")
+        step = _step_region(content, match)
+        names = _with_values(step, "name") if step is not None else []
+        usages.append(
+            _ArtifactUsage(
+                workflow=relative_path,
+                surface=surface,
+                action_line=content.count("\n", 0, match.start()) + 1,
+                artifact_name=names[0] if len(names) == 1 else None,
+                has_one_day_retention=(
+                    _upload_step_has_one_day_retention(content, match)
+                    if is_upload
+                    else False
+                ),
+                has_full_sha_pin=bool(
+                    re.fullmatch(r"[0-9a-fA-F]{40}", match.group("ref") or "")
+                ),
+                is_upload=is_upload,
+                is_workflow_source=is_workflow_source,
+            )
+        )
+    for match in _ARTIFACT_RUN_DOWNLOAD_RE.finditer(content):
+        usages.append(
+            _ArtifactUsage(
+                workflow=relative_path,
+                surface="gh run download",
+                action_line=content.count("\n", 0, match.start()) + 1,
+                artifact_name=None,
+                has_one_day_retention=False,
+                has_full_sha_pin=True,
+                is_upload=False,
+                is_workflow_source=is_workflow_source,
+            )
+        )
+    for match in _ARTIFACT_API_RE.finditer(content):
+        usages.append(
+            _ArtifactUsage(
+                workflow=relative_path,
+                surface="github-actions-artifact-api",
+                action_line=content.count("\n", 0, match.start()) + 1,
+                artifact_name=None,
+                has_one_day_retention=False,
+                has_full_sha_pin=True,
+                is_upload=False,
+                is_workflow_source=is_workflow_source,
+            )
+        )
+    return usages
+
+
+_ARTIFACT_SCRIPT_SUFFIXES = {
+    ".bash",
+    ".cjs",
+    ".js",
+    ".mjs",
+    ".py",
+    ".sh",
+    ".ts",
+    ".zsh",
+}
+
+
+def _artifact_sources(repo_root: Path) -> list[Path]:
+    """Return workflow and local helper sources that can invoke artifact storage."""
+    paths: set[Path] = set()
+    workflows_root = repo_root / ".github" / "workflows"
+    if workflows_root.is_dir():
+        paths.update(path for path in workflows_root.rglob("*.y*ml") if path.is_file())
+
+    local_actions = repo_root / ".github" / "actions"
+    if local_actions.is_dir():
+        paths.update(
+            path
+            for path in local_actions.rglob("*")
+            if path.is_file() and path.suffix.lower() != ".md"
+        )
+
+    for directory in (
+        repo_root / ".github" / "scripts",
+        repo_root / "ci",
+        repo_root / "scripts",
+        repo_root / "tools",
+    ):
+        if directory.is_dir():
+            paths.update(
+                path
+                for path in directory.rglob("*")
+                if path.is_file() and path.suffix.lower() in _ARTIFACT_SCRIPT_SUFFIXES
+            )
+    return sorted(paths)
+
+
+def _positive_int(value: object) -> bool:
+    return isinstance(value, int) and not isinstance(value, bool) and value > 0
+
+
+def _load_artifact_exceptions(
+    repo_root: Path,
+) -> tuple[List[dict[str, object]] | None, str | None]:
+    policy_path = repo_root / _ARTIFACT_EXCEPTION_PATH
+    if not policy_path.is_file():
+        return (
+            None,
+            f"missing {_ARTIFACT_EXCEPTION_PATH.as_posix()}",
+        )
+
+    try:
+        payload = json.loads(_read_text(policy_path))
+    except json.JSONDecodeError as error:
+        return None, f"invalid JSON in {_ARTIFACT_EXCEPTION_PATH}: {error.msg}"
+
+    if not isinstance(payload, dict) or payload.get("version") != 1:
+        return (
+            None,
+            f"{_ARTIFACT_EXCEPTION_PATH} must be an object with version 1",
+        )
+
+    raw_exceptions = payload.get("exceptions")
+    if not isinstance(raw_exceptions, list):
+        return None, f"{_ARTIFACT_EXCEPTION_PATH} must contain an exceptions list"
+
+    exceptions: List[dict[str, object]] = []
+    errors: List[str] = []
+    for index, raw_exception in enumerate(raw_exceptions):
+        if not isinstance(raw_exception, dict):
+            errors.append(f"exception {index} is not an object")
+            continue
+
+        invalid_fields = [
+            field
+            for field in _ARTIFACT_EXCEPTION_TEXT_FIELDS
+            if not isinstance(raw_exception.get(field), str)
+            or not raw_exception[field].strip()
+        ]
+        if invalid_fields:
+            errors.append(
+                f"exception {index} has missing text fields: {', '.join(invalid_fields)}"
+            )
+
+        for field in ("action_line", "size_limit_bytes"):
+            if not _positive_int(raw_exception.get(field)):
+                errors.append(f"exception {index} must set a positive {field}")
+
+        retention_days = raw_exception.get("retention_days")
+        if (
+            isinstance(retention_days, bool)
+            or not isinstance(retention_days, int)
+            or retention_days != 1
+        ):
+            errors.append(f"exception {index} must set retention_days to 1")
+        if raw_exception.get("non_secret") is not True:
+            errors.append(f"exception {index} must set non_secret to true")
+        if raw_exception.get("release_or_rollback_authority") is not False:
+            errors.append(
+                f"exception {index} must set release_or_rollback_authority to false"
+            )
+        if raw_exception.get("reviewed") is not True:
+            errors.append(f"exception {index} must set reviewed to true")
+        if raw_exception.get(
+            "surface"
+        ) == "actions/download-artifact" and not _positive_int(
+            raw_exception.get("producer_upload_line")
+        ):
+            errors.append(
+                f"exception {index} must set producer_upload_line for a download"
+            )
+
+        exceptions.append(raw_exception)
+
+    if errors:
+        return None, "; ".join(errors)
+    return exceptions, None
+
+
+def _artifact_violation(message: str, remediation: str) -> Violation:
+    return Violation(
+        category="GitHub Artifact Storage",
+        severity="CRITICAL",
+        message=message,
+        remediation=remediation,
+    )
+
+
+def _is_exception_eligible(usage: _ArtifactUsage) -> bool:
+    """Report whether a usage can even reach the reviewed-exception stage."""
+    return (
+        usage.is_workflow_source
+        and usage.surface not in _UNINSPECTABLE_ARTIFACT_SURFACES
+        and usage.has_full_sha_pin
+        and usage.artifact_name is not None
+    )
+
+
+def check_github_artifact_storage(repo_root: Path) -> List[Violation]:
+    """Fail closed on GitHub Actions artifact transport in CI sources."""
+    usages = [
+        usage
+        for source in _artifact_sources(repo_root)
+        for usage in _workflow_artifact_usages(repo_root, source)
+    ]
+    if not usages:
+        return []
+
+    # Only consult the exception record when a usage could actually be excused;
+    # an ineligible route must report its own reason, not a missing-file error.
+    exceptions: List[dict[str, object]] = []
+    configuration_error: str | None = None
+    if any(_is_exception_eligible(usage) for usage in usages):
+        loaded, configuration_error = _load_artifact_exceptions(repo_root)
+        exceptions = loaded or []
+
+    violations: List[Violation] = []
+    for usage in usages:
+        location = f"{usage.workflow}:{usage.action_line}"
+        if not usage.is_workflow_source:
+            violations.append(
+                _artifact_violation(
+                    f"{location} hides {usage.surface} outside a workflow",
+                    "Do not put GitHub artifact transport in a composite action or "
+                    "helper; use the fixed local store or direct transfer.",
+                )
+            )
+            continue
+        if usage.surface in _UNINSPECTABLE_ARTIFACT_SURFACES:
+            violations.append(
+                _artifact_violation(
+                    f"{location} uses uninspectable {usage.surface}",
+                    "API and CLI artifact routes are not exception-eligible; use a "
+                    "fixed local/direct route instead.",
+                )
+            )
+            continue
+        if not usage.has_full_sha_pin:
+            violations.append(
+                _artifact_violation(
+                    f"{location} uses {usage.surface} without a full commit SHA pin",
+                    "Pin the action to a reviewed full 40-character commit SHA or "
+                    "remove the GitHub artifact route.",
+                )
+            )
+            continue
+        if usage.artifact_name is None:
+            violations.append(
+                _artifact_violation(
+                    f"{location} uses {usage.surface} without one exact with.name value",
+                    "Use the fixed local store or give the exceptional route one "
+                    "literal or recorded artifact name.",
+                )
+            )
+            continue
+        if configuration_error:
+            violations.append(
+                _artifact_violation(
+                    f"{location} uses default-deny {usage.surface} and "
+                    f"{configuration_error}",
+                    "Remove the GitHub artifact route, or obtain and record a "
+                    "current explicit user request with documented technical "
+                    "necessity.",
+                )
+            )
+            continue
+        matching_exceptions = [
+            exception
+            for exception in exceptions
+            if exception["workflow"] == usage.workflow
+            and exception["surface"] == usage.surface
+            and exception["action_line"] == usage.action_line
+            and exception["artifact_name"] == usage.artifact_name
+        ]
+        if len(matching_exceptions) != 1:
+            violations.append(
+                _artifact_violation(
+                    f"{location} uses {usage.surface} without one exact reviewed exception",
+                    "Remove the route, or record one line-bound exception after the "
+                    "current user explicitly requests it and alternatives demonstrably fail.",
+                )
+            )
+            continue
+        exception = matching_exceptions[0]
+        if usage.is_upload and not usage.has_one_day_retention:
+            violations.append(
+                _artifact_violation(
+                    f"{location} uses {usage.surface} without exactly retention-days: 1",
+                    "Set exactly one retention-days: 1 under that action's with mapping, "
+                    "or remove the GitHub artifact route.",
+                )
+            )
+            continue
+        if usage.surface == "actions/download-artifact":
+            producer_line = exception["producer_upload_line"]
+            producer_candidates = [
+                candidate
+                for candidate in usages
+                if candidate.workflow == usage.workflow
+                and candidate.action_line == producer_line
+                and candidate.is_upload
+                and candidate.has_one_day_retention
+            ]
+            producer_exceptions = [
+                candidate
+                for candidate in exceptions
+                if candidate["workflow"] == usage.workflow
+                and candidate["action_line"] == producer_line
+                and str(candidate["surface"]).startswith("actions/upload")
+            ]
+            if (
+                len(producer_candidates) != 1
+                or len(producer_exceptions) != 1
+                or producer_exceptions[0]["artifact_name"] != exception["artifact_name"]
+                or producer_exceptions[0]["digest"] != exception["digest"]
+                or producer_exceptions[0]["source_sha"] != exception["source_sha"]
+            ):
+                violations.append(
+                    _artifact_violation(
+                        f"{location} is not bound to one approved one-day producer upload",
+                        "Bind the download to the matching upload action line, artifact "
+                        "name, SHA, and digest, or use the fixed local/direct route.",
+                    )
+                )
+    return violations
+
+
 def _check_native_build_ownership(
     repo_root: Path, profile: ProjectProfile
 ) -> List[Violation]:
@@ -234,6 +676,7 @@ def _check_native_build_ownership(
 def check_constraints(repo_root: Path, profile: ProjectProfile) -> List[Violation]:
     violations = _check_git(repo_root)
     violations.extend(_check_instruction_safety(repo_root))
+    violations.extend(check_github_artifact_storage(repo_root))
 
     if profile.has_language(Language.PYTHON):
         violations.extend(_check_python(repo_root, profile))

@@ -9,9 +9,11 @@ Use GitHub Actions to validate source, build one immutable artefact on the
 triggering self-hosted server where that is the project contract, and promote
 that exact artefact through protected release and deployment boundaries. Keep
 the primary bytes in the server-local artefact store, not GitHub Actions
-artefact storage. This skill owns automation; read the separate
-`$deploy-service` skill for host paths, activation helpers, runtime services,
-ingress, and rollback storage.
+artefact storage. GitHub byte uploads are default-deny: use them only when a
+documented cross-host need cannot use the local store or fixed transfer and the
+current user explicitly requests that specific upload. This skill owns
+automation; read the separate `$deploy-service` skill for host paths,
+activation helpers, runtime services, ingress, and rollback storage.
 
 ## Establish the release contract
 
@@ -38,7 +40,7 @@ ingress, and rollback storage.
    complementary trust boundaries.
 8. For packages, images, GitHub Releases, provenance, or cross-platform
    promotion, read [release-promotion.md](references/release-promotion.md).
-9. For a self-hosted triggering server or any artefact retention decision, read
+9. For any artefact retention or GitHub-upload decision, read
    [artifact-storage.md](references/artifact-storage.md).
 10. For an auto-deployment job, also read
    `.agents/skills/deploy-service/SKILL.md` and its applicable host references.
@@ -91,10 +93,19 @@ contract in `$deploy-service`.
 - The deployable artefact is built and tested once on the triggering server.
   Publishing and deployment promote the same verified bytes; neither job
   rebuilds from source or depends on a GitHub Actions artefact upload.
+- Do not add `actions/upload-artifact`, `actions/download-artifact`, or an
+  Actions artefact API/CLI call by default. The only exception has documented
+  technical necessity and a current user who explicitly requests that specific
+  GitHub byte upload; it is non-secret, expires within one day, and is never
+  the release or rollback authority.
+- Do not attach a GitHub Release asset by default. It is a public publication
+  surface, not CI transport, retention, or rollback, and requires a current
+  user who explicitly requests that publication or a durable reviewed policy
+  records prior explicit user authorisation for that exact public surface.
 - The primary artefact record lives in a fixed server-local store with an
   immutable manifest and a bounded rolling policy: by default three verified
   `master` records and two verified `develop` records, plus live, rollback,
-  pinned, or held records.
+  pinned, held, or activating records.
 - A validated release id joins source SHA, artefact digest, workflow run,
   target compatibility, approvals, host metadata, and rollback evidence.
 - Deployments are serialized per environment. An older or cancelled run cannot
@@ -129,7 +140,8 @@ Recommended ownership:
 - `build`: profile-authoritative build and packaging; commits one immutable
   server-local artefact record with its digest, compatibility metadata, and
   test evidence.
-- `attest`: provenance or GitHub artefact attestation with minimal write scope.
+- `attest`: provenance or GitHub artefact attestation metadata with minimal
+  write scope; attestation never authorises byte storage.
 - `publish`: signs or publishes the already-built package, image, or release
   asset after channel checks.
 - `deploy`: protected environment, environment concurrency, scoped identity,
@@ -152,6 +164,8 @@ Challenge at least these cases:
   unreviewed protected channel
 - tag, branch, and artefact source SHA do not agree
 - build and release jobs produce different bytes or compatibility metadata
+- a workflow adds GitHub artefact transport because jobs run on different hosts
+  even though a local record or fixed transfer exists
 - two deploys overlap, finish out of order, or one is cancelled mid-activation
 - transfer is truncated, substituted, or sent to the wrong environment
 - activation succeeds but release identity, a worker, ingress, FFI, or package
@@ -173,4 +187,5 @@ Report the event/channel model, build matrix, permission and secret boundaries,
 server-local artefact store and rolling counts, artefact/provenance identity,
 the `deploy` credential and host ownership boundary, any local database root
 contract, deployment interface, release and rollback flow, concurrency policy,
-and validation evidence.
+validation evidence, and any explicit GitHub-upload exception with its
+necessity, user request, one-day expiry, and non-rollback status.

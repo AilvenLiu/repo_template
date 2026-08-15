@@ -121,9 +121,13 @@ the contract in [artifact-storage.md](artifact-storage.md).
   every production release or persistent-state root.
 - Commit a complete artefact and manifest atomically after validation. Record
   the source SHA, workflow run, release id, digest, compatibility, and status.
-- Do not call `actions/upload-artifact` or `actions/download-artifact` for the
-  primary bytes. A protected deploy boundary reads the committed record via a
-  fixed host helper and verifies the digest again.
+- Do not call `actions/upload-artifact`, `actions/download-artifact`, or an
+  equivalent Actions artefact API or CLI for the primary bytes. The only
+  exception is the documented technical-necessity and explicit-user-request
+  path in [artifact-storage.md](artifact-storage.md); it expires within one day
+  and is never the release or rollback authority. A protected deploy boundary
+  reads the committed record via a fixed host helper and verifies the digest
+  again.
 - Keep, by default, only the three newest verified `master` records and two
   newest verified `develop` records, plus live, rollback, pinned, held, and
   activating records. Prune under a repository lock; never prune an active

@@ -7,10 +7,12 @@ Emit a manifest containing source SHA, release id, digest, target compatibility,
 toolchain, dependency-lock identity, and build run. Downstream jobs verify and
 promote that manifest; they do not rebuild.
 
-When the build runs on the triggering self-hosted server, commit the bytes and
-manifest to the fixed server-local artefact store described in
-[artifact-storage.md](artifact-storage.md). Do not use a GitHub Actions
-artefact upload as the normal hand-off or rollback store.
+Commit the bytes and manifest to the fixed operator-controlled local artefact
+store described in [artifact-storage.md](artifact-storage.md), whether the
+build runs on a self-hosted server or GitHub-hosted infrastructure. A hosted
+build must use a fixed direct transfer or protected build-and-promote job; do
+not use a GitHub Actions artefact upload as the hand-off or rollback store
+unless the documented technical-necessity and explicit-user-request exception applies.
 
 ## Default source authority
 
@@ -23,8 +25,19 @@ independently authorise automatic release or deployment.
 
 ## Publication surfaces
 
-- GitHub Releases: attach the verified assets and checksums to an immutable tag
-  that resolves to the recorded source SHA.
+GitHub Release assets are a public publication surface, not CI transport,
+retention, or rollback storage. Do not attach them by default: they require a
+current user who explicitly requests that publication, or a durable reviewed
+policy recording prior explicit user authorisation for that exact surface.
+GitHub attestations and provenance are metadata, not permission to upload
+artefact bytes. GitHub Packages and GHCR are GitHub byte-publication surfaces:
+never use them as CI transport, retention, or rollback storage, and publish
+only when a current user explicitly requests that named surface or a durable
+reviewed policy records prior explicit user authorisation. Other package and
+container registries still require an explicit release contract and must never
+become the rollback source.
+- GitHub Releases: when explicitly authorised, attach the verified assets and
+  checksums to an immutable tag that resolves to the recorded source SHA.
 - Package registries: use trusted publishing or short-lived identity where
   supported and verify the uploaded version and digest after publication.
 - Container registries: push by digest, apply human-readable tags only as

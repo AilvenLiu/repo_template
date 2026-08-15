@@ -126,7 +126,11 @@ standards-compliant filename.
 - Protect publication with an environment and environment-scoped concurrency.
 - Commit the tested wheel once to the server-local artefact store and propagate
   its record id, digest, and provenance to publication.
-- Preserve CMake, CTest, wheel-inspection, and GPU diagnostics on failure.
+- GitHub Actions artefact storage is default-deny; use it only when the local
+  store and fixed transfer cannot work and the current user explicitly requests
+  the one-day, non-rollback exception in `artifact-storage.md`.
+- Preserve CMake, CTest, wheel-inspection, and GPU diagnostics in ordinary
+  workflow logs, job summaries, or a bounded local diagnostic store on failure.
 
 Illustrative shape only; resolve placeholders from official action repositories:
 

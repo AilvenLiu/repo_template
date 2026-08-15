@@ -76,10 +76,20 @@ Do not embed secrets or unchecked event data into a remote shell program.
 Prefer short-lived identity federation when available. For SSH-only hosts, use
 one restricted, rotated key per repository and environment.
 
-Do not use `actions/upload-artifact` or `actions/download-artifact` for the
-primary build, release, or deployment bytes. An explicitly approved temporary
-cross-host exception must expire within one day and must not be the rollback
-source.
+GitHub Actions artefact storage is default-deny. Do not use
+`actions/upload-artifact`, `actions/download-artifact`, the Actions artefact
+API or CLI, or an equivalent GitHub byte-storage path for build, test,
+diagnostic, release, deployment, or rollback bytes. Permit a temporary
+cross-host exception only when the local store, fixed direct transfer, and
+approved pull interface demonstrably cannot work and the current user explicitly
+requests that specific upload. Record the producer, consumer, SHA, digest,
+environment, non-secret contents, size, and reason; expire it within one day,
+and never make it the release or rollback source. A durable reviewed policy may
+stand for a prior explicit user request only when it names this exact exception.
+
+Every workflow exception must satisfy the exact record schema in
+`artifact-storage.md`; an upload step sets `retention-days: 1` and the normal
+constraint check fails closed without it.
 
 ## Secrets and evidence
 

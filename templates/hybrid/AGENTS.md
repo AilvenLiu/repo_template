@@ -216,6 +216,15 @@ deploy-managed root such as `/data/database/<service-or-engine>` or
 management root is owned and maintained by `deploy`; any engine-owned child
 directory must be narrowly delegated and documented.
 
+GitHub Actions artefact storage is default-deny. Do not add
+`actions/upload-artifact`, `actions/download-artifact`, or an equivalent GitHub
+byte-storage API or CLI unless a local or fixed direct route has a documented
+technical limitation and the current user explicitly requests that exact one-day,
+non-rollback transfer; retain significant release records in the bounded local
+store. Do not attach a GitHub Release asset unless the current user explicitly
+requests that named public publication; it is never CI transport, retention, or
+rollback storage.
+
 ---
 
 ## Constraint Loading

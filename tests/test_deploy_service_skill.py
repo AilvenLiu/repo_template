@@ -45,8 +45,22 @@ def test_generated_project_loads_split_service_skills(
         target / ".agents/skills/service-cicd/references/artifact-storage.md"
     ).is_file()
 
+    artifact_storage = (
+        target / ".agents/skills/service-cicd/references/artifact-storage.md"
+    ).read_text()
+    artifact_storage = " ".join(artifact_storage.split()).lower()
+
+    for phrase in (
+        "github actions artefact storage is default-deny",
+        "documented technical necessity",
+        "current user explicitly requests",
+        "within one day",
+        "release or rollback authority",
+    ):
+        assert phrase in artifact_storage
+
     for entrypoint in ("AGENTS.md", "CLAUDE.md"):
-        body = (target / entrypoint).read_text()
+        body = " ".join((target / entrypoint).read_text().split())
         assert "common/service-deployment.md" in body
         assert "common/github-actions-cicd.md" in body
         assert "automatic deployment" in body
@@ -58,6 +72,9 @@ def test_generated_project_loads_split_service_skills(
         assert "`deploy` owns the approved service root" in body
         assert "/data/database/<service-or-engine>" in body
         assert "~/data/database/<service-or-engine>" in body
+        assert "GitHub Actions artefact storage is default-deny" in body
+        assert "current user explicitly" in body
+        assert "one-day, non-rollback transfer" in body
 
 
 def test_host_deployment_skill_owns_host_contract() -> None:
@@ -148,8 +165,9 @@ def test_server_local_artifact_contract_is_bounded_and_separate() -> None:
         root / "constraints/common/service-deployment.md"
     ).read_text()
 
-    for body in (artifact_storage, cicd_skill, cicd_constraint, deployment_constraint):
+    for body in (artifact_storage, cicd_skill, cicd_constraint):
         assert "server-local" in body.lower()
+    assert "immutable local artefact store" in deployment_constraint
 
     assert "/data/ci-artifacts/<repository>" in artifact_storage
     assert "three newest successful, verified `master` records" in artifact_storage
@@ -158,7 +176,27 @@ def test_server_local_artifact_contract_is_bounded_and_separate() -> None:
     assert "mark the selected record `activating` or `held`" in artifact_storage
     assert "actions/upload-artifact" in artifact_storage
     assert "actions/download-artifact" in artifact_storage
-    assert "must not write or prune the runner-owned" in deployment_constraint
+    assert "must not write or prune" in deployment_constraint
+    assert "runner-owned store" in deployment_constraint
+    for body in (artifact_storage, cicd_skill, cicd_constraint):
+        assert "default-deny" in body
+        assert "technical necessity" in body
+        assert "current user" in body
+        assert "one day" in body
+        assert "release or rollback authority" in body
+
+
+def test_shipped_workflows_do_not_use_github_artifact_storage() -> None:
+    workflow_root = ROOT / ".github" / "workflows"
+    for workflow in sorted(workflow_root.rglob("*.y*ml")):
+        body = workflow.read_text()
+        for forbidden in (
+            "actions/upload-artifact",
+            "actions/download-artifact",
+            "gh release upload",
+            "/actions/artifacts",
+        ):
+            assert forbidden not in body, f"{workflow} uses {forbidden}"
 
 
 def test_self_hosted_ci_and_ssh_deploy_have_separate_contracts() -> None:
