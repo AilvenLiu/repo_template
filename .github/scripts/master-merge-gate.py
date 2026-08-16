@@ -172,30 +172,45 @@ STRICT_SEMVER_PATTERN = re.compile(
 )
 
 
-def parse_pyproject_version(text: str) -> str | None:
-    """Return the version declared by pyproject.toml text."""
-    try:
-        import tomllib
+def _literal_version_scan(text: str) -> str | None:
+    """Return the first quoted version assignment in manifest text."""
+    match = re.search(r'(?m)^\s*version\s*=\s*"([^"]+)"', text)
+    return match.group(1) if match else None
 
-        data: Any = tomllib.loads(text)
-    except (ImportError, ValueError):
-        # tomllib is stdlib from 3.11 and raises TOMLDecodeError, a ValueError,
-        # on malformed input. Fall back to a literal scan so an older runner or
-        # an unparsable manifest still yields a version to compare rather than
-        # silently skipping the check.
-        match = re.search(r'(?m)^\s*version\s*=\s*"([^"]+)"', text)
-        return match.group(1) if match else None
 
-    if not isinstance(data, dict):
+def _table_version(table: object) -> str | None:
+    """Return a string version from one decoded TOML table."""
+    if not isinstance(table, dict):
         return None
-    project = data.get("project")
-    if isinstance(project, dict) and isinstance(project.get("version"), str):
-        return project["version"]
-    tool = data.get("tool")
+    version = table.get("version")
+    return version if isinstance(version, str) else None
+
+
+def parse_pyproject_version(text: str) -> str | None:
+    """Return the version declared by pyproject.toml text.
+
+    tomllib is stdlib from 3.11 only, so the literal scan is a real fallback
+    rather than dead code: an older interpreter or a malformed manifest must
+    still yield a version to compare instead of silently skipping the check.
+    """
+    try:
+        import tomllib  # type: ignore[import-not-found,unused-ignore]
+    except ImportError:
+        return _literal_version_scan(text)
+
+    try:
+        decoded: object = tomllib.loads(text)
+    except ValueError:
+        return _literal_version_scan(text)
+
+    if not isinstance(decoded, dict):
+        return None
+    project_version = _table_version(decoded.get("project"))
+    if project_version is not None:
+        return project_version
+    tool = decoded.get("tool")
     if isinstance(tool, dict):
-        poetry = tool.get("poetry")
-        if isinstance(poetry, dict) and isinstance(poetry.get("version"), str):
-            return poetry["version"]
+        return _table_version(tool.get("poetry"))
     return None
 
 
