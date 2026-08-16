@@ -164,12 +164,13 @@ Hotfix-Validation-Tradeoff:
 ### Before Opening a PR
 
 For a PR/MR targeting `master`, confirm all of the following before requesting review:
-- The source is same-repository `release/*` or `hotfix/*`; it is not `develop`.
+- The source is same-repository `release/v<MAJOR>.<MINOR>.<PATCH>` or `hotfix/v<MAJOR>.<MINOR>.<PATCH>`; it is not `develop`.
 - The complete source tree contains no development-stage paths; only `docs/changelog/` may exist below `docs/`.
 - A release PR records `Develop-Source-SHA` and differs from that SHA only by forbidden-path deletions.
 - A hotfix PR records `Hotfix-Validation-Tradeoff`, including checks run and omissions.
 - `master-merge-gate` and profile validation are configured as required hosted checks.
-- A normal promotion uses a validated `release/<name>` buffer branch, and a master-origin hotfix has a reviewed back-merge plan for `develop`.
+- A normal promotion uses a validated `release/v<MAJOR>.<MINOR>.<PATCH>` buffer branch, and a master-origin hotfix has a reviewed back-merge plan for `develop`.
+- The branch version equals the authoritative manifest version at the recorded source commit, carries no pre-release or build suffix, and is strictly greater than the version on `master`.
 
 Run the pre-commit validation:
 
@@ -311,16 +312,35 @@ See `.agents/constraints/cpp/cuda.md` for comprehensive CUDA requirements.
 
 Follow Semantic Versioning (semver.org):
 ```
-v<MAJOR>.<MINOR>.<PATCH>
+<MAJOR>.<MINOR>.<PATCH>
 ```
 
 - **MAJOR**: Incompatible API changes
 - **MINOR**: Backward-compatible functionality additions
 - **PATCH**: Backward-compatible bug fixes
 
-Update version in:
-- `CMakeLists.txt` (project VERSION)
+The root `CMakeLists.txt` is the authoritative version manifest. The release
+process reads `project(<name> VERSION <x.y.z>)` at the recorded source commit.
+
+Update all of these in the same reviewed pull request:
+- `project(... VERSION ...)` in the root `CMakeLists.txt`
 - `CHANGELOG.md`
+
+Release naming is derived from that version, never typed by hand:
+
+| Artefact | Name |
+|---|---|
+| Release shim branch | `release/v<MAJOR>.<MINOR>.<PATCH>` |
+| Deletion-only staging branch | `chore/release-v<MAJOR>.<MINOR>.<PATCH>` |
+| Hotfix branch | `hotfix/v<MAJOR>.<MINOR>.<PATCH>` |
+| Tag on the merged `master` commit | `release-v<MAJOR>.<MINOR>.<PATCH>` |
+
+Bump the version on `develop` **before** selecting the release source commit. A
+release tree may differ from its source commit only by deleting development-stage
+paths, so a bump made after the cut would violate that invariant. A promoted
+version carries no `-dev`, `-rc`, or `+build` suffix and MUST be strictly greater
+than the version currently on `master`. The `master-merge-gate` enforces all of
+this; see `.agents/constraints/common/master-merge-policy.md` section 8.
 
 ## 9. Continuous Integration
 

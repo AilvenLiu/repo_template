@@ -9,8 +9,12 @@
 `master` accepts a pull request or merge request only when its source is a
 branch in the **same repository** named exactly:
 
-- `release/<name>`
-- `hotfix/<name>`
+- `release/v<major>.<minor>.<patch>`
+- `hotfix/v<major>.<minor>.<patch>`
+
+Section 8 defines the version, its authoritative manifest, and the matching tag
+name. A source branch whose name is not exactly one of these forms is rejected
+even when its tree is otherwise clean.
 
 All other sources, including feature branches and fork branches, are rejected.
 `develop` is categorically rejected because its required development-stage
@@ -65,22 +69,29 @@ The required release-shim workflow:
 1. Author the functional change on a normal branch from `develop`, merge it
    into `develop` through review, and run the full repository-owned validation
    while all agent tooling is present.
-2. Select an immutable reviewed commit SHA on `develop` and record it in the
-   master PR/MR body as `Develop-Source-SHA: <full 40-character SHA>`.
-3. Create the protected `release/<name>` ref at that exact commit; do not
+2. Bump the authoritative version manifest on `develop` through the ordinary
+   reviewed pull request, before selecting a source SHA. Section 8.4 explains
+   why the bump can never happen later in this workflow.
+3. Select an immutable reviewed commit SHA on `develop` and record it in the
+   master PR/MR body as `Develop-Source-SHA: <full 40-character SHA>`. Read the
+   version `<x.y.z>` from the authoritative manifest at that exact commit; every
+   name below is derived from it.
+4. Create the protected `release/v<x.y.z>` ref at that exact commit; do not
    force-update it.
-4. Create an unprotected `chore/release-<name>` staging branch from the same
+5. Create an unprotected `chore/release-v<x.y.z>` staging branch from the same
    commit. Delete only the forbidden paths and make the mechanical cleanup
    commit there. Because the cleanup deliberately removes the local wrappers,
    ordinary Git is permitted only for this deletion-only staging commit after
    the source SHA has passed the full repository-owned validation.
-5. Merge `chore/release-<name>` into `release/<name>` through a normal reviewed
-   PR/MR. This keeps all changes to the protected release branch review-bound.
-6. Run the master merge gate and full profile validation against the release
+6. Merge `chore/release-v<x.y.z>` into `release/v<x.y.z>` through a normal
+   reviewed PR/MR. This keeps all changes to the protected release branch
+   review-bound.
+7. Run the master merge gate and full profile validation against the release
    branch.
-7. Open `release/<name>` to `master` PR/MR with the source SHA, validation
+8. Open `release/v<x.y.z>` to `master` PR/MR with the source SHA, validation
    evidence, and release notes.
-8. Merge only after required checks and independent approval pass.
+9. Merge only after required checks and the applicable approval evidence pass.
+10. Tag the resulting `master` merge commit `release-v<x.y.z>` after the merge.
 
 A `release/*` tree MUST differ from its recorded `develop` source SHA only by
 deletions of the forbidden paths in section 2. It MUST NOT add, modify, rename,
@@ -142,9 +153,29 @@ full recursive source-branch tree.
 For GitHub, use the checked-in `pull_request_target` workflow only to fetch and
 run the trusted `master` policy; it MUST NOT check out or execute pull-request
 code, receive production secrets, or have write permissions. Configure hosted
-branch rules/rulesets to require a PR, independent approval, the required
-checks, and protected workflow ownership. Repository files cannot configure or
-verify those hosted controls on their own.
+branch rules/rulesets to require a PR, the applicable approval evidence, the
+required checks, and protected workflow ownership. Independent approval is the
+default; section 4.1 defines the narrow single-maintainer exception. Repository
+files cannot configure or verify those hosted controls on their own.
+
+### 4.1 Single-maintainer project exception
+
+A durable project-specific release policy MAY replace independent human
+approval only when the user explicitly confirms that exactly one accountable
+human maintains the repository and identifies that maintainer by immutable
+hosted user ID and login. This exception changes the human approval evidence
+only; it does not weaken the ordinary pull request, expected-head,
+required-check, immutable guard, full-tree, credential-separation, or
+ref-monitoring requirements.
+
+The single maintainer must authorise the exact candidate before merge through
+one unedited hosted comment created before merge and bound to repository ID,
+pull-request number, base SHA, and head SHA. The policy guard must verify the
+maintainer identity, comment tuple and timestamp, successful named checks,
+expected head, and merge actor. A missing, edited, post-merge, stale-head,
+wrong-owner, or ambiguous attestation fails closed. Record explicitly that this
+owner attestation is self-approval, not independent review and not server-side
+enforcement.
 
 Read `.agents/skills/branch-governance/SKILL.md` before changing this policy,
 the workflow, hosted branch rules, or release-shim automation.
@@ -163,3 +194,91 @@ two-phase strategy so that `master` is clean of agent tooling from the start:
 This means `master` never contains development-stage assets, even in the
 initial commit. See `init.py` in the create-project skill for the
 implementation.
+
+A generated project starts at version `0.1.0` in its authoritative manifest and
+promotes its first release as `release/v0.1.0`, tagged `release-v0.1.0`.
+
+## 8. Release version identity
+
+Every promotion to `master` carries exactly one semantic version. The version is
+reviewed data inside the source tree. It is never an operator argument, a CI
+input, a timestamp, or a value invented at promotion time.
+
+### 8.1 Authoritative version manifest
+
+Exactly one manifest is authoritative, selected by project profile:
+
+| Profile | Authoritative manifest | Field |
+|---|---|---|
+| `python` | `pyproject.toml` | `[project].version`, else `[tool.poetry].version` |
+| `cpp` | root `CMakeLists.txt` | `project(<name> VERSION <x.y.z>)` |
+| `hybrid` | root `CMakeLists.txt` | `project(<name> VERSION <x.y.z>)` |
+
+A hybrid project MUST also declare the identical version in `pyproject.toml`.
+CMake owns the native build graph under the C++ First policy, so CMake is
+authoritative and the Python packaging manifest mirrors it. Disagreement between
+the two is a hard failure, not a warning, because it makes the shipped artefact
+and the published package claim different versions.
+
+### 8.2 Version format
+
+A promoted version MUST be `<major>.<minor>.<patch>`, each a non-negative integer
+without a leading zero. A promoted version MUST NOT carry a pre-release or
+build-metadata suffix: `0.4.1-dev`, `1.0.0-rc1`, and `2.1.0+build7` are all
+rejected. Development-stage suffixes may exist on `develop`, never on a version
+promoted to `master`.
+
+### 8.3 Required names
+
+Derive every release name from that one version:
+
+| Artefact | Required name |
+|---|---|
+| Release shim branch | `release/v<major>.<minor>.<patch>` |
+| Deletion-only staging branch | `chore/release-v<major>.<minor>.<patch>` |
+| Hotfix branch | `hotfix/v<major>.<minor>.<patch>` |
+| Tag on the merged `master` commit | `release-v<major>.<minor>.<patch>` |
+
+A branch name is a claim about the tree it carries. The gate MUST verify that
+the version in the branch name equals the authoritative manifest version at the
+recorded `Develop-Source-SHA`, so a name can never describe content it does not
+carry.
+
+Because the name is derived from the source commit rather than chosen, repeating
+a promotion for the same source commit yields the same branch name. A retry is
+then idempotent instead of producing a second, divergent candidate.
+
+### 8.4 Bump before you cut
+
+A release tree differs from its recorded `develop` source SHA only by deletions
+of the section 2 forbidden paths. A version bump is a modification, so it can
+never be made on the release or staging branch without violating that invariant.
+
+The bump MUST therefore land on `develop` first, through the ordinary reviewed
+pull request, before a source SHA is selected. Bump the version in the same pull
+request as the change it describes, or in a dedicated reviewed pull request
+immediately before promotion. Selecting a source SHA whose manifest still holds
+an already-released version is a hard failure, not a warning.
+
+### 8.5 Monotonicity
+
+A candidate version MUST be strictly greater than the version currently on
+`master`, compared component-wise as integers. This makes an accidental
+re-release, a silent rollback, and a recycled branch name detectable rather than
+merely discouraged.
+
+Reusing a released version is forbidden even after deleting its branch or tag.
+On a hosting plan without server-side ref protection, this monotonicity check is
+the only remaining structural defence against name recycling. Record that
+limitation rather than claiming the host prevents the reuse.
+
+### 8.6 Tagging
+
+Tag the resulting `master` merge commit `release-v<major>.<minor>.<patch>` after
+the merge, never before. The tag names one immutable promoted commit, so it MUST
+NOT be moved, deleted, or re-pointed. Where automatic release or deployment is
+enabled, it promotes that exact tagged `master` SHA.
+
+A hotfix follows the same rules: it bumps the patch component on its own branch,
+carries a `hotfix/v<x.y.z>` name, and is tagged `release-v<x.y.z>` on `master`.
+Its back-merge to `develop` carries the version bump with the functional fix.

@@ -14,7 +14,7 @@ constraints before editing policy or workflow files.
 | Target | Allowed source | Required purpose |
 |---|---|---|
 | `develop` | feature/fix/docs/chore branches | normal integration |
-| `master` | same-repository `release/*`, `hotfix/*` | reviewed production entry |
+| `master` | same-repository `release/v<x.y.z>`, `hotfix/v<x.y.z>` | reviewed production entry |
 
 For every target, state whether direct pushes are denied, which approvals are
 independent, which status checks are required, and which file paths cannot
@@ -46,11 +46,30 @@ Promote reviewed `develop` content through a release shim:
 
 1. Author and review every functional change through `develop`, then run the
    repository-owned validation there while the complete tooling is present.
-2. Validate and record the immutable reviewed `develop` SHA. The master PR
-   body MUST contain `Develop-Source-SHA: <full 40-character SHA>`.
-3. Create the protected `release/<name>` ref at that SHA without force-updating
-   an existing ref.
-4. Create an unprotected `chore/release-<name>` staging branch from the same
+2. Bump the authoritative version manifest on `develop` through the ordinary
+   reviewed pull request. Do this before selecting a source SHA: the release
+   tree is deletion-only, so a bump made later would violate that invariant.
+   The manifest is `pyproject.toml` for a `python` profile and the root
+   `CMakeLists.txt` for `cpp` and `hybrid`; a hybrid `pyproject.toml` MUST
+   declare the identical version.
+3. Validate and record the immutable reviewed `develop` SHA. The master PR
+   body MUST contain `Develop-Source-SHA: <full 40-character SHA>`. Read
+   `<x.y.z>` from the authoritative manifest at that exact SHA and derive every
+   name below from it; never type the version by hand.
+
+   ```bash
+   # python profile
+   SOURCE_SHA=$(git rev-parse develop)
+   VERSION=$(git show "$SOURCE_SHA:pyproject.toml" \
+     | sed -n 's/^version[[:space:]]*=[[:space:]]*"\(.*\)"/\1/p' | head -1)
+   # cpp and hybrid profiles
+   VERSION=$(git show "$SOURCE_SHA:CMakeLists.txt" \
+     | sed -n 's/.*VERSION[[:space:]]\+\([0-9]\+\.[0-9]\+\.[0-9]\+\).*/\1/p' | head -1)
+   ```
+
+4. Create the protected `release/v$VERSION` ref at that SHA without
+   force-updating an existing ref.
+5. Create an unprotected `chore/release-v$VERSION` staging branch from the same
    SHA. Before opening the master PR, delete only the paths forbidden by the
    master merge policy and commit the cleanup on that staging branch. The
    master-merge-gate will reject any master PR whose source tree contains these
@@ -71,12 +90,20 @@ Promote reviewed `develop` content through a release shim:
    step. Because the deletion deliberately removes the wrappers, ordinary Git
    is permitted only for this mechanical deletion-only staging commit.
 
-5. Merge the staging branch into `release/<name>` through a normal reviewed
+6. Merge the staging branch into `release/v$VERSION` through a normal reviewed
    PR/MR. Never commit the cleanup directly on the protected release branch.
-6. Run the master gate and full profile validation against the release branch.
-7. Open `release/<name>` to `master`, carrying source SHA, validation evidence,
-   changelog, and rollback/release notes.
-8. Merge only after the protected checks and independent approval pass.
+7. Run the master gate and full profile validation against the release branch.
+8. Open `release/v$VERSION` to `master`, carrying source SHA, validation
+   evidence, changelog, and rollback/release notes.
+9. Merge only after the protected checks and the applicable approval evidence
+   pass.
+10. Tag the resulting `master` merge commit `release-v$VERSION` after the merge.
+    The tag names one immutable commit and MUST NOT be moved or re-pointed.
+
+The candidate version MUST be strictly greater than the version currently on
+`master`. Reusing a released version is forbidden even after deleting its branch
+or tag; without server-side ref protection this check is the only structural
+defence against name recycling.
 
 The release branch MUST contain only deletions of paths forbidden by the
 master policy relative to the recorded `develop` SHA. It MUST NOT contain a
@@ -127,6 +154,7 @@ operator actions.
 ## Finish with hosted configuration
 
 Configure the repository host separately to require pull requests, block direct
-and force pushes, require independent review, dismiss stale approvals, and
-require both `master-merge-gate` and profile validation. Report settings that
+and force pushes, require the applicable independent review or documented
+single-maintainer owner attestation, dismiss stale approvals where applicable,
+and require both `master-merge-gate` and profile validation. Report settings that
 could not be verified; do not claim a workflow file alone protects `master`.

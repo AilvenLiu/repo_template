@@ -19,9 +19,12 @@ governed separately by `common/service-deployment.md`.
   requires an explicit documented compatibility/risk decision. CPU and
   non-CUDA native validation remain mandatory where applicable.
 - Every PR/MR targeting `master` MUST also run the read-only
-  `master-merge-gate` status. Configure it and the profile-authoritative
-  validation status as required hosted branch checks; CI configuration alone is
-  not a substitute for branch protection.
+  `master-merge-gate` status and carry the applicable approval evidence from
+  `common/master-merge-policy.md`. Independent human approval is the default; a
+  durable single-maintainer policy may substitute only its exact owner
+  attestation. Configure it and the profile-authoritative validation status as
+  required hosted branch checks; CI configuration alone is not a substitute
+  for branch protection.
 
 ## CI Compute and Deployment Boundaries
 
@@ -57,9 +60,14 @@ procedural and validation contract.
 
 ## Master PR/MR Gate
 
-- Accept master-bound PRs/MRs only from same-repository `release/*` or
-  `hotfix/*` branches. Reject `develop` categorically because its required
-  tooling cannot pass the presence-based tree check.
+- Accept master-bound PRs/MRs only from same-repository branches named exactly
+  `release/v<major>.<minor>.<patch>` or `hotfix/v<major>.<minor>.<patch>`.
+  Reject `develop` categorically because its required tooling cannot pass the
+  presence-based tree check.
+- Verify that the version in the source branch name equals the authoritative
+  manifest version at the recorded source commit, that a hybrid project's
+  `pyproject.toml` mirrors its `CMakeLists.txt` version, and that the candidate
+  version is strictly greater than the version currently on `master`.
 - Reject any source tree containing a development-stage path listed in
   `common/master-merge-policy.md`; permit only `docs/changelog/` below `docs/`.
 - For `release/*`, require the PR body to record `Develop-Source-SHA` and fail

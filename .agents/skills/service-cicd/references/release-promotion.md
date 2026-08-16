@@ -36,6 +36,12 @@ only when a current user explicitly requests that named surface or a durable
 reviewed policy records prior explicit user authorisation. Other package and
 container registries still require an explicit release contract and must never
 become the rollback source.
+- Release tag: tag the merged `master` commit `release-v<major>.<minor>.<patch>`,
+  using the version read from the project's authoritative manifest at the
+  recorded source commit. Tag after the merge, never before. The tag names one
+  immutable commit and MUST NOT be moved, deleted, or re-pointed; a corrected
+  release takes the next version instead. See
+  `.agents/constraints/common/master-merge-policy.md` section 8.
 - GitHub Releases: when explicitly authorised, attach the verified assets and
   checksums to an immutable tag that resolves to the recorded source SHA.
 - Package registries: use trusted publishing or short-lived identity where

@@ -18,6 +18,7 @@ The gate script is self-contained (stdlib only) because it lives in
 from __future__ import annotations
 
 import argparse
+import base64
 import json
 import os
 import re
@@ -34,6 +35,13 @@ ALLOWED_HEAD_PREFIXES = ("release/", "hotfix/")
 DEVELOP_SOURCE_LABEL = "Develop-Source-SHA"
 HOTFIX_TRADEOFF_LABEL = "Hotfix-Validation-Tradeoff"
 FULL_SHA_PATTERN = re.compile(r"[0-9a-fA-F]{40}")
+SEMVER_COMPONENT = r"(?:0|[1-9][0-9]*)"
+RELEASE_BRANCH_PATTERN = re.compile(
+    rf"^(?:release|hotfix)/v({SEMVER_COMPONENT})\.({SEMVER_COMPONENT})\.({SEMVER_COMPONENT})$"
+)
+RELEASE_TAG_PATTERN = re.compile(
+    rf"^release-v({SEMVER_COMPONENT})\.({SEMVER_COMPONENT})\.({SEMVER_COMPONENT})$"
+)
 DEVELOPMENT_ONLY_ROOTS = (
     ".ai",
     ".agents",
@@ -46,12 +54,35 @@ TreeEntry: TypeAlias = tuple[str, str, str]
 TreeSnapshot: TypeAlias = dict[str, TreeEntry]
 
 
+def branch_version(branch: str) -> tuple[int, int, int] | None:
+    """Return the semantic version a master source branch name declares."""
+    match = RELEASE_BRANCH_PATTERN.fullmatch(branch)
+    if match is None:
+        return None
+    return (int(match.group(1)), int(match.group(2)), int(match.group(3)))
+
+
+def tag_version(tag: str) -> tuple[int, int, int] | None:
+    """Return the semantic version a release tag name declares.
+
+    Exported as the canonical parser for the post-merge tagging step. This gate
+    runs at pull-request time and therefore cannot itself enforce that the tag
+    was applied; release automation and the operator procedure own that step.
+    """
+    match = RELEASE_TAG_PATTERN.fullmatch(tag)
+    if match is None:
+        return None
+    return (int(match.group(1)), int(match.group(2)), int(match.group(3)))
+
+
+def format_version(version: tuple[int, int, int]) -> str:
+    """Return the canonical dotted text for one semantic version."""
+    return ".".join(str(component) for component in version)
+
+
 def is_allowed_master_source(branch: str) -> bool:
     """Return whether a branch is an allowed same-repository master PR source."""
-    return any(
-        branch.startswith(prefix) and len(branch) > len(prefix)
-        for prefix in ALLOWED_HEAD_PREFIXES
-    )
+    return branch_version(branch) is not None
 
 
 def is_development_only_path(path: str) -> bool:
@@ -95,8 +126,8 @@ def validate_master_pull_request(
 
     if not is_allowed_master_source(head_ref):
         violations.append(
-            "master accepts only release/<name> or hotfix/<name> as "
-            "pull-request sources"
+            "master accepts only release/v<major>.<minor>.<patch> or "
+            "hotfix/v<major>.<minor>.<patch> as pull-request sources"
         )
 
     for path in sorted(set(source_tree_paths)):
@@ -130,6 +161,121 @@ def validate_release_projection(
     for path in sorted(develop_tree.keys() - release_tree.keys()):
         if not is_development_only_path(path):
             violations.append(f"release tree non-policy deletion is forbidden: {path}")
+
+    return violations
+
+
+CMAKE_MANIFEST = "CMakeLists.txt"
+PYPROJECT_MANIFEST = "pyproject.toml"
+STRICT_SEMVER_PATTERN = re.compile(
+    rf"^{SEMVER_COMPONENT}\.{SEMVER_COMPONENT}\.{SEMVER_COMPONENT}$"
+)
+
+
+def parse_pyproject_version(text: str) -> str | None:
+    """Return the version declared by pyproject.toml text."""
+    try:
+        import tomllib
+
+        data: Any = tomllib.loads(text)
+    except (ImportError, ValueError):
+        # tomllib is stdlib from 3.11 and raises TOMLDecodeError, a ValueError,
+        # on malformed input. Fall back to a literal scan so an older runner or
+        # an unparsable manifest still yields a version to compare rather than
+        # silently skipping the check.
+        match = re.search(r'(?m)^\s*version\s*=\s*"([^"]+)"', text)
+        return match.group(1) if match else None
+
+    if not isinstance(data, dict):
+        return None
+    project = data.get("project")
+    if isinstance(project, dict) and isinstance(project.get("version"), str):
+        return project["version"]
+    tool = data.get("tool")
+    if isinstance(tool, dict):
+        poetry = tool.get("poetry")
+        if isinstance(poetry, dict) and isinstance(poetry.get("version"), str):
+            return poetry["version"]
+    return None
+
+
+def parse_cmake_version(text: str) -> str | None:
+    """Return the VERSION of the first CMake project() command."""
+    without_comments = re.sub(r"(?m)#.*$", "", text)
+    match = re.search(r"(?is)\bproject\s*\((.*?)\)", without_comments)
+    if match is None:
+        return None
+    version_match = re.search(r"(?i)\bVERSION\s+([0-9][0-9A-Za-z.+-]*)", match.group(1))
+    return version_match.group(1) if version_match else None
+
+
+def _authoritative_version(
+    manifests: Mapping[str, str],
+) -> tuple[str | None, str | None]:
+    """Return the authoritative version and its manifest path for one tree.
+
+    CMake wins whenever it is present, covering both the cpp and hybrid
+    profiles, because CMake owns the native build graph under C++ First.
+    """
+    if CMAKE_MANIFEST in manifests:
+        return parse_cmake_version(manifests[CMAKE_MANIFEST]), CMAKE_MANIFEST
+    if PYPROJECT_MANIFEST in manifests:
+        return parse_pyproject_version(manifests[PYPROJECT_MANIFEST]), PYPROJECT_MANIFEST
+    return None, None
+
+
+def validate_release_version(
+    *,
+    head_ref: str,
+    source_manifests: Mapping[str, str],
+    master_manifests: Mapping[str, str],
+) -> list[str]:
+    """Return violations for the release version identity of a master PR."""
+    declared = branch_version(head_ref)
+    if declared is None:
+        return []
+
+    violations: list[str] = []
+    source_version, manifest_path = _authoritative_version(source_manifests)
+    if manifest_path is None:
+        violations.append(
+            "source tree declares no authoritative version manifest "
+            f"({CMAKE_MANIFEST} or {PYPROJECT_MANIFEST})"
+        )
+        return violations
+    if source_version is None:
+        violations.append(f"no version is declared in {manifest_path}")
+        return violations
+    if STRICT_SEMVER_PATTERN.fullmatch(source_version) is None:
+        violations.append(
+            f"{manifest_path} version must be <major>.<minor>.<patch> without a "
+            f"pre-release or build suffix: {source_version}"
+        )
+        return violations
+
+    if manifest_path == CMAKE_MANIFEST and PYPROJECT_MANIFEST in source_manifests:
+        mirrored = parse_pyproject_version(source_manifests[PYPROJECT_MANIFEST])
+        if mirrored != source_version:
+            violations.append(
+                f"{PYPROJECT_MANIFEST} version {mirrored} must equal the "
+                f"authoritative {CMAKE_MANIFEST} version {source_version}"
+            )
+
+    if format_version(declared) != source_version:
+        violations.append(
+            f"branch name declares version {format_version(declared)} but "
+            f"{manifest_path} at the recorded source SHA declares {source_version}"
+        )
+        return violations
+
+    master_version, _ = _authoritative_version(master_manifests)
+    if master_version is not None and STRICT_SEMVER_PATTERN.fullmatch(master_version):
+        current = tuple(int(part) for part in master_version.split("."))
+        if declared <= current:
+            violations.append(
+                f"candidate version {source_version} must be strictly greater "
+                f"than the version currently on master ({master_version})"
+            )
 
     return violations
 
@@ -273,6 +419,46 @@ def _is_ancestor(
     return behind_by == 0
 
 
+def _fetch_manifest_texts(
+    repository: str, tree: TreeSnapshot, token: str
+) -> dict[str, str]:
+    """Read the version manifests that exist in one tree snapshot."""
+    api_url = os.environ.get("GITHUB_API_URL", "https://api.github.com").rstrip("/")
+    encoded_repository = quote(repository, safe="/")
+    manifests: dict[str, str] = {}
+    for path in (CMAKE_MANIFEST, PYPROJECT_MANIFEST):
+        entry = tree.get(path)
+        if entry is None or entry[1] != "blob":
+            continue
+        blob = _request_json(
+            f"{api_url}/repos/{encoded_repository}/git/blobs/{quote(entry[2], safe='')}",
+            token,
+            f"read {path}",
+        )
+        content = blob.get("content")
+        if not isinstance(content, str) or blob.get("encoding") != "base64":
+            continue
+        try:
+            manifests[path] = base64.b64decode(content).decode("utf-8")
+        except (ValueError, UnicodeDecodeError):
+            continue
+    return manifests
+
+
+def _master_manifests(
+    base: dict[str, Any], base_repository: str, head_ref: str, token: str
+) -> dict[str, str]:
+    """Read the version manifests currently on master for the monotonicity check."""
+    if branch_version(head_ref) is None:
+        return {}
+    base_sha = base.get("sha")
+    if not isinstance(base_sha, str) or not base_sha:
+        return {}
+    return _fetch_manifest_texts(
+        base_repository, _fetch_tree(base_repository, base_sha, token), token
+    )
+
+
 def validate_event(event: dict[str, Any], token: str) -> list[str]:
     """Validate a GitHub pull-request event payload using the Git Trees API."""
     pull_request = event.get("pull_request")
@@ -329,12 +515,35 @@ def validate_event(event: dict[str, Any], token: str) -> list[str]:
                     release_tree=source_tree,
                 )
             )
+            violations.extend(
+                validate_release_version(
+                    head_ref=head_ref,
+                    source_manifests=_fetch_manifest_texts(
+                        base_repository, develop_tree, token
+                    ),
+                    master_manifests=_master_manifests(
+                        base, base_repository, head_ref, token
+                    ),
+                )
+            )
 
     if head_ref.startswith("hotfix/"):
         if _body_field(body, HOTFIX_TRADEOFF_LABEL) is None:
             violations.append(
                 f"hotfix PR body must contain exactly one non-empty "
                 f"'{HOTFIX_TRADEOFF_LABEL}: <checks run and omissions>' field"
+            )
+        if base_repository == head_repository:
+            violations.extend(
+                validate_release_version(
+                    head_ref=head_ref,
+                    source_manifests=_fetch_manifest_texts(
+                        head_repository, source_tree, token
+                    ),
+                    master_manifests=_master_manifests(
+                        base, base_repository, head_ref, token
+                    ),
+                )
             )
 
     return violations

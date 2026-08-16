@@ -15,7 +15,7 @@ _HEAD_SHA = "b" * 40
 
 def _violations(
     *,
-    head_ref: str = "release/2026.07.22",
+    head_ref: str = "release/v1.2.3",
     head_repository: str = "example/project",
     changed_paths: list[str] | None = None,
 ) -> list[str]:
@@ -47,12 +47,134 @@ def _event(*, head_ref: str, body: str | None) -> dict[str, object]:
 
 def test_master_accepts_only_declared_same_repository_sources() -> None:
     assert _violations(head_ref="develop")
-    assert not _violations(head_ref="release/2026.07.22")
-    assert not _violations(head_ref="hotfix/payment-timeout")
+    assert not _violations(head_ref="release/v1.2.3")
+    assert not _violations(head_ref="hotfix/v1.2.4")
+    assert not _violations(head_ref="release/v0.1.0")
+    assert not _violations(head_ref="release/v10.20.30")
     assert _violations(head_ref="feat/direct-to-master")
     assert _violations(head_ref="release/")
     assert _violations(head_ref="hotfix/")
     assert _violations(head_repository="fork/project")
+
+
+def test_master_source_branch_requires_exact_semantic_version_name() -> None:
+    """Only release/v<x.y.z> and hotfix/v<x.y.z> may reach master."""
+    for rejected in (
+        "release/2026.07.22",
+        "release/1.2.3",
+        "release/v1.2",
+        "release/v1.2.3.4",
+        "release/v1.2.3-rc1",
+        "release/v1.2.3+build7",
+        "release/v01.2.3",
+        "release/vnext",
+        "release/v1.2.3/extra",
+        "chore/release-v1.2.3",
+        "hotfix/payment-timeout",
+    ):
+        assert _violations(head_ref=rejected), rejected
+
+
+def test_branch_and_tag_version_parsers_agree_on_canonical_names() -> None:
+    assert master_merge_gate.branch_version("release/v1.2.3") == (1, 2, 3)
+    assert master_merge_gate.branch_version("hotfix/v0.0.1") == (0, 0, 1)
+    assert master_merge_gate.branch_version("release/v1.2.3-rc1") is None
+    assert master_merge_gate.tag_version("release-v2.0.1") == (2, 0, 1)
+    assert master_merge_gate.tag_version("v2.0.1") is None
+    assert master_merge_gate.tag_version("release/v2.0.1") is None
+    assert master_merge_gate.format_version((1, 2, 3)) == "1.2.3"
+
+
+_PYPROJECT = '[project]\nname = "demo"\nversion = "{version}"\n'
+_POETRY = '[tool.poetry]\nname = "demo"\nversion = "{version}"\n'
+_CMAKE = 'cmake_minimum_required(VERSION 3.24)\nproject(demo VERSION {version} LANGUAGES CXX)\n'
+
+
+def _version_violations(
+    *,
+    head_ref: str = "release/v1.2.3",
+    source: dict[str, str] | None = None,
+    master: dict[str, str] | None = None,
+) -> list[str]:
+    return master_merge_gate.validate_release_version(
+        head_ref=head_ref,
+        source_manifests=source if source is not None else {},
+        master_manifests=master if master is not None else {},
+    )
+
+
+def test_version_manifest_is_parsed_for_every_project_profile() -> None:
+    """Python reads pyproject, cpp and hybrid read CMake as the authority."""
+    assert master_merge_gate.parse_pyproject_version(
+        _PYPROJECT.format(version="1.2.3")
+    ) == "1.2.3"
+    assert master_merge_gate.parse_pyproject_version(
+        _POETRY.format(version="4.5.6")
+    ) == "4.5.6"
+    assert master_merge_gate.parse_cmake_version(
+        _CMAKE.format(version="1.2.3")
+    ) == "1.2.3"
+    assert master_merge_gate.parse_cmake_version(
+        "# project(ignored VERSION 9.9.9)\nproject(demo VERSION 1.0.0)\n"
+    ) == "1.0.0"
+
+
+def test_branch_version_must_match_the_source_manifest() -> None:
+    assert not _version_violations(source={"pyproject.toml": _PYPROJECT.format(version="1.2.3")})
+    assert not _version_violations(source={"CMakeLists.txt": _CMAKE.format(version="1.2.3")})
+    assert _version_violations(source={"pyproject.toml": _PYPROJECT.format(version="1.2.4")})
+    assert _version_violations(source={})
+
+
+def test_hybrid_manifests_must_declare_the_same_version() -> None:
+    """CMake is authoritative; a disagreeing pyproject is a hard failure."""
+    assert not _version_violations(
+        source={
+            "CMakeLists.txt": _CMAKE.format(version="1.2.3"),
+            "pyproject.toml": _PYPROJECT.format(version="1.2.3"),
+        }
+    )
+    assert _version_violations(
+        source={
+            "CMakeLists.txt": _CMAKE.format(version="1.2.3"),
+            "pyproject.toml": _PYPROJECT.format(version="1.2.4"),
+        }
+    )
+
+
+def test_promoted_version_rejects_prerelease_and_build_suffixes() -> None:
+    for rejected in ("1.2.3-dev", "1.2.3-rc1", "1.2.3+build7", "1.2", "01.2.3"):
+        assert _version_violations(
+            head_ref="release/v1.2.3",
+            source={"pyproject.toml": _PYPROJECT.format(version=rejected)},
+        ), rejected
+
+
+def test_candidate_version_must_exceed_the_version_on_master() -> None:
+    source = {"pyproject.toml": _PYPROJECT.format(version="1.2.3")}
+    assert not _version_violations(
+        source=source, master={"pyproject.toml": _PYPROJECT.format(version="1.2.2")}
+    )
+    assert not _version_violations(
+        source=source, master={"pyproject.toml": _PYPROJECT.format(version="0.9.9")}
+    )
+    assert _version_violations(
+        source=source, master={"pyproject.toml": _PYPROJECT.format(version="1.2.3")}
+    )
+    assert _version_violations(
+        source=source, master={"pyproject.toml": _PYPROJECT.format(version="1.3.0")}
+    )
+    assert _version_violations(
+        source=source, master={"pyproject.toml": _PYPROJECT.format(version="2.0.0")}
+    )
+
+
+def test_first_release_is_allowed_when_master_declares_no_version() -> None:
+    assert not _version_violations(
+        head_ref="release/v0.1.0",
+        source={"pyproject.toml": _PYPROJECT.format(version="0.1.0")},
+        master={},
+    )
 
 
 def test_release_projection_allows_only_forbidden_path_deletions() -> None:
@@ -120,15 +242,20 @@ def test_release_event_requires_and_validates_recorded_develop_sha(monkeypatch) 
         return True
 
     monkeypatch.setattr(master_merge_gate, "_is_ancestor", record_ancestry)
+    monkeypatch.setattr(
+        master_merge_gate,
+        "_fetch_manifest_texts",
+        lambda repository, tree, token: {"pyproject.toml": _PYPROJECT.format(version="1.2.3")},
+    )
 
     missing = master_merge_gate.validate_event(
-        _event(head_ref="release/2026.07.22", body=None), "token"
+        _event(head_ref="release/v1.2.3", body=None), "token"
     )
     assert any("Develop-Source-SHA" in violation for violation in missing)
 
     valid = master_merge_gate.validate_event(
         _event(
-            head_ref="release/2026.07.22",
+            head_ref="release/v1.2.3",
             body=f"Develop-Source-SHA: {_DEVELOP_SHA}",
         ),
         "token",
@@ -149,7 +276,7 @@ def test_release_event_rejects_unrelated_recorded_source(monkeypatch) -> None:
 
     violations = master_merge_gate.validate_event(
         _event(
-            head_ref="release/2026.07.22",
+            head_ref="release/v1.2.3",
             body=f"Develop-Source-SHA: {_DEVELOP_SHA}",
         ),
         "token",
@@ -178,14 +305,20 @@ def test_hotfix_event_requires_explicit_validation_tradeoff(monkeypatch) -> None
         master_merge_gate, "_fetch_tree", lambda repository, sha, token: {}
     )
 
+    monkeypatch.setattr(
+        master_merge_gate,
+        "_fetch_manifest_texts",
+        lambda repository, tree, token: {"pyproject.toml": _PYPROJECT.format(version="1.2.4")},
+    )
+
     missing = master_merge_gate.validate_event(
-        _event(head_ref="hotfix/payment-timeout", body=""), "token"
+        _event(head_ref="hotfix/v1.2.4", body=""), "token"
     )
     assert any("Hotfix-Validation-Tradeoff" in violation for violation in missing)
 
     valid = master_merge_gate.validate_event(
         _event(
-            head_ref="hotfix/payment-timeout",
+            head_ref="hotfix/v1.2.4",
             body="Hotfix-Validation-Tradeoff: agent-precommit absent; ran hosted CI",
         ),
         "token",

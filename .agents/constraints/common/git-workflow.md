@@ -30,8 +30,14 @@ absolutely forbidden.
 
 ### Master PR/MR Admission
 
-`master` accepts PRs/MRs only from same-repository `release/*` or `hotfix/*`
-branches. The master merge gate uses a **presence-based** check:
+`master` accepts PRs/MRs only from same-repository branches named exactly
+`release/v<major>.<minor>.<patch>` or `hotfix/v<major>.<minor>.<patch>`. The
+version is read from the project's authoritative manifest at the recorded
+source commit, never typed by hand, and the merged `master` commit is tagged
+`release-v<major>.<minor>.<patch>`. Because a release tree is deletion-only,
+the version bump MUST already be on `develop` before the source SHA is
+selected. Read `master-merge-policy.md` section 8 for the full version
+contract. The master merge gate uses a **presence-based** check:
 it enumerates every file in the source branch's tree via the Git Trees API
 and rejects the PR if any development-stage path exists — regardless of
 which commit introduced it. `docs/changelog/` is the sole allowed `docs/`

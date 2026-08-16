@@ -132,7 +132,7 @@ ctest --test-dir build --output-on-failure
 ## Absolute Prohibitions
 
 - NEVER commit directly to `master`, `main`, `develop`, `release/*`, `hotfix/*`
-- NEVER open or merge a master-bound PR/MR except from same-repository `release/*` or `hotfix/*`; `develop` is categorically invalid, and the source tree must pass the presence-based `master-merge-gate`
+- NEVER open or merge a master-bound PR/MR except from same-repository `release/v<MAJOR>.<MINOR>.<PATCH>` or `hotfix/v<MAJOR>.<MINOR>.<PATCH>`; `develop` is categorically invalid, and the source tree must pass the presence-based `master-merge-gate`. The version comes from the authoritative manifest at the recorded source commit and the merged commit is tagged `release-v<MAJOR>.<MINOR>.<PATCH>`
 - NEVER merge `master` into or rebase `develop` onto `master` for an ordinary release; release trees contain only forbidden-path deletions relative to their recorded `develop` SHA
 - A master-origin hotfix MUST record reduced validation and return to `develop` through a reviewed merge or cherry-pick PR, never through rebase
 - NEVER install C++ libraries via system package managers; NVIDIA/AMD GPU libraries and toolchains are discovered as external SDKs

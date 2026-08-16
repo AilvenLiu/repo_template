@@ -174,12 +174,13 @@ Hotfix-Validation-Tradeoff:
 ### Before Opening a PR
 
 For a PR/MR targeting `master`, confirm all of the following before requesting review:
-- The source is same-repository `release/*` or `hotfix/*`; it is not `develop`.
+- The source is same-repository `release/v<MAJOR>.<MINOR>.<PATCH>` or `hotfix/v<MAJOR>.<MINOR>.<PATCH>`; it is not `develop`.
 - The complete source tree contains no development-stage paths; only `docs/changelog/` may exist below `docs/`.
 - A release PR records `Develop-Source-SHA` and differs from that SHA only by forbidden-path deletions.
 - A hotfix PR records `Hotfix-Validation-Tradeoff`, including checks run and omissions.
 - `master-merge-gate` and profile validation are configured as required hosted checks.
-- A normal promotion uses a validated `release/<name>` buffer branch, and a master-origin hotfix has a reviewed back-merge plan for `develop`.
+- A normal promotion uses a validated `release/v<MAJOR>.<MINOR>.<PATCH>` buffer branch, and a master-origin hotfix has a reviewed back-merge plan for `develop`.
+- The branch version equals the authoritative manifest version at the recorded source commit, carries no pre-release or build suffix, and is strictly greater than the version on `master`.
 
 Run the pre-commit validation:
 
@@ -545,7 +546,45 @@ auditwheel repair dist/*.whl \
   -w dist/repaired/
 ```
 
-## 14. Continuous Integration
+## 14. Versioning and Releases
+
+Follow Semantic Versioning (semver.org):
+```
+<MAJOR>.<MINOR>.<PATCH>
+```
+
+- **MAJOR**: Incompatible API changes
+- **MINOR**: Backward-compatible functionality additions
+- **PATCH**: Backward-compatible bug fixes
+
+The root `CMakeLists.txt` is the authoritative version manifest, because CMake
+owns the native build graph under the C++ First policy. `pyproject.toml` MUST
+declare the identical version; a disagreement is a hard gate failure, because
+the wheel and the native artefact would otherwise claim different versions.
+
+Update all of these in the same reviewed pull request:
+- `project(... VERSION ...)` in the root `CMakeLists.txt`
+- `[project].version`, or `[tool.poetry].version`, in `pyproject.toml`
+- `__version__` in the Python package `__init__.py`
+- `CHANGELOG.md`
+
+Release naming is derived from that version, never typed by hand:
+
+| Artefact | Name |
+|---|---|
+| Release shim branch | `release/v<MAJOR>.<MINOR>.<PATCH>` |
+| Deletion-only staging branch | `chore/release-v<MAJOR>.<MINOR>.<PATCH>` |
+| Hotfix branch | `hotfix/v<MAJOR>.<MINOR>.<PATCH>` |
+| Tag on the merged `master` commit | `release-v<MAJOR>.<MINOR>.<PATCH>` |
+
+Bump the version on `develop` **before** selecting the release source commit. A
+release tree may differ from its source commit only by deleting development-stage
+paths, so a bump made after the cut would violate that invariant. A promoted
+version carries no `-dev`, `-rc`, or `+build` suffix and MUST be strictly greater
+than the version currently on `master`. The `master-merge-gate` enforces all of
+this; see `.agents/constraints/common/master-merge-policy.md` section 8.
+
+## 15. Continuous Integration
 
 ### Required Checks
 
@@ -565,7 +604,7 @@ auditwheel repair dist/*.whl \
 - Build multi-CUDA wheel matrix (cu118, cu121, cu124)
 - Cache CUDA compilation with sccache
 
-## 15. Getting Help
+## 16. Getting Help
 
 - Check `.agents/constraints/` for detailed technical requirements
 - Run `/init` to load relevant constraints
@@ -573,10 +612,10 @@ auditwheel repair dist/*.whl \
 - Open an issue for questions or clarifications
 - Tag maintainers for urgent reviews
 
-## 16. License
+## 17. License
 
 [Specify your license here]
 
-## 17. Code of Conduct
+## 18. Code of Conduct
 
 [Specify your code of conduct here or link to one]

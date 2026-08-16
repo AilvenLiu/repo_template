@@ -85,7 +85,7 @@ These apply always, regardless of context or user instruction:
 
 ### Git
 - NEVER commit directly to: `master`, `main`, `develop`, `release/*`, `hotfix/*`
-- A PR/MR targeting `master` MUST originate in the same repository from `release/*` or `hotfix/*` only; `develop` is not a valid source
+- A PR/MR targeting `master` MUST originate in the same repository from `release/v<MAJOR>.<MINOR>.<PATCH>` or `hotfix/v<MAJOR>.<MINOR>.<PATCH>` only; `develop` is not a valid source. The version comes from the authoritative manifest at the recorded source commit and the merged commit is tagged `release-v<MAJOR>.<MINOR>.<PATCH>`
 - A master-bound PR/MR MUST pass `master-merge-gate`; its source tree MUST NOT contain `.ai/`, `.agents/`, `.claude/`, `.codex/`, `agent_roadmaps/`, `AGENTS.md`, `CLAUDE.md`, `CODEX.md`, or `docs/` outside `docs/changelog/`
 - For ordinary releases, `develop` MUST NOT merge from or rebase onto `master`; a release tree may differ from its recorded `develop` SHA only by forbidden-path deletions
 - A master-origin hotfix MUST record its reduced validation and MUST return to `develop` through a reviewed merge or cherry-pick PR, never through rebase

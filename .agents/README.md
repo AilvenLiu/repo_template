@@ -133,7 +133,8 @@ The constraint files describe **what** must be done; the wrappers implement
 
 ### Common (all languages)
 - **git-workflow.md** - Branch policy, commit conventions, protected branches
-- **master-merge-policy.md** - Master PR/MR sources, forbidden paths, and release shim
+- **master-merge-policy.md** - Master PR/MR sources, forbidden paths, release shim,
+  and the semantic release version identity for branch and tag names
 - **session-discipline.md** - Session continuity, decision hygiene
 - **closure-discipline.md** - Review, validation, and evidence required before closure
 - **roadmap-awareness.md** - Multi-session task management
