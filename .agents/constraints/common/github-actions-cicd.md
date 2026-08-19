@@ -116,6 +116,40 @@ only after an update to `master`. On GitHub, use a `push` event restricted to
 - A project-specific exception MUST be durable, reviewed, and explicit about
   the alternate event/ref, environments, approvals, and artefact provenance.
 
+### Release Tagging
+
+`common/master-merge-policy.md` section 8.6 requires that the `release-v<x.y.z>`
+tag be created by automation and verified independently. On GitHub Actions:
+
+- A `push` event restricted to `master` MUST create the tag, in a job dedicated
+  to that single purpose.
+- That job MUST declare `permissions: contents: write` and nothing further, and
+  it MUST be the only job in the workflow holding a write credential. Every other
+  job stays read-only.
+- Release and deployment jobs MUST declare `needs:` on the tag job, so that an
+  untagged commit cannot be published or deployed.
+- The version MUST be read from the authoritative manifest at the promoted SHA.
+  A branch name, a PR title, or a workflow input is not authoritative; a release
+  branch may be misnamed, and the gate that checks the name runs on a different
+  event.
+- A version that is not strictly greater than the highest existing release tag
+  MUST fail the job. Compare numerically per component, not lexically: a string
+  sort places `0.10.0` below `0.9.0`.
+- Re-running the workflow on an already-tagged commit MUST succeed without
+  re-pointing the tag. Deployments are re-run for reasons unrelated to tagging,
+  and a tag job that fails on its second run makes recovery harder than the
+  problem it was invoked for.
+- The job MUST NOT force-update, move, or delete a tag under any condition.
+- Error handling in the version comparison MUST distinguish "no release tags
+  exist yet", which is the legitimate bootstrap case, from "the lookup failed".
+  A trailing `|| true` on the lookup pipeline covers the first and silently
+  swallows the second, which converts a broken comparison into an apparently
+  passing one.
+- A read-only check MUST fail when the head of `master` carries no matching
+  release tag. This is what detects a tag job that was skipped, cancelled, or
+  never wired up, and it holds for repositories that do no automatic tagging at
+  all.
+
 ## Workflow Trust Boundary
 
 - Declare least-privilege `permissions` at workflow or job scope. Grant write
