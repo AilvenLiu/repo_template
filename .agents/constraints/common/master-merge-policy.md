@@ -80,9 +80,11 @@ The required release-shim workflow:
    force-update it.
 5. Create an unprotected `chore/release-v<x.y.z>` staging branch from the same
    commit. Delete only the forbidden paths and make the mechanical cleanup
-   commit there. Because the cleanup deliberately removes the local wrappers,
-   ordinary Git is permitted only for this deletion-only staging commit after
-   the source SHA has passed the full repository-owned validation.
+   commit there. The coding agent or other automation performs this step; a
+   person MUST NOT hand-build the projection. Because the cleanup deliberately
+   removes the local wrappers, ordinary Git is permitted only for this
+   deletion-only staging commit after the source SHA has passed the full
+   repository-owned validation.
 6. Merge `chore/release-v<x.y.z>` into `release/v<x.y.z>` through a normal
    reviewed PR/MR. This keeps all changes to the protected release branch
    review-bound.
@@ -92,6 +94,8 @@ The required release-shim workflow:
    evidence, and release notes.
 9. Merge only after required checks and the applicable approval evidence pass.
 10. Tag the resulting `master` merge commit `release-v<x.y.z>` after the merge.
+    Automation performs this step and a separate check verifies it; see
+    section 8.6.
 
 A `release/*` tree MUST differ from its recorded `develop` source SHA only by
 deletions of the forbidden paths in section 2. It MUST NOT add, modify, rename,
@@ -109,11 +113,28 @@ to an older shared ancestor instead of the deliberately selected release SHA.
 This check is a hard failure: warning-only enforcement would still permit code
 that was not part of the reviewed `develop` input to reach `master`.
 
-An automated projection may create the release and staging branches after an
-immutable `develop` source SHA is selected, but it MUST validate that SHA and
-its ancestry, use narrowly scoped credentials, and create or update neither
-`master` nor an existing release branch by force. The cleanup still reaches the
-protected release branch through review.
+The projection MUST be produced by the repository's coding agent or by other
+automation, and MUST NOT be produced by hand. A hand-built projection is a
+policy violation even when the tree it produces is correct. The deletion set is
+mechanical: it follows entirely from section 2 and from the authoritative
+manifest at the recorded source SHA, so there is no judgement in it for a person
+to contribute, and every manual execution is an opportunity to omit a path, skip
+a step, or mistype a version.
+
+Automation MUST validate the recorded SHA and its ancestry, use narrowly scoped
+credentials, and create or update neither `master` nor an existing release
+branch by force. The cleanup still reaches the protected release branch through
+review.
+
+Skipping the staging branch is the specific failure this rule exists to prevent,
+and it is an observed one rather than a hypothetical. Committing the cleanup
+directly onto `release/v<x.y.z>` yields a tree the master merge gate accepts,
+because that gate compares the resulting tree against the recorded source SHA
+and does not examine the route taken to build it. The deletion-only invariant
+holds while the review the protected branch is meant to carry is silently
+bypassed. Verification MUST therefore assert the route as well as the tree: on a
+release branch built through this procedure, the cleanup MUST arrive as a merge
+of `chore/release-v<x.y.z>` rather than as a direct commit.
 
 A `release/*` branch is a review and validation buffer, not an automatic
 production deployment or publication event. Unless a durable, reviewed
@@ -278,6 +299,27 @@ Tag the resulting `master` merge commit `release-v<major>.<minor>.<patch>` after
 the merge, never before. The tag names one immutable promoted commit, so it MUST
 NOT be moved, deleted, or re-pointed. Where automatic release or deployment is
 enabled, it promotes that exact tagged `master` SHA.
+
+The tag MUST be created by automation, and MUST NOT be created by a person.
+Manual tagging fails in a particular way: it is a separate action taken after the
+merge has already succeeded, so the merge -- the step everyone is watching --
+reports success whether or not the tag follows. Forgetting it leaves `master` in
+a state the rest of this section treats as impossible, and nothing reports the
+omission.
+
+Automation that creates the tag MUST derive `<x.y.z>` from the authoritative
+manifest at the recorded source commit rather than from a branch or PR name,
+reject a version that is not strictly greater than the highest existing release
+tag, be idempotent so that a re-run neither fails nor re-points an existing tag,
+hold only the credential needed to create a tag, and run before any release or
+deployment job that consumes it.
+
+Tag presence MUST be verified independently of tag creation. A promoted `master`
+head that carries no matching `release-v<x.y.z>` tag MUST fail a check.
+Verification is read-only, needs no write credential, and so remains available to
+a repository that has no tagging automation at all. It is what makes the mandate
+above enforceable rather than aspirational: creation can be skipped silently,
+whereas a failing check cannot.
 
 A hotfix follows the same rules: it bumps the patch component on its own branch,
 carries a `hotfix/v<x.y.z>` name, and is tagged `release-v<x.y.z>` on `master`.
