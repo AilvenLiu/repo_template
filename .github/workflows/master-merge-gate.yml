@@ -4,6 +4,7 @@ on:
   pull_request_target:
     branches:
       - master
+      - 'release/**'
     types:
       - opened
       - edited
@@ -38,6 +39,13 @@ jobs:
         shell: bash
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          # Validation provenance (master-merge-policy.md section 9.1): set the
+          # repository variable REQUIRED_SOURCE_CHECKS to a comma-separated list
+          # of Actions WORKFLOW names, each of which must have a successful
+          # push-event run on develop at the recorded Develop-Source-SHA.
+          # Workflow names must not contain commas. Leave it unset to keep the
+          # release-PR rebuild requirement unchanged.
+          REQUIRED_SOURCE_CHECKS: ${{ vars.REQUIRED_SOURCE_CHECKS || '' }}
         run: |
           set -euo pipefail
           python3 trusted-policy/.github/scripts/master-merge-gate.py \

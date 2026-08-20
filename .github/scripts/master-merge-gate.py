@@ -10,6 +10,20 @@ introduced in an earlier commit and this PR's diff is empty for that path.
 For release branches, the gate also reads the immutable develop source SHA
 from the PR body and rejects any tree difference other than a forbidden-path
 deletion. Emergency hotfix PRs must record their reduced validation trade-off.
+When the REQUIRED_SOURCE_CHECKS environment variable names Actions workflows,
+the gate additionally requires each of them to have a successful push run on
+develop at the recorded develop source SHA (validation provenance,
+master-merge-policy.md section 9.1).
+
+For pull requests targeting a protected release/v<x.y.z> branch, the gate
+enforces the staging contract instead: the source must be the matching
+chore/release-v<x.y.z> branch and the tree may differ from the release base
+only by forbidden-path deletions (master-merge-policy.md section 9.2).
+
+The script also offers --rehearse: a read-only, network-free local pre-flight
+that derives the release names from the authoritative manifest, runs the same
+pure validation, and simulates the deletion-only projection before any release
+ref is cut (master-merge-policy.md section 9.4).
 
 The gate script is self-contained (stdlib only) because it lives in
 .github/scripts/ and must not depend on .agents/ packages.
@@ -22,9 +36,10 @@ import base64
 import json
 import os
 import re
+import subprocess
 import sys
 from pathlib import Path
-from typing import Any, Iterable, Mapping, TypeAlias
+from typing import Any, Iterable, Mapping, Sequence, TypeAlias
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote
 from urllib.request import Request, urlopen
@@ -235,7 +250,9 @@ def _authoritative_version(
     if CMAKE_MANIFEST in manifests:
         return parse_cmake_version(manifests[CMAKE_MANIFEST]), CMAKE_MANIFEST
     if PYPROJECT_MANIFEST in manifests:
-        return parse_pyproject_version(manifests[PYPROJECT_MANIFEST]), PYPROJECT_MANIFEST
+        return parse_pyproject_version(
+            manifests[PYPROJECT_MANIFEST]
+        ), PYPROJECT_MANIFEST
     return None, None
 
 
@@ -293,6 +310,109 @@ def validate_release_version(
             )
 
     return violations
+
+
+SOURCE_BRANCH = "develop"
+
+
+def validate_staging_pull_request(
+    *,
+    base_ref: str,
+    head_ref: str,
+    base_repository: str,
+    head_repository: str,
+) -> list[str]:
+    """Return violations for a pull request targeting a protected release branch.
+
+    A release branch accepts only its own deletion-only staging branch,
+    chore/release-v<x.y.z> for the identical version, from the same repository
+    (master-merge-policy.md sections 4 and 9.2). The tree comparison itself is
+    performed by validate_release_projection against the release branch base.
+    """
+    version = branch_version(base_ref)
+    if version is None or not base_ref.startswith("release/"):
+        return []
+
+    violations: list[str] = []
+    if not base_repository or base_repository != head_repository:
+        violations.append(
+            "a release branch accepts pull requests only from branches in the "
+            "same repository"
+        )
+    expected = f"chore/release-v{format_version(version)}"
+    if head_ref != expected:
+        violations.append(
+            "a release branch accepts only its deletion-only staging branch "
+            f"{expected} as a pull-request source"
+        )
+    return violations
+
+
+def validate_source_validation_provenance(
+    *,
+    workflow_runs_payload: Any,
+    required_workflows: Sequence[str],
+    expected_head_sha: str,
+) -> list[str]:
+    """Return violations when required workflows did not succeed at the SHA.
+
+    Validation provenance (master-merge-policy.md section 9.1): because the
+    release tree is identity-proved against the recorded develop source SHA,
+    a successful authoritative validation at that SHA is evidence for the
+    release PR. Evidence is read from the Actions workflow-runs listing, not
+    the Checks API, because a workflow run's name, event, head branch, and
+    head SHA are recorded by the forge and cannot be minted through the
+    check-runs API by a same-repository branch workflow. A run counts only
+    when it is a completed, successful `push` run of the develop branch at
+    exactly the expected SHA. The function fails closed on a malformed or
+    incomplete listing.
+    """
+    if not required_workflows:
+        return []
+    malformed = "workflow-run listing for the recorded source SHA is malformed"
+    if not isinstance(workflow_runs_payload, dict):
+        return [malformed]
+    runs = workflow_runs_payload.get("workflow_runs")
+    if not isinstance(runs, list):
+        return [malformed]
+    total_count = workflow_runs_payload.get("total_count")
+    if isinstance(total_count, int) and total_count > len(runs):
+        return [
+            "workflow-run listing for the recorded source SHA is incomplete; "
+            "refusing to validate provenance on a partial listing"
+        ]
+
+    successful: set[str] = set()
+    for run in runs:
+        if not isinstance(run, dict):
+            continue
+        name = run.get("name")
+        if (
+            isinstance(name, str)
+            and run.get("status") == "completed"
+            and run.get("conclusion") == "success"
+            and run.get("event") == "push"
+            and run.get("head_branch") == SOURCE_BRANCH
+            and run.get("head_sha") == expected_head_sha
+        ):
+            successful.add(name)
+
+    return [
+        "required validation workflow has no successful push run on "
+        f"{SOURCE_BRANCH} at the recorded develop source SHA: {name}"
+        for name in required_workflows
+        if name not in successful
+    ]
+
+
+def _required_source_checks() -> list[str]:
+    """Return the workflow names REQUIRED_SOURCE_CHECKS demands at the SHA.
+
+    Values are GitHub Actions workflow names, comma-separated; a workflow
+    whose name contains a comma cannot be expressed and must be renamed.
+    """
+    raw = os.environ.get("REQUIRED_SOURCE_CHECKS", "")
+    return [name.strip() for name in raw.split(",") if name.strip()]
 
 
 def _body_field(body: Any, label: str) -> str | None:
@@ -460,6 +580,21 @@ def _fetch_manifest_texts(
     return manifests
 
 
+def _fetch_workflow_runs(
+    repository: str, commit_sha: str, token: str
+) -> dict[str, Any]:
+    """Read the workflow runs for one commit via the read-only Actions API."""
+    api_url = os.environ.get("GITHUB_API_URL", "https://api.github.com").rstrip("/")
+    encoded_repository = quote(repository, safe="/")
+    encoded_sha = quote(commit_sha, safe="")
+    return _request_json(
+        f"{api_url}/repos/{encoded_repository}/actions/runs"
+        f"?head_sha={encoded_sha}&per_page=100",
+        token,
+        "read source SHA workflow runs",
+    )
+
+
 def _master_manifests(
     base: dict[str, Any], base_repository: str, head_ref: str, token: str
 ) -> dict[str, str]:
@@ -472,6 +607,38 @@ def _master_manifests(
     return _fetch_manifest_texts(
         base_repository, _fetch_tree(base_repository, base_sha, token), token
     )
+
+
+def _validate_staging_event(
+    base: dict[str, Any], head: dict[str, Any], token: str
+) -> list[str]:
+    """Validate a pull request targeting a protected release branch.
+
+    The deletion-only projection check for the staging PR: the head tree may
+    differ from the release branch base tree only by deletions of forbidden
+    paths (master-merge-policy.md section 9.2).
+    """
+    base_ref = _require_string(base, "ref", "pull-request base ref")
+    base_repository = _repository_name(base.get("repo"), "pull-request base repository")
+    head_repository = _repository_name(head.get("repo"), "pull-request head repository")
+    head_ref = _require_string(head, "ref", "pull-request head ref")
+    head_sha = _require_string(head, "sha", "pull-request head SHA")
+
+    violations = validate_staging_pull_request(
+        base_ref=base_ref,
+        head_ref=head_ref,
+        base_repository=base_repository,
+        head_repository=head_repository,
+    )
+    if base_repository == head_repository:
+        base_sha = _require_string(base, "sha", "pull-request base SHA")
+        violations.extend(
+            validate_release_projection(
+                develop_tree=_fetch_tree(base_repository, base_sha, token),
+                release_tree=_fetch_tree(head_repository, head_sha, token),
+            )
+        )
+    return violations
 
 
 def validate_event(event: dict[str, Any], token: str) -> list[str]:
@@ -487,6 +654,8 @@ def validate_event(event: dict[str, Any], token: str) -> list[str]:
 
     base_ref = _require_string(base, "ref", "pull-request base ref")
     if base_ref != MASTER_BRANCH:
+        if base_ref.startswith("release/") and branch_version(base_ref) is not None:
+            return _validate_staging_event(base, head, token)
         return []
 
     base_repository = _repository_name(base.get("repo"), "pull-request base repository")
@@ -530,6 +699,17 @@ def validate_event(event: dict[str, Any], token: str) -> list[str]:
                     release_tree=source_tree,
                 )
             )
+            required_workflows = _required_source_checks()
+            if required_workflows:
+                violations.extend(
+                    validate_source_validation_provenance(
+                        workflow_runs_payload=_fetch_workflow_runs(
+                            base_repository, develop_source_sha, token
+                        ),
+                        required_workflows=required_workflows,
+                        expected_head_sha=develop_source_sha,
+                    )
+                )
             violations.extend(
                 validate_release_version(
                     head_ref=head_ref,
@@ -564,11 +744,179 @@ def validate_event(event: dict[str, Any], token: str) -> list[str]:
     return violations
 
 
+def _git_output(repo: Path, *args: str) -> str:
+    """Return one local git command's stdout, raising RuntimeError on failure."""
+    try:
+        process = subprocess.run(
+            ["git", "-C", str(repo), *args],
+            capture_output=True,
+            encoding="utf-8",
+            errors="strict",
+            timeout=60,
+        )
+    except (OSError, subprocess.TimeoutExpired, UnicodeDecodeError) as error:
+        raise RuntimeError(f"git {' '.join(args)} failed: {error}") from error
+    if process.returncode != 0:
+        raise RuntimeError(f"git {' '.join(args)} failed: {process.stderr.strip()}")
+    return process.stdout
+
+
+def _resolve_ref(repo: Path, ref: str) -> str | None:
+    """Resolve a ref to a commit SHA, falling back to its origin remote ref."""
+    for candidate in (ref, f"origin/{ref}"):
+        try:
+            return _git_output(
+                repo, "rev-parse", "--verify", f"{candidate}^{{commit}}"
+            ).strip()
+        except RuntimeError:
+            continue
+    return None
+
+
+def _local_tree_paths(repo: Path, commit: str) -> list[str]:
+    """Enumerate every file path in one local commit tree."""
+    output = _git_output(repo, "ls-tree", "-r", "--name-only", "-z", commit)
+    return [path for path in output.split("\0") if path]
+
+
+def _local_manifests(repo: Path, commit: str) -> dict[str, str]:
+    """Read the version manifests that exist in one local commit tree."""
+    manifests: dict[str, str] = {}
+    for path in (CMAKE_MANIFEST, PYPROJECT_MANIFEST):
+        try:
+            manifests[path] = _git_output(repo, "show", f"{commit}:{path}")
+        except RuntimeError:
+            continue
+    return manifests
+
+
+def rehearse(
+    repo: Path,
+    source_ref: str,
+    master_ref: str,
+    *,
+    allow_missing_master_ref: bool = False,
+) -> int:
+    """Rehearse a promotion locally: read-only, network-free pre-flight.
+
+    Derives the version and every release name from the authoritative manifest
+    at the candidate source SHA, runs the same pure validation the hosted gate
+    runs (strict format, hybrid manifest agreement, monotonicity against the
+    master ref), and simulates the deletion-only projection, reporting what it
+    will remove. An unresolvable master ref is a hard failure, because a pass
+    without the monotonicity comparison would be false assurance; pass
+    --allow-missing-master-ref only for a first-release bootstrap where no
+    master exists yet. Exit code 0 means the promotion names and version are
+    safe to cut; any finding should be fixed on develop first.
+    """
+    source_sha = _resolve_ref(repo, source_ref)
+    if source_sha is None:
+        raise RuntimeError(
+            f"source ref '{source_ref}' (and 'origin/{source_ref}') does not resolve"
+        )
+    source_manifests = _local_manifests(repo, source_sha)
+    version, manifest_path = _authoritative_version(source_manifests)
+
+    violations: list[str] = []
+    deleted: list[str] = []
+    if manifest_path is None:
+        violations.append(
+            "source tree declares no authoritative version manifest "
+            f"({CMAKE_MANIFEST} or {PYPROJECT_MANIFEST})"
+        )
+    elif version is None:
+        violations.append(f"no version is declared in {manifest_path}")
+    elif STRICT_SEMVER_PATTERN.fullmatch(version) is None:
+        violations.append(
+            f"{manifest_path} version must be <major>.<minor>.<patch> without a "
+            f"pre-release or build suffix: {version}"
+        )
+    else:
+        master_sha = _resolve_ref(repo, master_ref)
+        if master_sha is None:
+            if not allow_missing_master_ref:
+                raise RuntimeError(
+                    f"master ref '{master_ref}' (and 'origin/{master_ref}') does "
+                    "not resolve, so monotonicity cannot be verified; fetch the "
+                    "ref, or pass --allow-missing-master-ref for a first-release "
+                    "bootstrap"
+                )
+            print(
+                f"WARNING: master ref '{master_ref}' not found; monotonicity "
+                "NOT verified (first-release bootstrap).",
+                file=sys.stderr,
+            )
+            master_manifests: dict[str, str] = {}
+        else:
+            master_manifests = _local_manifests(repo, master_sha)
+        violations.extend(
+            validate_release_version(
+                head_ref=f"release/v{version}",
+                source_manifests=source_manifests,
+                master_manifests=master_manifests,
+            )
+        )
+
+        deleted = sorted(
+            path
+            for path in _local_tree_paths(repo, source_sha)
+            if is_development_only_path(path)
+        )
+
+    if violations:
+        print(
+            "REHEARSAL FAILED: fix these on develop before cutting refs:",
+            file=sys.stderr,
+        )
+        for violation in violations:
+            print(f"- {violation}", file=sys.stderr)
+        return 1
+
+    print(f"Rehearsal passed for source SHA {source_sha}.")
+    print(f"  version:         {version} (from {manifest_path})")
+    print(f"  release branch:  release/v{version}")
+    print(f"  staging branch:  chore/release-v{version}")
+    print(f"  master tag:      release-v{version}")
+    print(f"  projection:      {len(deleted)} forbidden path(s) to delete")
+    print("Master PR body field:")
+    print(f"{DEVELOP_SOURCE_LABEL}: {source_sha}")
+    return 0
+
+
 def main() -> int:
     """Run the master merge gate for a GitHub pull-request event."""
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--event-path", type=Path, required=True)
+    parser.add_argument("--event-path", type=Path)
+    parser.add_argument(
+        "--rehearse",
+        action="store_true",
+        help="run the local read-only promotion pre-flight instead of the hosted gate",
+    )
+    parser.add_argument("--repo", type=Path, default=Path("."))
+    parser.add_argument("--source-ref", default="develop")
+    parser.add_argument("--master-ref", default=MASTER_BRANCH)
+    parser.add_argument(
+        "--allow-missing-master-ref",
+        action="store_true",
+        help="permit a first-release bootstrap where no master ref exists yet; "
+        "monotonicity is then explicitly reported as not verified",
+    )
     args = parser.parse_args()
+
+    if args.rehearse:
+        try:
+            return rehearse(
+                args.repo,
+                args.source_ref,
+                args.master_ref,
+                allow_missing_master_ref=args.allow_missing_master_ref,
+            )
+        except RuntimeError as error:
+            print(f"REHEARSAL FAILED: {error}", file=sys.stderr)
+            return 1
+
+    if args.event_path is None:
+        parser.error("--event-path is required unless --rehearse is given")
 
     token = os.environ.get("GITHUB_TOKEN")
     if not token:

@@ -7,6 +7,14 @@ Emit a manifest containing source SHA, release id, digest, target compatibility,
 toolchain, dependency-lock identity, and build run. Downstream jobs verify and
 promote that manifest; they do not rebuild.
 
+For a governed release-shim promotion, the one build stage MAY run at the
+recorded develop source SHA: the master merge gate proves that the promoted
+`master` tree differs from that SHA only by deletions of build-irrelevant
+paths, so the artefact of the source SHA is the artefact of the `master` SHA
+(`master-merge-policy.md` section 9.1). A release manifest that reuses such an
+artefact MUST record both SHAs and the gate evidence binding them, and
+deployment still promotes only after `master` is updated.
+
 Commit the bytes and manifest to the fixed operator-controlled local artefact
 store described in [artifact-storage.md](artifact-storage.md), whether the
 build runs on a self-hosted server or GitHub-hosted infrastructure. A hosted

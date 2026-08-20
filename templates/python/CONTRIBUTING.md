@@ -276,6 +276,16 @@ version carries no `-dev`, `-rc`, or `+build` suffix and MUST be strictly greate
 than the version currently on `master`. The `master-merge-gate` enforces all of
 this; see `.agents/constraints/common/master-merge-policy.md` section 8.
 
+Keep promotions cheap without weakening the gate (section 9 of the same
+policy): bump the version in the same pull request as the change it describes
+rather than in a dedicated bump PR; batch reviewed `develop` merges into
+release trains instead of promoting every merge; rehearse locally with
+`poetry run python .github/scripts/master-merge-gate.py --rehearse` before
+cutting any release ref; and satisfy the release-PR validation requirement by provenance of
+the validated source SHA instead of a rebuild where the gate is configured with
+`REQUIRED_SOURCE_CHECKS`. The staging PR needs only the deletion-only
+projection check, never a rebuild.
+
 ## 8. Continuous Integration
 
 All PRs MUST pass CI checks:
@@ -284,6 +294,12 @@ All PRs MUST pass CI checks:
 - Code formatting check (`ruff format --check`)
 - Linting and import order pass (`ruff check`)
 - Coverage threshold met (80%+)
+
+Exception: for an identity-proved release PR and its deletion-only staging PR,
+the promotion rules in section 7 apply instead -- the required validation
+status may be satisfied by verified provenance of the validated source SHA,
+and the staging PR runs the deletion-only projection check rather than a
+rebuild (`.agents/constraints/common/master-merge-policy.md` section 9).
 
 ## 9. Forbidden Practices
 

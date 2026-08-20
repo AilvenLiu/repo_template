@@ -3,6 +3,8 @@
 **Status**: Active
 **Date**: 2026-08-19
 **Authors**: Template maintainers
+**Amended by**: ADR 0003 (adds an opt-in direct automation projection route and
+validation provenance for release-bound PRs)
 
 ## Summary
 

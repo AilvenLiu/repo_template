@@ -59,7 +59,13 @@ tooling, its PR MUST record the checks run and omissions in the required
 `Hotfix-Validation-Tradeoff` field described by `master-merge-policy.md`.
 
 The `master-merge-gate` CI status and profile-authoritative validation MUST be
-required in hosted branch rules.
+required in hosted branch rules; both stay required for every master-bound
+PR/MR. `master-merge-policy.md` section 9 defines the promotion efficiency
+provisions -- validation provenance (which changes how an identity-proved
+release PR satisfies the validation status, never whether it is required),
+per-step required checks, release-train cadence, and the local `--rehearse`
+pre-flight -- and section 8.4 makes bumping the version in the same pull
+request as the change it describes the recommended default.
 
 ## 2. Mandatory Branch-Based Workflow
 

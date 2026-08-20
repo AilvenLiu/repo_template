@@ -26,15 +26,50 @@ event data until the gate validates them.
 1. Keep the deterministic policy in `master-merge-gate.py` and add tests for
    every allowed source, forbidden tree path, changelog exception, release
    projection change type, required PR body field, and hotfix trade-off.
-2. Run the gate for master-bound PRs/MRs and configure its status check as
-   required in the hosting provider's branch rules.
+2. Run the gate for master-bound PRs/MRs and for PRs targeting `release/*`
+   branches (where it enforces the staging contract), and configure its status
+   check as required in the hosting provider's branch rules for both targets.
 3. Run profile-authoritative format, lint, static analysis, build, and test
-   validation as a separate required status check.
+   validation as a separate required status check. That status stays required
+   for every master-bound PR; `master-merge-policy.md` section 9.1 governs how
+   an identity-proved release PR may satisfy it without a rebuild.
 4. Use read-only permissions for the gate. A GitHub `pull_request_target` gate
    may run only trusted base-branch policy; never check out or run PR code, use
    production secrets, or grant write permissions.
 5. Protect the workflow with hosted CODEOWNERS/ruleset review. A checked-in
    workflow alone cannot stop an authorised maintainer changing it later.
+
+## Choose a release cadence
+
+The shim pipeline is priced per release, not per change. Default to release
+trains: accumulate reviewed merges on `develop` and promote on a cadence or
+when the accumulated value warrants it, rather than promoting every merge. An
+urgent fix rides an immediate single-change train, or the hotfix path when
+`develop` has diverged too far. See `master-merge-policy.md` section 9.3.
+
+## Rehearse before you cut
+
+Before creating any release ref, rehearse the promotion locally with the
+shipped gate. The rehearsal is read-only and needs no network or token:
+
+```bash
+# python and hybrid profiles
+poetry run python .github/scripts/master-merge-gate.py --rehearse \
+  --source-ref develop --master-ref origin/master
+# cpp profile
+python3 .github/scripts/master-merge-gate.py --rehearse \
+  --source-ref develop --master-ref origin/master
+```
+
+It derives the version and every release name from the authoritative manifest
+at the candidate SHA, verifies strict format and monotonicity against
+`master`, and simulates the deletion-only projection, reporting what it will
+remove. It fails closed: an unresolvable master baseline is a failure, and a
+first release with no master yet must be declared with
+`--allow-missing-master-ref`. Fix every finding on `develop` first: a
+rehearsal failure costs seconds, while the same failure on the master PR costs
+the whole promotion cycle. On success it prints the `Develop-Source-SHA` body
+line to paste into the master PR.
 
 ## Use a release shim
 
@@ -49,6 +84,9 @@ Promote reviewed `develop` content through a release shim:
 2. Bump the authoritative version manifest on `develop` through the ordinary
    reviewed pull request. Do this before selecting a source SHA: the release
    tree is deletion-only, so a bump made later would violate that invariant.
+   Prefer bumping in the same pull request as the change it describes; a
+   dedicated bump PR costs one extra full CI round and is needed only for a
+   release train whose already-merged changes did not set the version.
    The manifest is `pyproject.toml` for a `python` profile and the root
    `CMakeLists.txt` for `cpp` and `hybrid`; a hybrid `pyproject.toml` MUST
    declare the identical version.
@@ -91,8 +129,16 @@ Promote reviewed `develop` content through a release shim:
    is permitted only for this mechanical deletion-only staging commit.
 
 6. Merge the staging branch into `release/v$VERSION` through a normal reviewed
-   PR/MR. Never commit the cleanup directly on the protected release branch.
-7. Run the master gate and full profile validation against the release branch.
+   PR/MR. Never commit the cleanup directly on the protected release branch;
+   the only exception is the automation-only route of `master-merge-policy.md`
+   section 9.5, which an interactive coding-agent session may never use.
+7. Run the master gate against the release branch. Full profile validation MAY
+   be satisfied by validation provenance for the recorded develop SHA instead
+   of a rebuild; see `master-merge-policy.md` section 9.1 and the
+   `REQUIRED_SOURCE_CHECKS` gate variable (Actions workflow names, each
+   needing a successful push run on `develop` at that SHA). The validation
+   status itself stays required. The staging PR in step 6 needs only the
+   deletion-only projection check, not a rebuild.
 8. Open `release/v$VERSION` to `master`, carrying source SHA, validation
    evidence, changelog, and rollback/release notes.
 9. Merge only after the protected checks and the applicable approval evidence
@@ -118,6 +164,14 @@ and staging branches and PRs, but cannot force-update branches or merge to
 and existing remote refs before any write. Preserve a deterministic
 source-SHA-to-release-branch mapping so retries cannot create different
 candidates.
+
+A project MAY collapse the staging PR round by letting that automation commit
+the deletion-only projection directly to the protected release branch. This is
+an opt-in exception with strict conditions -- a durable reviewed project
+policy, a dedicated non-merging identity, unchanged gate verification, and
+route verification updated to assert the automation identity -- defined by
+`master-merge-policy.md` section 9.5 and ADR 0003. The staging route remains
+the default.
 
 ## Handle an emergency hotfix
 
@@ -156,5 +210,8 @@ operator actions.
 Configure the repository host separately to require pull requests, block direct
 and force pushes, require the applicable independent review or documented
 single-maintainer owner attestation, dismiss stale approvals where applicable,
-and require both `master-merge-gate` and profile validation. Report settings that
-could not be verified; do not claim a workflow file alone protects `master`.
+and require both `master-merge-gate` and profile validation for every
+master-bound PR (`master-merge-policy.md` section 9.1 governs how the
+validation status may be satisfied on an identity-proved release PR). Require
+the gate for `release/*` targets too. Report settings that could not be
+verified; do not claim a workflow file alone protects `master`.

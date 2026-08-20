@@ -21,7 +21,9 @@ All other sources, including feature branches and fork branches, are rejected.
 tooling can never pass the presence-based tree check. Listing it as an allowed
 source would authorise a PR that cannot succeed. `release/*` and `hotfix/*`
 remain protected: their changes still arrive through their own reviewed PR/MR
-workflow.
+workflow, with one narrow exception -- the deletion-only projection commit MAY
+instead arrive through the section 9.5 direct automation route where a project
+has adopted it.
 
 ## 2. Development-stage paths forbidden from master
 
@@ -71,7 +73,10 @@ The required release-shim workflow:
    while all agent tooling is present.
 2. Bump the authoritative version manifest on `develop` through the ordinary
    reviewed pull request, before selecting a source SHA. Section 8.4 explains
-   why the bump can never happen later in this workflow.
+   why the bump can never happen later in this workflow. Prefer bumping in the
+   same pull request as the change it describes; a dedicated bump pull request
+   costs one extra full CI round and is needed only when promoting a release
+   train whose already-merged changes did not set the version.
 3. Select an immutable reviewed commit SHA on `develop` and record it in the
    master PR/MR body as `Develop-Source-SHA: <full 40-character SHA>`. Read the
    version `<x.y.z>` from the authoritative manifest at that exact commit; every
@@ -87,9 +92,11 @@ The required release-shim workflow:
    repository-owned validation.
 6. Merge `chore/release-v<x.y.z>` into `release/v<x.y.z>` through a normal
    reviewed PR/MR. This keeps all changes to the protected release branch
-   review-bound.
-7. Run the master merge gate and full profile validation against the release
-   branch.
+   review-bound. This is the default route; section 9.5 defines the only
+   sanctioned alternative.
+7. Run the master merge gate against the release branch. The full profile
+   validation requirement MAY be satisfied by the validation provenance rule in
+   section 9.1 instead of a rebuild.
 8. Open `release/v<x.y.z>` to `master` PR/MR with the source SHA, validation
    evidence, and release notes.
 9. Merge only after required checks and the applicable approval evidence pass.
@@ -134,7 +141,9 @@ and does not examine the route taken to build it. The deletion-only invariant
 holds while the review the protected branch is meant to carry is silently
 bypassed. Verification MUST therefore assert the route as well as the tree: on a
 release branch built through this procedure, the cleanup MUST arrive as a merge
-of `chore/release-v<x.y.z>` rather than as a direct commit.
+of `chore/release-v<x.y.z>` rather than as a direct commit. Section 9.5 defines
+the only sanctioned alternative route: a direct automation-produced projection
+adopted through a durable, reviewed project-specific release policy.
 
 A `release/*` branch is a review and validation buffer, not an automatic
 production deployment or publication event. Unless a durable, reviewed
@@ -168,8 +177,12 @@ described in section 3.
 
 Every generated repository MUST configure the `master-merge-gate` CI status as
 a required check for `master`, alongside the profile-authoritative validation
+status. Both statuses stay required for every master-bound PR/MR; section 9.1
+governs only how an identity-proved release PR may satisfy the validation
 status. The gate validates source branch, same-repository ownership, and the
-full recursive source-branch tree.
+full recursive source-branch tree; for PRs targeting a `release/*` branch it
+validates the staging contract of section 9.2, and it SHOULD be a required
+check there too.
 
 For GitHub, use the checked-in `pull_request_target` workflow only to fetch and
 run the trusted `master` policy; it MUST NOT check out or execute pull-request
@@ -276,10 +289,13 @@ of the section 2 forbidden paths. A version bump is a modification, so it can
 never be made on the release or staging branch without violating that invariant.
 
 The bump MUST therefore land on `develop` first, through the ordinary reviewed
-pull request, before a source SHA is selected. Bump the version in the same pull
-request as the change it describes, or in a dedicated reviewed pull request
-immediately before promotion. Selecting a source SHA whose manifest still holds
-an already-released version is a hard failure, not a warning.
+pull request, before a source SHA is selected. Bumping in the same pull request
+as the change it describes is the recommended default: it costs no extra CI
+round and leaves `develop` permanently promotable. A dedicated reviewed bump
+pull request immediately before promotion is the fallback for a release train
+whose already-merged changes did not set the version. Selecting a source SHA
+whose manifest still holds an already-released version is a hard failure, not a
+warning.
 
 ### 8.5 Monotonicity
 
@@ -324,3 +340,121 @@ whereas a failing check cannot.
 A hotfix follows the same rules: it bumps the patch component on its own branch,
 carries a `hotfix/v<x.y.z>` name, and is tagged `release-v<x.y.z>` on `master`.
 Its back-merge to `develop` carries the version bump with the functional fix.
+
+## 9. Promotion efficiency
+
+The release-shim workflow is a defence-in-depth pipeline, and its integrity
+guarantees are exactly what make most of its repeated validation redundant.
+This section removes the redundancy without weakening any invariant. Every
+provision below changes which evidence satisfies a requirement or when a cost
+is paid; none removes a requirement.
+
+### 9.1 Validation provenance
+
+The deletion-only invariant is what makes revalidation redundant. Once the
+master merge gate has proved that a release tree equals the recorded
+`Develop-Source-SHA` tree minus deletions of the section 2 paths, comparing
+leaf entries by object SHA, the functional content under validation is
+byte-identical to content that the authoritative profile validation already
+passed at that SHA. Rebuilding it proves nothing new.
+
+Every section 2 path is agent tooling or documentation and MUST remain
+build-irrelevant: no build, test, or packaging input may live under a forbidden
+path. This is what keeps the substitution sound, and a project that violates it
+has a defect independent of this section, because its shipped `master` tree
+could not build either.
+
+For a `release/*` to `master` PR/MR, the full profile validation requirement
+MAY therefore be satisfied by validation provenance instead of a rebuild:
+machine-verified evidence that the authoritative profile validation succeeded
+at the recorded develop source SHA, bound to that exact SHA, together with the
+gate's tree-identity proof. The substitution is valid ONLY where an automated
+check verifies that evidence; the shipped gate does so through
+`REQUIRED_SOURCE_CHECKS`, and the GitHub shape lives in
+`common/github-actions-cicd.md`. Where no machine-checked verification exists,
+the rebuild REMAINS required. Asserted evidence, such as a PR-body claim that
+validation passed, satisfies nothing. A rebuild is the always-sound fallback
+and a project MAY keep it.
+
+The hosted validation status itself stays required for every master-bound
+PR/MR, exactly as section 6 demands. Substitution changes how an
+identity-proved release PR satisfies that status: the workflow that reports it
+MAY verify the provenance and report success without rebuilding. It never
+removes the status from the branch rules. This is also what keeps the hotfix
+requirement intact, because the same status stays required for a `hotfix/*`
+PR/MR and MUST be satisfied there by the full available validation.
+
+Provenance substitution NEVER applies to a `hotfix/*` PR/MR. A hotfix tree is
+not identity-proved against any validated SHA, so it keeps the full available
+validation requirement of section 5. Provenance also presupposes that the
+authoritative validation produced evidence at the develop merge commit itself:
+run it on every update of `develop`, not only on pull requests, so the
+recorded source SHA carries a verifiable run.
+
+### 9.2 Required validation per promotion step
+
+The single paid validation of any functional content is the one that runs where
+that content is authored:
+
+- Feature/fix to `develop`: the authoritative full profile validation. This is
+  the validation every later step inherits.
+- `chore/release-v<x.y.z>` to `release/v<x.y.z>`: the deletion-only projection
+  check alone. The tree is identity-proved against an already-validated SHA, so
+  a rebuild on this PR adds no information and SHOULD NOT be a required check.
+- `release/v<x.y.z>` to `master`: the master merge gate, plus either validation
+  provenance (section 9.1) or a full rebuild.
+- `hotfix/v<x.y.z>` to `master`: the master merge gate plus the full available
+  validation. No substitution.
+
+### 9.3 Release cadence
+
+The promotion pipeline is priced per release, not per change, so its cost
+amortises across everything a release carries. Default to release trains:
+accumulate reviewed merges on `develop` and promote on a cadence or when the
+accumulated value warrants it. Promoting every merge is a per-project choice,
+not the default this policy assumes. An urgent fix either rides an immediate
+single-change train, which under sections 9.1 and 9.2 costs one develop PR
+round plus gate checks, or uses the section 5 hotfix path when `develop` has
+diverged too far.
+
+### 9.4 Pre-flight rehearsal
+
+Before creating any release ref, rehearse the promotion locally and fix
+findings there: derive the version and every release name from the
+authoritative manifest at the candidate SHA, verify strict format and
+monotonicity against `master`, and simulate the deletion-only projection,
+reporting exactly what it will remove. The shipped gate provides a read-only,
+network-free `--rehearse` mode for exactly this. The rehearsal fails closed:
+an unresolvable `master` baseline is a failure, not a silent pass, and a
+first-release bootstrap must be declared explicitly. A rehearsal failure costs
+seconds; the same failure discovered on the master PR costs the whole
+promotion cycle.
+
+### 9.5 Direct automation projection
+
+The default route for the projection remains the staging branch and its
+reviewed PR (section 4). A project MAY instead adopt direct projection, in
+which the mandated automation commits the deletion-only cleanup directly to the
+protected `release/v<x.y.z>` branch and the staging PR round is removed, only
+when all of the following hold:
+
+1. A durable, reviewed project-specific release policy records the adoption.
+2. The projection is produced by the mandated automation under a dedicated,
+   narrowly-scoped identity whose write access is limited to creating release
+   and staging refs and the projection commit; it cannot merge to `master` and
+   cannot force-update any ref. An interactive coding-agent session is NOT
+   that automation: it remains bound by the protected-branch prohibition and
+   MUST NOT push to a release branch under this exception.
+3. The master merge gate independently verifies the deletion-only invariant
+   against the recorded source SHA, as it always does.
+4. The same project policy updates route verification: instead of asserting a
+   `chore/release-v<x.y.z>` merge, it asserts the forge-authenticated actor
+   that pushed the cleanup commit, or a verified cryptographic signature of
+   the automation identity. Git author and committer fields are self-asserted
+   and MUST NOT be the evidence.
+
+A person hand-building the projection remains forbidden on both routes. Record
+explicitly what this exception trades away: review of a mechanical commit whose
+content the gate re-derives byte-for-byte. The residual risk is compromised
+automation, which staged review of an automation-authored PR does not
+meaningfully mitigate. ADR 0003 records this decision and its limits.
