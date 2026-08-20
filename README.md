@@ -151,6 +151,14 @@ language, so copied C++ repos do not require Python-only support skills
 such as `python-env-setup`, while hybrid repos correctly require both the
 Python and C++/CUDA skill surface plus the hybrid constraint layer.
 
+## Dependencies
+
+The foundry's own tooling (capability audit, session init) needs:
+
+- `pyyaml` -- parses `.agents/capabilities.yml` (manifest v2+); declared in
+  `requirements.txt` and installed into the interpreter that runs
+  `.agents/bin/agent-*`
+
 ## License
 
 Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International
