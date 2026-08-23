@@ -347,7 +347,10 @@ fails nor re-points an existing tag, and hold only the credential needed to
 create a tag. An existing tag at the exact expected `master` SHA is success; an
 existing tag at any other SHA is a hard failure rather than a silent overwrite.
 The tag write MUST use a create-only operation and MUST expose no force-update,
-move, or deletion path.
+move, or deletion path. That idempotent success holds only while the event SHA
+remains the remote `master` tip and every policy-designated promotion ref retains
+its reviewed identity; a stale event MUST fail closed rather than replay an
+obsolete promotion.
 
 The version contract MAY still be checked before the deployment gate, and
 checking it early is preferred: a promotion whose version was never bumped is a
@@ -373,10 +376,13 @@ does, the recovery policy MUST already be reviewed into `master`; MUST fix the
 repository identity and the historical promotion evidence, including the exact
 successful deployment workflow and job; MUST record known evidence limitations
 rather than asserting evidence that does not exist; and MUST accept no
-user-supplied ref, tag, or SHA. Reconciliation proceeds in ascending numeric
-release order using the same create-only operations, and revalidates the current
-remote `master` and every policy-designated promotion ref immediately before each
-write so that a stale rerun or a changed branch identity fails closed.
+user-supplied ref, tag, or SHA. Discovery MUST prove the `master` first-parent
+history, the promoted branch identity, the manifest version, the source
+relationship, and the required deployment evidence before any candidate is
+eligible. Reconciliation then proceeds in ascending numeric release order using
+the same create-only operations, and revalidates the current remote `master` and
+every policy-designated promotion ref immediately before each write so that a
+stale rerun or a changed branch identity fails closed.
 
 A hotfix follows the same rules: it bumps the patch component on its own branch,
 carries a `hotfix/v<x.y.z>` name, and is tagged `release-v<x.y.z>` on `master`.
