@@ -30,12 +30,56 @@ jobs:
           set -euo pipefail
           git init --quiet trusted-policy
           git -C trusted-policy remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          # HTTP Basic, not Bearer. Git's HTTP transport does not accept a
+          # bearer token here: the fetch falls through to an interactive
+          # credential prompt and dies with "could not read Username for
+          # 'https://github.com'", so the gate fails at step one and never
+          # evaluates a single pull request. This is the same x-access-token
+          # scheme the standard checkout action uses.
+          auth="$(printf 'x-access-token:%s' "${GITHUB_TOKEN}" | base64 -w0)"
           git -C trusted-policy \
-            -c http.extraheader="AUTHORIZATION: Bearer ${GITHUB_TOKEN}" \
+            -c http.extraheader="AUTHORIZATION: basic ${auth}" \
             fetch --depth=1 origin refs/heads/master
           git -C trusted-policy checkout --detach --quiet FETCH_HEAD
 
+      # This workflow is copied verbatim into every generated project (see
+      # _COPY_DIRS in .agents/skills/create-project/scripts/init.py), so it has
+      # to be correct there. It cannot also be correct here.
+      #
+      # The gate forbids .agents/, .claude/, .codex/, agent_roadmaps/,
+      # AGENTS.md, and CLAUDE.md from any master-bound tree. In the Agent
+      # Foundry source repository those paths are the product: master carries
+      # every one of them, permanently and by design. A gate that ran here
+      # would reject this repository's own master tree on content, not merely
+      # on branch naming, and no branching model would fix that.
+      #
+      # The marker is read from the trusted base tree fetched above, never from
+      # pull-request code, so a pull request cannot introduce it to bypass the
+      # gate. templates/ is not in _COPY_DIRS, so it exists only here.
+      - name: Skip in the template source repository
+        id: applicability
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -f trusted-policy/templates/python/AGENTS.md ]; then
+            echo "applicable=false" >> "$GITHUB_OUTPUT"
+            echo "This is the Agent Foundry source repository; the master merge"
+            echo "gate governs generated projects, not the template itself."
+            {
+              echo "### Master merge gate: not applicable"
+              echo
+              echo "The trusted base tree carries \`templates/\`, so this is the"
+              echo "Agent Foundry source repository. Its master branch is"
+              echo "expected to contain the development-stage paths the gate"
+              echo "forbids in a generated project."
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "applicable=true" >> "$GITHUB_OUTPUT"
+            echo "Generated project; enforcing the gate."
+          fi
+
       - name: Enforce source and path policy
+        if: steps.applicability.outputs.applicable == 'true'
         shell: bash
         env:
           GITHUB_TOKEN: ${{ github.token }}
