@@ -4,7 +4,9 @@
 **Date**: 2026-08-19
 **Authors**: Template maintainers
 **Amended by**: ADR 0003 (adds an opt-in direct automation projection route and
-validation provenance for release-bound PRs)
+validation provenance for release-bound PRs); ADR 0004 (separates operational
+deployment identity from semantic tags, moves semantic publication after a
+successful deployment, and corrects the provenance claim below)
 
 ## Summary
 
@@ -32,6 +34,12 @@ Actions shape -- a dedicated job holding `contents: write` and nothing else, wit
 release and deployment jobs declaring `needs:` on it -- lives in the
 vendor-specific constraint, so a repository on another forge is bound by the
 property without being bound to the mechanism.
+
+> **Amended by ADR 0004 (2026-08-23).** The dependency direction above is
+> reversed where the workflow deploys: the tag job declares `needs:` on the
+> deployment job, not the reverse, so that a failed deployment leaves the commit
+> untagged. The original text is preserved here because it is the decision this
+> repository actually took; read ADR 0004 for the currently binding shape.
 
 ## Rationale
 

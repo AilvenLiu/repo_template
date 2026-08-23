@@ -108,8 +108,17 @@ contract in `$deploy-service`.
   pinned, held, or activating records.
 - A validated release id joins source SHA, artefact digest, workflow run,
   target compatibility, approvals, host metadata, and rollback evidence.
+- An operational deployment id is not a semantic Git tag. Keep timestamped
+  channel identifiers in the host and artefact evidence plane; derive
+  `release-v<major>.<minor>.<patch>` only from an eligible master manifest.
+- Where promotion includes a deployment gate, publish the semantic tag only
+  after that deployment succeeds for the exact master SHA, isolate the publisher
+  in the only `contents: write` job, and independently verify the resulting tag
+  targets from a fresh read-only job.
 - Deployments are serialized per environment. An older or cancelled run cannot
-  activate after a newer release or prune its rollback target.
+  activate after a newer release or prune its rollback target. Re-read the
+  protected-channel tip at the activation boundary because serialization does
+  not make a manually rerun old event current.
 - CI transfers only to a release-specific temporary path and invokes one fixed,
   narrowly authorized host interface. Never upload and run a fresh root script.
 - Auto-release occurs only after the required CI, policy, provenance, and
