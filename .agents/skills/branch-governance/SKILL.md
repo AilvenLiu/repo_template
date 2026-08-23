@@ -143,8 +143,12 @@ Promote reviewed `develop` content through a release shim:
    evidence, changelog, and rollback/release notes.
 9. Merge only after the protected checks and the applicable approval evidence
    pass.
-10. Tag the resulting `master` merge commit `release-v$VERSION` after the merge.
-    The tag names one immutable commit and MUST NOT be moved or re-pointed.
+10. Tag the resulting `master` merge commit `release-v$VERSION` after the merge
+    and after every required promotion and deployment gate for that exact SHA
+    has succeeded. The tag names one immutable commit and MUST NOT be moved or
+    re-pointed. An operational deployment identifier is never a substitute for
+    it, and a fresh read-only job verifies the resulting target independently
+    (`master-merge-policy.md` section 8.6 and ADR 0004).
 
 The candidate version MUST be strictly greater than the version currently on
 `master`. Reusing a released version is forbidden even after deleting its branch

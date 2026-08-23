@@ -149,34 +149,52 @@ only after an update to `master`. On GitHub, use a `push` event restricted to
 `common/master-merge-policy.md` section 8.6 requires that the `release-v<x.y.z>`
 tag be created by automation and verified independently. On GitHub Actions:
 
-- A `push` event restricted to `master` MUST create the tag, in a job dedicated
-  to that single purpose.
+- Only a trusted `push` event restricted to `master` may create a semantic tag,
+  in a job dedicated to that single purpose.
 - That job MUST declare `permissions: contents: write` and nothing further, and
-  it MUST be the only job in the workflow holding a write credential. Every other
-  job stays read-only.
-- Release and deployment jobs MUST declare `needs:` on the tag job, so that an
-  untagged commit cannot be published or deployed.
-- The version MUST be read from the authoritative manifest at the promoted SHA.
-  A branch name, a PR title, or a workflow input is not authoritative; a release
-  branch may be misnamed, and the gate that checks the name runs on a different
-  event.
-- A version that is not strictly greater than the highest existing release tag
-  MUST fail the job. Compare numerically per component, not lexically: a string
-  sort places `0.10.0` below `0.9.0`.
+  it MUST be the only job in the workflow holding a write credential. The
+  deployment job and every other job stay read-only.
+- Where the workflow deploys, the tag job MUST declare `needs:` on the deployment
+  job and MUST NOT run unless that deployment succeeded for the same
+  `github.sha`. Inverting this -- deployment declaring `needs:` on the tag job --
+  produces a tag for a commit whose deployment then fails, which is
+  indistinguishable afterwards from a release that shipped.
+- Operational deployment identifiers such as `master-<timestamp>-<short-sha>`
+  MUST remain host and artefact join keys. They MUST NOT be created as Git tags
+  or substituted for semantic tags.
+- The version MUST be read from the authoritative manifest at the exact promoted
+  `master` SHA. A branch name, a PR title, or a workflow input is not
+  authoritative; a release branch may be misnamed, and the gate that checks the
+  name runs on a different event. This check MAY run before the deployment job so
+  that a missing version bump fails fast; only the tag write waits.
+- A version that is not strictly greater than the preceding eligible `master`
+  release MUST fail the job. Compare numerically per component, not lexically: a
+  string sort places `0.10.0` below `0.9.0`.
 - Re-running the workflow on an already-tagged commit MUST succeed without
   re-pointing the tag. Deployments are re-run for reasons unrelated to tagging,
   and a tag job that fails on its second run makes recovery harder than the
-  problem it was invoked for.
-- The job MUST NOT force-update, move, or delete a tag under any condition.
+  problem it was invoked for. A stale event whose `master` tip has since advanced
+  MUST fail instead; idempotency never authorises replay of an obsolete
+  deployment.
+- The job MUST NOT force-update, move, or delete a tag under any condition. Use a
+  create-only ref operation.
 - Error handling in the version comparison MUST distinguish "no release tags
   exist yet", which is the legitimate bootstrap case, from "the lookup failed".
   A trailing `|| true` on the lookup pipeline covers the first and silently
   swallows the second, which converts a broken comparison into an apparently
   passing one.
-- A read-only check MUST fail when the head of `master` carries no matching
-  release tag. This is what detects a tag job that was skipped, cancelled, or
-  never wired up, and it holds for repositories that do no automatic tagging at
-  all.
+- A separate read-only verification job MUST run after every tagging attempt on a
+  promoted `master` commit. It MUST independently re-derive the eligible commits,
+  manifest versions, expected tag names, and exact targets rather than trusting
+  the tag job's outputs, and MUST fail when any governed tag is absent, moved, or
+  mismatched. It MUST receive no production environment, deployment credential,
+  or write permission. This is what detects a tag job that was skipped,
+  cancelled, or never wired up, and it holds for repositories that do no
+  automatic tagging at all.
+- Workflow concurrency MUST serialise deployment and tagging for an environment,
+  with `cancel-in-progress: false`. Concurrency alone does not prove freshness:
+  the activation boundary MUST also re-read the protected-channel branch tip and
+  reject an old rerun after that ref advances.
 
 ## Workflow Trust Boundary
 

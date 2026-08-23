@@ -312,9 +312,25 @@ limitation rather than claiming the host prevents the reuse.
 ### 8.6 Tagging
 
 Tag the resulting `master` merge commit `release-v<major>.<minor>.<patch>` after
-the merge, never before. The tag names one immutable promoted commit, so it MUST
-NOT be moved, deleted, or re-pointed. Where automatic release or deployment is
-enabled, it promotes that exact tagged `master` SHA.
+the merge, and after every required promotion and deployment gate for that exact
+`master` SHA has succeeded. Never tag a release or hotfix branch before it
+reaches `master`, and never tag a `master` commit whose required deployment has
+not yet succeeded. The tag names one immutable promoted commit, so it MUST NOT be
+moved, deleted, or re-pointed.
+
+A repository with no deployment gate tags once the merge and its required checks
+succeed. A repository whose promotion includes a deployment gate treats a
+successful deployment of that exact SHA as a precondition of the tag, so the tag
+records what actually shipped rather than what was expected to ship.
+
+An operational deployment identifier such as `master-<timestamp>-<short-sha>` or
+`release-<timestamp>-<short-sha>` is a host, artefact, retention, and rollback
+join key. It is not a semantic version and MUST NOT be created as, or substituted
+for, a `release-v<major>.<minor>.<patch>` Git tag. Where both exist, the
+operational identifier records a deployment attempt and the semantic tag records
+a completed release; a repository that conflates them loses the ability to state
+which commits actually reached production. Existing operational tags are
+historical evidence only and do not authorise a semantic release.
 
 The tag MUST be created by automation, and MUST NOT be created by a person.
 Manual tagging fails in a particular way: it is a separate action taken after the
@@ -324,18 +340,43 @@ a state the rest of this section treats as impossible, and nothing reports the
 omission.
 
 Automation that creates the tag MUST derive `<x.y.z>` from the authoritative
-manifest at the recorded source commit rather than from a branch or PR name,
-reject a version that is not strictly greater than the highest existing release
-tag, be idempotent so that a re-run neither fails nor re-points an existing tag,
-hold only the credential needed to create a tag, and run before any release or
-deployment job that consumes it.
+manifest at the exact resulting `master` merge commit rather than from a branch,
+PR name, or workflow input, reject a version that is not strictly greater than
+the preceding eligible `master` release, be idempotent so that a re-run neither
+fails nor re-points an existing tag, and hold only the credential needed to
+create a tag. An existing tag at the exact expected `master` SHA is success; an
+existing tag at any other SHA is a hard failure rather than a silent overwrite.
+The tag write MUST use a create-only operation and MUST expose no force-update,
+move, or deletion path.
 
-Tag presence MUST be verified independently of tag creation. A promoted `master`
-head that carries no matching `release-v<x.y.z>` tag MUST fail a check.
-Verification is read-only, needs no write credential, and so remains available to
-a repository that has no tagging automation at all. It is what makes the mandate
-above enforceable rather than aspirational: creation can be skipped silently,
-whereas a failing check cannot.
+The version contract MAY still be checked before the deployment gate, and
+checking it early is preferred: a promotion whose version was never bumped is a
+policy violation worth catching in seconds rather than after a long build. Only
+the tag *write* waits for the deployment gate.
+
+Tag presence MUST be verified independently of tag creation, from a fresh
+read-only context that does not consume the publisher's outputs. Verification
+MUST re-derive every governed eligible `master` commit, its manifest version, the
+expected tag name, and the expected target, and MUST fail when a governed tag is
+absent, moved, or mismatched. The verifier receives no production credential and
+no write token, so it remains available to a repository that has no tagging
+automation at all. It is what makes the mandate above enforceable rather than
+aspirational: creation can be skipped silently, whereas a failing check cannot.
+
+Because verification necessarily follows the merge and the deployment it depends
+on, it cannot be a pre-merge required check for that same promotion. A project
+MUST therefore treat it as a mandatory post-merge result and block or alert on
+any later promotion until it succeeds.
+
+A project MAY additionally reconcile missing historical semantic tags. If it
+does, the recovery policy MUST already be reviewed into `master`; MUST fix the
+repository identity and the historical promotion evidence, including the exact
+successful deployment workflow and job; MUST record known evidence limitations
+rather than asserting evidence that does not exist; and MUST accept no
+user-supplied ref, tag, or SHA. Reconciliation proceeds in ascending numeric
+release order using the same create-only operations, and revalidates the current
+remote `master` and every policy-designated promotion ref immediately before each
+write so that a stale rerun or a changed branch identity fails closed.
 
 A hotfix follows the same rules: it bumps the patch component on its own branch,
 carries a `hotfix/v<x.y.z>` name, and is tagged `release-v<x.y.z>` on `master`.
