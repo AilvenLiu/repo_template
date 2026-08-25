@@ -124,6 +124,12 @@ identity.
 - Cleanup is dry-run capable, cannot escape the approved root, preserves live,
   rollback, activating, pinned, and held releases, and fails closed on malformed
   metadata or unknown state.
+- Every host service the deployment depends on carries an explicit, verified
+  restart policy. Distribution units commonly ship `Restart=no` with the default
+  `OOMPolicy=stop`, so one OOM-killed child leaves the unit dead until a person
+  intervenes. Install a drop-in, never edit the packaged unit, and have the
+  installer read the effective properties back and fail when they do not match.
+  See [host-bootstrap.md](references/host-bootstrap.md).
 
 ## Use an explicit host state machine
 

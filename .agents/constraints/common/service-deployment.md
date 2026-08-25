@@ -160,6 +160,46 @@ create that exception.
   preserve active/rollback/pinned/held releases, and fail closed on malformed or
   unknown metadata.
 
+## Host Dependency Service Supervision
+
+A deployed service depends on host daemons it does not own: reverse proxy, mail
+transport, resolver, database engine, or queue broker. Their availability is part
+of the deployment contract even though the packages come from the distribution,
+so their recovery behaviour MUST be chosen rather than inherited.
+
+- Distribution-packaged units frequently ship `Restart=no` together with the
+  systemd default `OOMPolicy=stop`. One kernel OOM kill of a single child then
+  stops the whole unit and leaves it dead until a person intervenes. Deployment
+  automation MUST establish an explicit restart policy for every host service the
+  deployment depends on.
+- Express that policy as a drop-in under
+  `/etc/systemd/system/<unit>.service.d/`, never by editing the packaged unit.
+  A drop-in survives package upgrades; an edited unit is reverted or conflicts.
+- For a daemon whose master process supervises and respawns its own children --
+  a reverse proxy, an MTA, a process-manager pool -- set `OOMPolicy=continue` so
+  one OOM-killed child is not escalated into a full outage, and
+  `Restart=on-failure` for the case where the master itself dies. Widen
+  `StartLimitIntervalSec` and `StartLimitBurst` so a prolonged resource shortage
+  does not latch a permanent failed state after the default burst.
+- `OOMPolicy=continue` is not universally correct. It suits a supervising master
+  process. For a single-process service that cannot recover from losing its only
+  worker, let the unit stop and rely on `Restart=`.
+- The installer MUST read the effective properties back and fail loudly when they
+  do not match the intended policy. A file on disk is not evidence: the unit
+  adopts a drop-in only after a daemon reload, and an installed but ineffective
+  drop-in is indistinguishable from a working one until the day it is needed.
+- A drop-in on a shared unit changes behaviour for every co-tenant of that host
+  service, not only the service being deployed. Record the intended effect and
+  confirm the other consumers still work.
+- `OOMPolicy=continue` trades a loud failed unit for quiet self-healing. Where
+  unit state feeds alerting, add a separate detection path for OOM kills so the
+  degradation stays visible.
+
+Distinguish a failing release from a failing host dependency. A smoke check that
+probes reverse-proxy ingress fails while the proxy is down regardless of which
+artefact is active, so a red deployment MUST NOT be read as a bad release until
+the dependency has been checked.
+
 ## Host and Network Changes
 
 Inventory listeners, IPv4 and IPv6, routes, forwarding, firewall, VPN, DNS,

@@ -39,6 +39,57 @@ listener even when the new website itself works.
 - Verify directory traversal permissions for the reverse-proxy worker without
   making unrelated directories broadly writable.
 
+## Supervision of host dependency services
+
+Treat the recovery behaviour of every host service the deployment depends on as
+part of the bootstrap. Do not assume a packaged unit restarts itself.
+
+Inspect what the unit actually does before trusting it:
+
+```bash
+systemctl show <unit> -p Restart -p RestartSec -p OOMPolicy -p FragmentPath
+```
+
+`Restart=no` with `OOMPolicy=stop` means one OOM-killed child ends the service
+permanently, and the unit then reports `Result: oom-kill` even though its main
+process exited cleanly. That combination is common in distribution packages.
+
+Install a drop-in rather than editing the packaged unit, at
+`/etc/systemd/system/<unit>.service.d/restart-policy.conf`:
+
+```ini
+[Unit]
+StartLimitIntervalSec=300
+StartLimitBurst=10
+
+[Service]
+Restart=on-failure
+RestartSec=5
+OOMPolicy=continue
+```
+
+Reload, then verify the unit adopted it. `daemon-reload` updates a running
+unit's properties without restarting it:
+
+```bash
+systemctl daemon-reload
+systemctl show <unit> -p Restart -p OOMPolicy -p DropInPaths
+```
+
+Put that verification inside the installer and fail the run when it does not
+match. An installed but ineffective drop-in looks identical to a working one
+until the outage it was meant to prevent.
+
+`OOMPolicy=continue` is right for a master/worker daemon because the master
+respawns its children. It is wrong for a single-process service that cannot
+recover from losing its only worker; there, let the unit stop and restart.
+
+Remember the blast radius. These units are usually shared: a reverse proxy
+serves every site on the host and an MTA carries every service's mail, so the
+policy applies to co-tenants too. Confirm the other consumers still work after
+the change, and note that a quietly self-healing unit no longer signals an OOM
+kill through its unit state.
+
 ## TLS and DNS cutover
 
 1. Configure and validate origin TLS before changing public DNS.

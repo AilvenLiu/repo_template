@@ -110,6 +110,57 @@ def test_host_deployment_skill_owns_host_contract() -> None:
     assert not (references / "github-actions.md").exists()
 
 
+def test_host_dependency_services_require_a_verified_restart_policy() -> None:
+    """A packaged unit's default recovery behaviour is not a deployment decision.
+
+    Distribution units commonly ship Restart=no with the systemd default
+    OOMPolicy=stop, so one OOM-killed child leaves a reverse proxy or MTA dead
+    until a person intervenes. The guidance must state the policy, require a
+    drop-in rather than an edited unit, and require the installer to verify the
+    policy actually took effect.
+    """
+    constraint = (ROOT / ".agents/constraints/common/service-deployment.md").read_text()
+    reference = (
+        ROOT / ".agents/skills/deploy-service/references/host-bootstrap.md"
+    ).read_text()
+    skill = (ROOT / ".agents/skills/deploy-service/SKILL.md").read_text()
+
+    assert "Host Dependency Service Supervision" in constraint
+    assert "Supervision of host dependency services" in reference
+
+    # All three name the defective default so the problem is recognisable.
+    for body in (constraint, reference, skill):
+        assert "`Restart=no`" in body
+        assert "`OOMPolicy=stop`" in body
+        assert "drop-in" in body
+
+    # The constraint and the reference carry the policy itself; the skill states
+    # the invariant and delegates the detail.
+    for body in (constraint, reference):
+        assert "OOMPolicy=continue" in body
+    assert "references/host-bootstrap.md" in skill
+
+    # Never edit the packaged unit: an override directory survives upgrades.
+    assert "/etc/systemd/system/<unit>.service.d/" in constraint
+    assert "never by editing the packaged unit" in constraint
+    assert "rather than editing the packaged unit" in reference
+
+    # An installed but ineffective drop-in is the failure mode being prevented.
+    assert "read the effective properties back and fail loudly" in constraint
+    assert "systemctl daemon-reload" in reference
+    assert "Put that verification inside the installer" in reference
+
+    # OOMPolicy=continue is not universally correct.
+    assert "not universally correct" in constraint
+    assert "single-process service" in constraint
+    assert "single-process service" in reference
+
+    # Shared units carry co-tenant blast radius, and self-healing is quieter.
+    assert "co-tenant" in constraint
+    assert "blast radius" in reference
+    assert "MUST NOT be read as a bad release" in constraint
+
+
 def test_dual_stack_ingress_covers_cloudflare_525_vhost_diagnosis() -> None:
     reference = (
         ROOT / ".agents/skills/deploy-service/references/dual-stack-ingress.md"
