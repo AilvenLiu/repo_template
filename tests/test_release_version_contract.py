@@ -62,7 +62,9 @@ def _gate(project_root: Path) -> ModuleType:
     """Load the master merge gate that the generated project actually received."""
     script = project_root / ".github" / "scripts" / "master-merge-gate.py"
     assert script.exists(), f"generated project is missing {script}"
-    spec = importlib.util.spec_from_file_location(f"gate_{project_root.parent.name}", script)
+    spec = importlib.util.spec_from_file_location(
+        f"gate_{project_root.parent.name}", script
+    )
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
@@ -89,10 +91,11 @@ def test_generated_contributing_documents_naming_and_ordering(
     """The contributor guide must name every artefact and the bump ordering."""
     text = (generated[profile] / "CONTRIBUTING.md").read_text()
     assert "`release/v<MAJOR>.<MINOR>.<PATCH>`" in text
-    assert "`chore/release-v<MAJOR>.<MINOR>.<PATCH>`" in text
+    assert "chore/release-v" not in text
     assert "`hotfix/v<MAJOR>.<MINOR>.<PATCH>`" in text
     assert "`release-v<MAJOR>.<MINOR>.<PATCH>`" in text
-    assert "before" in text and "source commit" in text
+    assert ".agents/bin/agent-release prepare" in text
+    assert "sole" in text
     expected_manifest = "pyproject.toml" if profile == "python" else "CMakeLists.txt"
     assert expected_manifest in text
     if profile == "hybrid":

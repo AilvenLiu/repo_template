@@ -12,13 +12,9 @@ from the PR body and rejects any tree difference other than a forbidden-path
 deletion. Emergency hotfix PRs must record their reduced validation trade-off.
 When the REQUIRED_SOURCE_CHECKS environment variable names Actions workflows,
 the gate additionally requires each of them to have a successful push run on
-develop at the recorded develop source SHA (validation provenance,
+develop at the recorded develop source SHA, or at the independently proved
+parent of its bounded version-only commit (validation provenance,
 master-merge-policy.md section 9.1).
-
-For pull requests targeting a protected release/v<x.y.z> branch, the gate
-enforces the staging contract instead: the source must be the matching
-chore/release-v<x.y.z> branch and the tree may differ from the release base
-only by forbidden-path deletions (master-merge-policy.md section 9.2).
 
 The script also offers --rehearse: a read-only, network-free local pre-flight
 that derives the release names from the authoritative manifest, runs the same
@@ -48,6 +44,7 @@ from urllib.request import Request, urlopen
 MASTER_BRANCH = "master"
 ALLOWED_HEAD_PREFIXES = ("release/", "hotfix/")
 DEVELOP_SOURCE_LABEL = "Develop-Source-SHA"
+RELEASE_METADATA_PARENT_LABEL = "Release-Metadata-Parent-SHA"
 HOTFIX_TRADEOFF_LABEL = "Hotfix-Validation-Tradeoff"
 FULL_SHA_PATTERN = re.compile(r"[0-9a-fA-F]{40}")
 SEMVER_COMPONENT = r"(?:0|[1-9][0-9]*)"
@@ -187,10 +184,35 @@ STRICT_SEMVER_PATTERN = re.compile(
 )
 
 
-def _literal_version_scan(text: str) -> str | None:
-    """Return the first quoted version assignment in manifest text."""
-    match = re.search(r'(?m)^\s*version\s*=\s*"([^"]+)"', text)
-    return match.group(1) if match else None
+def _scan_pyproject_version_entry(text: str) -> tuple[str, str] | None:
+    """Find one canonical project or Poetry version without a TOML dependency.
+
+    Agent wrappers support Python 3.10, where tomllib is unavailable. This
+    deliberately narrow scanner recognises only the table and scalar forms the
+    release normaliser can replace byte-for-byte. Ambiguous assignments fail
+    closed.
+    """
+    current_table = ""
+    versions: dict[str, list[str]] = {"project": [], "tool.poetry": []}
+    table_pattern = re.compile(r"^\s*\[([^]]+)]\s*(?:#.*)?$")
+    version_pattern = re.compile(
+        r"^\s*version\s*=\s*(?P<quote>[\"'])(?P<value>[^\"']*)"
+        r"(?P=quote)\s*(?:#.*)?$"
+    )
+    for line in text.splitlines():
+        table_match = table_pattern.fullmatch(line)
+        if table_match is not None:
+            current_table = table_match.group(1).strip()
+            continue
+        version_match = version_pattern.fullmatch(line)
+        if current_table in versions and version_match is not None:
+            versions[current_table].append(version_match.group("value"))
+
+    if len(versions["project"]) == 1:
+        return "project", versions["project"][0]
+    if not versions["project"] and len(versions["tool.poetry"]) == 1:
+        return "tool.poetry", versions["tool.poetry"][0]
+    return None
 
 
 def _table_version(table: object) -> str | None:
@@ -201,32 +223,39 @@ def _table_version(table: object) -> str | None:
     return version if isinstance(version, str) else None
 
 
-def parse_pyproject_version(text: str) -> str | None:
-    """Return the version declared by pyproject.toml text.
-
-    tomllib is stdlib from 3.11 only, so the literal scan is a real fallback
-    rather than dead code: an older interpreter or a malformed manifest must
-    still yield a version to compare instead of silently skipping the check.
-    """
+def _pyproject_version_entry(text: str) -> tuple[str, str] | None:
+    """Return the authoritative table and version, rejecting ambiguity."""
+    scanned = _scan_pyproject_version_entry(text)
     try:
         import tomllib  # type: ignore[import-not-found,unused-ignore]
     except ImportError:
-        return _literal_version_scan(text)
+        return scanned
 
     try:
         decoded: object = tomllib.loads(text)
     except ValueError:
-        return _literal_version_scan(text)
-
+        return None
     if not isinstance(decoded, dict):
         return None
     project_version = _table_version(decoded.get("project"))
+    decoded_entry: tuple[str, str] | None
     if project_version is not None:
-        return project_version
-    tool = decoded.get("tool")
-    if isinstance(tool, dict):
-        return _table_version(tool.get("poetry"))
-    return None
+        decoded_entry = ("project", project_version)
+    else:
+        tool = decoded.get("tool")
+        poetry_version = (
+            _table_version(tool.get("poetry")) if isinstance(tool, dict) else None
+        )
+        decoded_entry = (
+            ("tool.poetry", poetry_version) if poetry_version is not None else None
+        )
+    return decoded_entry if decoded_entry == scanned else None
+
+
+def parse_pyproject_version(text: str) -> str | None:
+    """Return the unambiguous canonical version declared by pyproject.toml."""
+    entry = _pyproject_version_entry(text)
+    return entry[1] if entry is not None else None
 
 
 def parse_cmake_version(text: str) -> str | None:
@@ -300,14 +329,23 @@ def validate_release_version(
         )
         return violations
 
-    master_version, _ = _authoritative_version(master_manifests)
-    if master_version is not None and STRICT_SEMVER_PATTERN.fullmatch(master_version):
-        current = tuple(int(part) for part in master_version.split("."))
-        if declared <= current:
+    master_version, master_manifest_path = _authoritative_version(master_manifests)
+    if master_manifest_path is not None:
+        if (
+            master_version is None
+            or STRICT_SEMVER_PATTERN.fullmatch(master_version) is None
+        ):
             violations.append(
-                f"candidate version {source_version} must be strictly greater "
-                f"than the version currently on master ({master_version})"
+                f"master {master_manifest_path} must declare a strict semantic "
+                "version before monotonicity can be proved"
             )
+        else:
+            current = tuple(int(part) for part in master_version.split("."))
+            if declared <= current:
+                violations.append(
+                    f"candidate version {source_version} must be strictly greater "
+                    f"than the version currently on master ({master_version})"
+                )
 
     return violations
 
@@ -315,36 +353,183 @@ def validate_release_version(
 SOURCE_BRANCH = "develop"
 
 
-def validate_staging_pull_request(
+def _normalise_pyproject_release_version(text: str) -> str | None:
+    """Replace exactly one authoritative TOML version value with a marker."""
+    entry = _pyproject_version_entry(text)
+    if entry is None:
+        return None
+    target, _ = entry
+
+    current_table = ""
+    replacements = 0
+    output: list[str] = []
+    table_pattern = re.compile(r"^\s*\[([^]]+)]\s*(?:#.*)?$")
+    version_pattern = re.compile(
+        r"^(\s*version\s*=\s*)(?P<quote>[\"'])(?:[^\"']*)(?P=quote)(\s*(?:#.*)?)$"
+    )
+    for line in text.splitlines(keepends=True):
+        body = line.rstrip("\r\n")
+        ending = line[len(body) :]
+        table_match = table_pattern.fullmatch(body)
+        if table_match is not None:
+            current_table = table_match.group(1).strip()
+        version_match = version_pattern.fullmatch(body)
+        if current_table == target and version_match is not None:
+            replacements += 1
+            quote_character = version_match.group("quote")
+            body = (
+                f"{version_match.group(1)}{quote_character}<release-version>"
+                f"{quote_character}{version_match.group(3)}"
+            )
+        output.append(body + ending)
+
+    return "".join(output) if replacements == 1 else None
+
+
+def _normalise_cmake_release_version(text: str) -> str | None:
+    """Replace exactly one VERSION token in the first CMake project command."""
+    comment_masked = re.sub(r"(?m)#.*$", lambda match: " " * len(match.group(0)), text)
+    command_match = re.search(r"(?is)\bproject\s*\((.*?)\)", comment_masked)
+    if command_match is None:
+        return None
+    inner_start, inner_end = command_match.span(1)
+    masked_inner = comment_masked[inner_start:inner_end]
+    version_pattern = re.compile(r"(?i)(\bVERSION\s+)([0-9][0-9A-Za-z.+-]*)")
+    matches = list(version_pattern.finditer(masked_inner))
+    if len(matches) != 1:
+        return None
+    value_start, value_end = matches[0].span(2)
+    absolute_start = inner_start + value_start
+    absolute_end = inner_start + value_end
+    return text[:absolute_start] + "<release-version>" + text[absolute_end:]
+
+
+def validate_release_metadata_only(
     *,
-    base_ref: str,
-    head_ref: str,
-    base_repository: str,
-    head_repository: str,
+    parent_sha: str,
+    source_parent_shas: Sequence[str],
+    parent_tree: Mapping[str, TreeEntry],
+    source_tree: Mapping[str, TreeEntry],
+    parent_manifests: Mapping[str, str],
+    source_manifests: Mapping[str, str],
 ) -> list[str]:
-    """Return violations for a pull request targeting a protected release branch.
+    """Prove that a source commit changes only canonical release versions.
 
-    A release branch accepts only its own deletion-only staging branch,
-    chore/release-v<x.y.z> for the identical version, from the same repository
-    (master-merge-policy.md sections 4 and 9.2). The tree comparison itself is
-    performed by validate_release_projection against the release branch base.
+    This proof permits authoritative validation provenance to come from the
+    direct parent of a lightweight version-only develop commit. It compares
+    complete trees and then normalises only the authoritative version tokens;
+    path-only filtering is insufficient because a manifest can contain build
+    logic, dependencies, and arbitrary configuration alongside its version.
     """
-    version = branch_version(base_ref)
-    if version is None or not base_ref.startswith("release/"):
-        return []
-
     violations: list[str] = []
-    if not base_repository or base_repository != head_repository:
+    if list(source_parent_shas) != [parent_sha]:
         violations.append(
-            "a release branch accepts pull requests only from branches in the "
-            "same repository"
+            "release metadata source must have exactly the recorded parent"
         )
-    expected = f"chore/release-v{format_version(version)}"
-    if head_ref != expected:
+
+    if CMAKE_MANIFEST in source_manifests:
+        required_manifests = {CMAKE_MANIFEST}
+        if PYPROJECT_MANIFEST in source_manifests:
+            required_manifests.add(PYPROJECT_MANIFEST)
+    elif PYPROJECT_MANIFEST in source_manifests:
+        required_manifests = {PYPROJECT_MANIFEST}
+    else:
+        return violations + [
+            "release metadata source declares no authoritative version manifest"
+        ]
+
+    if set(parent_manifests) != set(source_manifests):
+        violations.append("release metadata commit adds or removes a version manifest")
+
+    changed_paths = {
+        path
+        for path in parent_tree.keys() | source_tree.keys()
+        if parent_tree.get(path) != source_tree.get(path)
+    }
+    if changed_paths != required_manifests:
+        unexpected = sorted(changed_paths - required_manifests)
+        missing = sorted(required_manifests - changed_paths)
+        if unexpected:
+            violations.append(
+                "release metadata commit changes non-version path(s): "
+                + ", ".join(unexpected)
+            )
+        if missing:
+            violations.append(
+                "release metadata commit does not update required manifest(s): "
+                + ", ".join(missing)
+            )
+
+    for path in sorted(required_manifests):
+        parent_entry = parent_tree.get(path)
+        source_entry = source_tree.get(path)
+        if parent_entry is None or source_entry is None:
+            violations.append(
+                f"release metadata tree is missing required manifest entry: {path}"
+            )
+        elif parent_entry[1] != "blob" or source_entry[1] != "blob":
+            violations.append(f"release metadata manifest must remain a blob: {path}")
+        elif parent_entry[:2] != source_entry[:2]:
+            violations.append(
+                f"release metadata commit changes manifest mode or type: {path}"
+            )
+
+    parent_version, parent_authority = _authoritative_version(parent_manifests)
+    source_version, source_authority = _authoritative_version(source_manifests)
+    if parent_authority != source_authority or source_authority is None:
+        violations.append("release metadata commit changes version authority")
+    if (
+        parent_version is None
+        or source_version is None
+        or STRICT_SEMVER_PATTERN.fullmatch(parent_version) is None
+        or STRICT_SEMVER_PATTERN.fullmatch(source_version) is None
+    ):
         violations.append(
-            "a release branch accepts only its deletion-only staging branch "
-            f"{expected} as a pull-request source"
+            "release metadata parent and source versions must both be strict "
+            "semantic versions"
         )
+    elif tuple(int(part) for part in source_version.split(".")) <= tuple(
+        int(part) for part in parent_version.split(".")
+    ):
+        violations.append(
+            f"release metadata version {source_version} must advance parent "
+            f"version {parent_version}"
+        )
+
+    for path in sorted(required_manifests):
+        parent_text = parent_manifests.get(path)
+        source_text = source_manifests.get(path)
+        if parent_text is None or source_text is None:
+            continue
+        normaliser = (
+            _normalise_cmake_release_version
+            if path == CMAKE_MANIFEST
+            else _normalise_pyproject_release_version
+        )
+        parent_normalised = normaliser(parent_text)
+        source_normalised = normaliser(source_text)
+        if (
+            parent_normalised is None
+            or source_normalised is None
+            or parent_normalised != source_normalised
+        ):
+            violations.append(
+                f"release metadata commit changes {path} outside its "
+                "authoritative version field"
+            )
+
+    for label, manifests in (
+        ("parent", parent_manifests),
+        ("source", source_manifests),
+    ):
+        if CMAKE_MANIFEST in manifests and PYPROJECT_MANIFEST in manifests:
+            if parse_cmake_version(
+                manifests[CMAKE_MANIFEST]
+            ) != parse_pyproject_version(manifests[PYPROJECT_MANIFEST]):
+                violations.append(
+                    f"hybrid release metadata {label} versions do not agree"
+                )
+
     return violations
 
 
@@ -437,6 +622,27 @@ def _develop_source_sha(body: Any) -> str | None:
     if value is None or FULL_SHA_PATTERN.fullmatch(value) is None:
         return None
     return value.lower()
+
+
+def _release_metadata_parent_sha(body: Any) -> str | None:
+    """Return an optional parent SHA; return empty text for malformed fields."""
+    if not isinstance(body, str):
+        return None
+    prefix = f"{RELEASE_METADATA_PARENT_LABEL}:"
+    values = [
+        line[len(prefix) :].strip()
+        for line in body.splitlines()
+        if line.startswith(prefix)
+    ]
+    if not values:
+        return None
+    if (
+        len(values) != 1
+        or not values[0]
+        or FULL_SHA_PATTERN.fullmatch(values[0]) is None
+    ):
+        return ""
+    return values[0].lower()
 
 
 def _require_string(mapping: dict[str, Any], key: str, label: str) -> str:
@@ -563,8 +769,10 @@ def _fetch_manifest_texts(
     manifests: dict[str, str] = {}
     for path in (CMAKE_MANIFEST, PYPROJECT_MANIFEST):
         entry = tree.get(path)
-        if entry is None or entry[1] != "blob":
+        if entry is None:
             continue
+        if entry[1] != "blob":
+            raise RuntimeError(f"{path} is not a readable blob")
         blob = _request_json(
             f"{api_url}/repos/{encoded_repository}/git/blobs/{quote(entry[2], safe='')}",
             token,
@@ -572,11 +780,14 @@ def _fetch_manifest_texts(
         )
         content = blob.get("content")
         if not isinstance(content, str) or blob.get("encoding") != "base64":
-            continue
+            raise RuntimeError(f"{path} blob response is not base64 content")
         try:
-            manifests[path] = base64.b64decode(content).decode("utf-8")
-        except (ValueError, UnicodeDecodeError):
-            continue
+            compact_content = "".join(content.split())
+            manifests[path] = base64.b64decode(compact_content, validate=True).decode(
+                "utf-8"
+            )
+        except (ValueError, UnicodeDecodeError) as error:
+            raise RuntimeError(f"{path} is not valid UTF-8 base64 content") from error
     return manifests
 
 
@@ -595,6 +806,32 @@ def _fetch_workflow_runs(
     )
 
 
+def _fetch_commit_parent_shas(
+    repository: str, commit_sha: str, token: str
+) -> list[str]:
+    """Read the immutable parent list from the Git database API."""
+    api_url = os.environ.get("GITHUB_API_URL", "https://api.github.com").rstrip("/")
+    encoded_repository = quote(repository, safe="/")
+    encoded_sha = quote(commit_sha, safe="")
+    response = _request_json(
+        f"{api_url}/repos/{encoded_repository}/git/commits/{encoded_sha}",
+        token,
+        "read source commit parents",
+    )
+    parents = response.get("parents")
+    if not isinstance(parents, list):
+        raise RuntimeError("Git commit API response missing 'parents' array")
+    parent_shas: list[str] = []
+    for parent in parents:
+        if not isinstance(parent, dict):
+            raise RuntimeError("Git commit API returned an invalid parent")
+        sha = parent.get("sha")
+        if not isinstance(sha, str) or FULL_SHA_PATTERN.fullmatch(sha) is None:
+            raise RuntimeError("Git commit API returned a malformed parent SHA")
+        parent_shas.append(sha.lower())
+    return parent_shas
+
+
 def _master_manifests(
     base: dict[str, Any], base_repository: str, head_ref: str, token: str
 ) -> dict[str, str]:
@@ -602,43 +839,11 @@ def _master_manifests(
     if branch_version(head_ref) is None:
         return {}
     base_sha = base.get("sha")
-    if not isinstance(base_sha, str) or not base_sha:
-        return {}
+    if not isinstance(base_sha, str) or FULL_SHA_PATTERN.fullmatch(base_sha) is None:
+        raise RuntimeError("pull-request base is missing a full master SHA")
     return _fetch_manifest_texts(
         base_repository, _fetch_tree(base_repository, base_sha, token), token
     )
-
-
-def _validate_staging_event(
-    base: dict[str, Any], head: dict[str, Any], token: str
-) -> list[str]:
-    """Validate a pull request targeting a protected release branch.
-
-    The deletion-only projection check for the staging PR: the head tree may
-    differ from the release branch base tree only by deletions of forbidden
-    paths (master-merge-policy.md section 9.2).
-    """
-    base_ref = _require_string(base, "ref", "pull-request base ref")
-    base_repository = _repository_name(base.get("repo"), "pull-request base repository")
-    head_repository = _repository_name(head.get("repo"), "pull-request head repository")
-    head_ref = _require_string(head, "ref", "pull-request head ref")
-    head_sha = _require_string(head, "sha", "pull-request head SHA")
-
-    violations = validate_staging_pull_request(
-        base_ref=base_ref,
-        head_ref=head_ref,
-        base_repository=base_repository,
-        head_repository=head_repository,
-    )
-    if base_repository == head_repository:
-        base_sha = _require_string(base, "sha", "pull-request base SHA")
-        violations.extend(
-            validate_release_projection(
-                develop_tree=_fetch_tree(base_repository, base_sha, token),
-                release_tree=_fetch_tree(head_repository, head_sha, token),
-            )
-        )
-    return violations
 
 
 def validate_event(event: dict[str, Any], token: str) -> list[str]:
@@ -654,8 +859,6 @@ def validate_event(event: dict[str, Any], token: str) -> list[str]:
 
     base_ref = _require_string(base, "ref", "pull-request base ref")
     if base_ref != MASTER_BRANCH:
-        if base_ref.startswith("release/") and branch_version(base_ref) is not None:
-            return _validate_staging_event(base, head, token)
         return []
 
     base_repository = _repository_name(base.get("repo"), "pull-request base repository")
@@ -692,6 +895,13 @@ def validate_event(event: dict[str, Any], token: str) -> list[str]:
                 violations.append(
                     "release branch does not descend from the recorded develop source SHA"
                 )
+            release_parents = _fetch_commit_parent_shas(
+                base_repository, head_sha, token
+            )
+            if release_parents != [develop_source_sha]:
+                violations.append(
+                    "release candidate must have the recorded develop source as its only parent"
+                )
             develop_tree = _fetch_tree(base_repository, develop_source_sha, token)
             violations.extend(
                 validate_release_projection(
@@ -700,14 +910,40 @@ def validate_event(event: dict[str, Any], token: str) -> list[str]:
                 )
             )
             required_workflows = _required_source_checks()
+            metadata_parent_sha = _release_metadata_parent_sha(body)
+            provenance_sha = develop_source_sha
+            if metadata_parent_sha == "":
+                violations.append(
+                    f"'{RELEASE_METADATA_PARENT_LABEL}' must be a full "
+                    "40-character SHA when present"
+                )
+            elif metadata_parent_sha is not None:
+                parent_tree = _fetch_tree(base_repository, metadata_parent_sha, token)
+                metadata_violations = validate_release_metadata_only(
+                    parent_sha=metadata_parent_sha,
+                    source_parent_shas=_fetch_commit_parent_shas(
+                        base_repository, develop_source_sha, token
+                    ),
+                    parent_tree=parent_tree,
+                    source_tree=develop_tree,
+                    parent_manifests=_fetch_manifest_texts(
+                        base_repository, parent_tree, token
+                    ),
+                    source_manifests=_fetch_manifest_texts(
+                        base_repository, develop_tree, token
+                    ),
+                )
+                violations.extend(metadata_violations)
+                if not metadata_violations:
+                    provenance_sha = metadata_parent_sha
             if required_workflows:
                 violations.extend(
                     validate_source_validation_provenance(
                         workflow_runs_payload=_fetch_workflow_runs(
-                            base_repository, develop_source_sha, token
+                            base_repository, provenance_sha, token
                         ),
                         required_workflows=required_workflows,
-                        expected_head_sha=develop_source_sha,
+                        expected_head_sha=provenance_sha,
                     )
                 )
             violations.extend(
@@ -784,9 +1020,10 @@ def _local_manifests(repo: Path, commit: str) -> dict[str, str]:
     manifests: dict[str, str] = {}
     for path in (CMAKE_MANIFEST, PYPROJECT_MANIFEST):
         try:
-            manifests[path] = _git_output(repo, "show", f"{commit}:{path}")
+            _git_output(repo, "cat-file", "-e", f"{commit}:{path}")
         except RuntimeError:
             continue
+        manifests[path] = _git_output(repo, "show", f"{commit}:{path}")
     return manifests
 
 
@@ -875,7 +1112,6 @@ def rehearse(
     print(f"Rehearsal passed for source SHA {source_sha}.")
     print(f"  version:         {version} (from {manifest_path})")
     print(f"  release branch:  release/v{version}")
-    print(f"  staging branch:  chore/release-v{version}")
     print(f"  master tag:      release-v{version}")
     print(f"  projection:      {len(deleted)} forbidden path(s) to delete")
     print("Master PR body field:")

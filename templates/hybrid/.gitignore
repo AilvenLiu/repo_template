@@ -57,7 +57,7 @@ cython_debug/
 # C++/CUDA Build directories
 !.agents/skills/build/
 !.claude/skills/build/
-build/
+/build/
 cmake-build-*/
 out/
 lib/

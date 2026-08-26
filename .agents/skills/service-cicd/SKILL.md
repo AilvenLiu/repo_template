@@ -73,6 +73,14 @@ service root. A local database uses a separate deploy-managed root such as
 `~/data/database/<service-or-engine>`; engine-owned children follow the host
 contract in `$deploy-service`.
 
+## Keep bounded version pushes from minting false evidence
+
+When adapting `develop` CI for `.agents/bin/agent-release bump`, read the
+bounded-version section in
+[release-promotion.md](references/release-promotion.md). A full-validation
+workflow whose expensive jobs are skipped but whose run still concludes
+`success` MUST NOT satisfy `REQUIRED_SOURCE_CHECKS` at that child SHA.
+
 ## Preserve these invariants
 
 - Pull-request CI runs without production secrets or write permissions and

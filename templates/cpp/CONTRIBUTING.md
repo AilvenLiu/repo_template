@@ -321,51 +321,58 @@ Follow Semantic Versioning (semver.org):
 
 The root `CMakeLists.txt` is the authoritative version manifest. The release
 process reads `project(<name> VERSION <x.y.z>)` at the recorded source commit.
+An ordinary release-content PR updates it and `CHANGELOG.md` together.
 
-Update all of these in the same reviewed pull request:
-- `project(... VERSION ...)` in the root `CMakeLists.txt`
-- `CHANGELOG.md`
-
-Release naming is derived from that version, never typed by hand:
+Release naming is derived from the manifest, never typed by hand:
 
 | Artefact | Name |
 |---|---|
-| Release shim branch | `release/v<MAJOR>.<MINOR>.<PATCH>` |
-| Deletion-only staging branch | `chore/release-v<MAJOR>.<MINOR>.<PATCH>` |
+| Final release candidate | `release/v<MAJOR>.<MINOR>.<PATCH>` |
 | Hotfix branch | `hotfix/v<MAJOR>.<MINOR>.<PATCH>` |
 | Tag on the merged `master` commit | `release-v<MAJOR>.<MINOR>.<PATCH>` |
 
-Bump the version on `develop` **before** selecting the release source commit. A
-release tree may differ from its source commit only by deleting development-stage
-paths, so a bump made after the cut would violate that invariant. A promoted
-version carries no `-dev`, `-rc`, or `+build` suffix and MUST be strictly greater
-than the version currently on `master`. The `master-merge-gate` enforces all of
-this; see `.agents/constraints/common/master-merge-policy.md` section 8.
+For an already-reviewed release train that needs only final version selection,
+Fetch `origin` immediately before starting so the remote-tracking develop and
+master refs used by the wrappers are fresh.
+run `.agents/bin/agent-release bump <MAJOR.MINOR.PATCH>` on clean, current
+`develop`, then push `develop` normally without force. The wrapper makes and
+re-proves one strictly increasing `CMakeLists.txt`-only commit; it intentionally
+does not run the full build.
 
-Keep promotions cheap without weakening the gate (section 9 of the same
-policy): bump the version in the same pull request as the change it describes
-rather than in a dedicated bump PR; batch reviewed `develop` merges into
-release trains instead of promoting every merge; rehearse locally with
-`python3 .github/scripts/master-merge-gate.py --rehearse` before cutting any
-release ref; and satisfy the release-PR validation requirement by provenance of
-the validated source SHA instead of a rebuild where the gate is configured with
-`REQUIRED_SOURCE_CHECKS`. The staging PR needs only the deletion-only
-projection check, never a rebuild.
+Create the candidate with:
+
+```bash
+.agents/bin/agent-release prepare --master-ref origin/master
+```
+
+This rehearses the gate, builds the sanitised tree in a temporary index, and
+creates `release/v<MAJOR>.<MINOR>.<PATCH>` once at its final commit without a
+checkout or stash. Run the printed exact non-force push; hosted protection must
+allow creation but reject every later ref update or deletion. Then open the
+sole ordinary release PR from that branch to `master`. Never create a staging
+branch, update/recycle the release ref, or force-push it. Copy the printed
+`Develop-Source-SHA` and, when present, `Release-Metadata-Parent-SHA` fields
+into the PR body. The latter lets the gate independently prove the bounded
+version commit and accept validation provenance from its parent.
+
+A promoted version carries no `-dev`, `-rc`, or `+build` suffix and MUST be
+strictly greater than the version currently on `master`. See
+`.agents/constraints/common/master-merge-policy.md` sections 8 and 9.
 
 ## 9. Continuous Integration
 
-All PRs MUST pass CI checks:
+All ordinary PRs MUST pass CI checks:
 - Compilation on all supported platforms
 - All tests pass
 - Static analysis (clang-tidy, cppcheck)
 - Code formatting check (clang-format)
 - Coverage threshold met (70%+)
 
-Exception: for an identity-proved release PR and its deletion-only staging PR,
-the promotion rules in section 8 apply instead -- the required validation
-status may be satisfied by verified provenance of the validated source SHA,
-and the staging PR runs the deletion-only projection check rather than a
-rebuild (`.agents/constraints/common/master-merge-policy.md` section 9).
+The bounded version-only push runs focused structural proof instead of the full
+build. On the sole identity-proved release PR, the required validation status
+may use verified provenance from the source SHA or its structurally proved
+metadata parent; the status remains required
+(`.agents/constraints/common/master-merge-policy.md` section 9).
 
 ## 10. Forbidden Practices
 

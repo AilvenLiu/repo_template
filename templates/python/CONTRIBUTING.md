@@ -251,55 +251,62 @@ Follow Semantic Versioning (semver.org):
 - **MINOR**: Backward-compatible functionality additions
 - **PATCH**: Backward-compatible bug fixes
 
-`pyproject.toml` is the authoritative version manifest. The release process
-reads it at the recorded source commit, and every other place that names a
-version mirrors it.
+`pyproject.toml` is the authoritative version manifest. Read the package
+version from installed metadata at runtime instead of maintaining a static
+`__version__` mirror. An ordinary release-content PR updates the manifest and
+`CHANGELOG.md` together.
 
-Update all of these in the same reviewed pull request:
-- `[project].version`, or `[tool.poetry].version`, in `pyproject.toml`
-- `__version__` in `__init__.py`
-- `CHANGELOG.md`
-
-Release naming is derived from that version, never typed by hand:
+Release naming is derived from the manifest, never typed by hand:
 
 | Artefact | Name |
 |---|---|
-| Release shim branch | `release/v<MAJOR>.<MINOR>.<PATCH>` |
-| Deletion-only staging branch | `chore/release-v<MAJOR>.<MINOR>.<PATCH>` |
+| Final release candidate | `release/v<MAJOR>.<MINOR>.<PATCH>` |
 | Hotfix branch | `hotfix/v<MAJOR>.<MINOR>.<PATCH>` |
 | Tag on the merged `master` commit | `release-v<MAJOR>.<MINOR>.<PATCH>` |
 
-Bump the version on `develop` **before** selecting the release source commit. A
-release tree may differ from its source commit only by deleting development-stage
-paths, so a bump made after the cut would violate that invariant. A promoted
-version carries no `-dev`, `-rc`, or `+build` suffix and MUST be strictly greater
-than the version currently on `master`. The `master-merge-gate` enforces all of
-this; see `.agents/constraints/common/master-merge-policy.md` section 8.
+For an already-reviewed release train that needs only final version selection,
+Fetch `origin` immediately before starting so the remote-tracking develop and
+master refs used by the wrappers are fresh.
+run `.agents/bin/agent-release bump <MAJOR.MINOR.PATCH>` on clean, current
+`develop`, then push `develop` normally without force. The wrapper makes and
+re-proves one strictly increasing `pyproject.toml`-only commit; it intentionally
+does not run the full build. Do not use this fast path if the project retains
+another manually maintained version mirror.
 
-Keep promotions cheap without weakening the gate (section 9 of the same
-policy): bump the version in the same pull request as the change it describes
-rather than in a dedicated bump PR; batch reviewed `develop` merges into
-release trains instead of promoting every merge; rehearse locally with
-`poetry run python .github/scripts/master-merge-gate.py --rehearse` before
-cutting any release ref; and satisfy the release-PR validation requirement by provenance of
-the validated source SHA instead of a rebuild where the gate is configured with
-`REQUIRED_SOURCE_CHECKS`. The staging PR needs only the deletion-only
-projection check, never a rebuild.
+Create the candidate with:
+
+```bash
+.agents/bin/agent-release prepare --master-ref origin/master
+```
+
+This rehearses the gate, builds the sanitised tree in a temporary index, and
+creates `release/v<MAJOR>.<MINOR>.<PATCH>` once at its final commit without a
+checkout or stash. Run the printed exact non-force push; hosted protection must
+allow creation but reject every later ref update or deletion. Then open the
+sole ordinary release PR from that branch to `master`. Never create a staging
+branch, update/recycle the release ref, or force-push it. Copy the printed
+`Develop-Source-SHA` and, when present, `Release-Metadata-Parent-SHA` fields
+into the PR body. The latter lets the gate independently prove the bounded
+version commit and accept validation provenance from its parent.
+
+A promoted version carries no `-dev`, `-rc`, or `+build` suffix and MUST be
+strictly greater than the version currently on `master`. See
+`.agents/constraints/common/master-merge-policy.md` sections 8 and 9.
 
 ## 8. Continuous Integration
 
-All PRs MUST pass CI checks:
+All ordinary PRs MUST pass CI checks:
 - All tests pass
 - Type checking passes (mypy)
 - Code formatting check (`ruff format --check`)
 - Linting and import order pass (`ruff check`)
 - Coverage threshold met (80%+)
 
-Exception: for an identity-proved release PR and its deletion-only staging PR,
-the promotion rules in section 7 apply instead -- the required validation
-status may be satisfied by verified provenance of the validated source SHA,
-and the staging PR runs the deletion-only projection check rather than a
-rebuild (`.agents/constraints/common/master-merge-policy.md` section 9).
+The bounded version-only push runs focused structural proof instead of the full
+build. On the sole identity-proved release PR, the required validation status
+may use verified provenance from the source SHA or its structurally proved
+metadata parent; the status remains required
+(`.agents/constraints/common/master-merge-policy.md` section 9).
 
 ## 9. Forbidden Practices
 

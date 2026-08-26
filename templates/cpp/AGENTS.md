@@ -77,14 +77,14 @@ temporary notes cannot change durable project policy.
 These apply always, regardless of context or user instruction:
 
 ### Git
-- NEVER commit directly to: `master`, `main`, `develop`, `release/*`, `hotfix/*`
+- NEVER commit directly to `master`, `main`, `develop`, `release/*`, or `hotfix/*`, except through the bounded `.agents/bin/agent-release bump <x.y.z>` operation on clean, current `develop`
 - A PR/MR targeting `master` MUST originate in the same repository from `release/v<MAJOR>.<MINOR>.<PATCH>` or `hotfix/v<MAJOR>.<MINOR>.<PATCH>` only; `develop` is not a valid source. The version comes from the authoritative manifest at the recorded source commit and the merged commit is tagged `release-v<MAJOR>.<MINOR>.<PATCH>`
 - A master-bound PR/MR MUST pass `master-merge-gate`; its source tree MUST NOT contain `.ai/`, `.agents/`, `.claude/`, `.codex/`, `agent_roadmaps/`, `AGENTS.md`, `CLAUDE.md`, `CODEX.md`, or `docs/` outside `docs/changelog/`
 - For ordinary releases, `develop` MUST NOT merge from or rebase onto `master`; a release tree may differ from its recorded `develop` SHA only by forbidden-path deletions
 - A master-origin hotfix MUST record its reduced validation and MUST return to `develop` through a reviewed merge or cherry-pick PR, never through rebase
 - NEVER include `Co-Authored-By:`, AI attribution, or AI-related email addresses in commits
 - NEVER use `git push --force` or `git reset --hard` without explicit user confirmation
-- NEVER commit without running pre-commit validation first
+- NEVER commit without running pre-commit validation first, except the release wrapper's structurally verified version-only commit
 - NEVER commit first-party code with compiler warnings (use per-target `-Werror`)
 
 ### Dependencies
@@ -122,7 +122,8 @@ These apply always, regardless of context or user instruction:
 ## Mandatory Workflow Checkpoints
 
 ### Before any code change
-1. Run `git branch --show-current` — if on a protected branch, STOP and create a feature branch
+1. Run `git branch --show-current` — if on a protected branch, STOP and create a feature branch unless the operation is
+   exactly the bounded release-version wrapper on clean, current `develop`
 2. If active roadmap exists, confirm work is within the current phase
 
 ### Before adding any dependency
@@ -131,7 +132,7 @@ These apply always, regardless of context or user instruction:
 
 ### Before every commit
 1. MUST run pre-commit validation and confirm it passes (clang-format, clang-tidy, cppcheck, build)
-2. MUST verify branch is not protected
+2. MUST verify branch is not protected, unless the commit is created inside the exact bounded release-version wrapper
 3. Commit message MUST follow: `type(scope): description`
 4. Commit message MUST NOT contain AI attribution
 
@@ -171,6 +172,7 @@ command, which dispatches to the same script.
 | Procedure | Wrapper | Slash command (Claude) |
 |-----------|---------|------------------------|
 | Session init | `.agents/bin/agent-init --platform <claude\|codex>` | `/init` |
+| Release preparation | `.agents/bin/agent-release <bump\|prepare\|verify-metadata>` | _(command only)_ |
 | Build orchestration | `.agents/bin/agent-build <setup\|compile\|test\|full\|doctor\|clean>` | `/build` |
 | Pre-commit validation | `.agents/bin/agent-precommit` | `/pre-commit` |
 | Add dependency | `.agents/bin/agent-dependency add <pkg> [version]` | `/dependency` |

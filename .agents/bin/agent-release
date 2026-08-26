@@ -1,0 +1,21 @@
+#!/bin/bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
+source "$SCRIPT_DIR/_agent_common.sh"
+REPO_ROOT="$(agent_repo_root)"
+
+if [[ $# -lt 1 ]]; then
+  echo "Usage: .agents/bin/agent-release <bump|prepare|verify-metadata> [args]" >&2
+  exit 1
+fi
+
+(
+  cd "$REPO_ROOT"
+  run_agent_python "$REPO_ROOT" \
+    "$REPO_ROOT/.agents/scripts/common/check_session.py" >/dev/null
+)
+
+run_agent_python "$REPO_ROOT" \
+  "$REPO_ROOT/.agents/scripts/release/prepare.py" --repo "$REPO_ROOT" "$@"
