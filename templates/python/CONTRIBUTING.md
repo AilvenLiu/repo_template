@@ -265,9 +265,9 @@ Release naming is derived from the manifest, never typed by hand:
 | Tag on the merged `master` commit | `release-v<MAJOR>.<MINOR>.<PATCH>` |
 
 For an already-reviewed release train that needs only final version selection,
-Fetch `origin` immediately before starting so the remote-tracking develop and
-master refs used by the wrappers are fresh.
-run `.agents/bin/agent-release bump <MAJOR.MINOR.PATCH>` on clean, current
+fetch `origin` immediately before starting so the remote-tracking develop and
+master refs used by the wrappers are fresh, then run
+`.agents/bin/agent-release bump <MAJOR.MINOR.PATCH>` on clean, current
 `develop`, then push `develop` normally without force. The wrapper makes and
 re-proves one strictly increasing `pyproject.toml`-only commit; it intentionally
 does not run the full build. Do not use this fast path if the project retains

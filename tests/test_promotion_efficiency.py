@@ -135,7 +135,7 @@ def test_generated_contributing_documents_the_cheap_promotion_path(
     assert ".agents/bin/agent-release prepare" in text
     assert "sole" in text
     assert "Release-Metadata-Parent-SHA" in text
-    assert "Fetch `origin` immediately" in text
+    assert "fetch `origin` immediately" in text
     assert "chore/release-v" not in text
 
 
