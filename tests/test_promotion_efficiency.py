@@ -81,8 +81,8 @@ def test_generated_policy_defines_the_efficiency_provisions(
     assert "### 9.2 Required validation per promotion step" in policy
     assert "### 9.3 Release cadence" in policy
     assert "### 9.4 Pre-flight rehearsal" in policy
-    assert "### 9.5 Direct automation projection" in policy
-    assert "same pull request as the change it describes" in policy
+    assert "### 9.5 Single-PR deterministic projection" in policy
+    assert "Version-only direct update on `develop`" in policy
     assert "NEVER applies to a `hotfix/*`" in policy
 
 
@@ -93,21 +93,36 @@ def test_generated_skill_workflow_and_adr_expose_the_mechanisms(
     """Skill, gate workflow, and ADR must ship the concrete mechanisms."""
     root = generated[profile]
     skill = (root / ".agents" / "skills" / "branch-governance" / "SKILL.md").read_text()
-    assert "--rehearse" in skill
-    assert "REQUIRED_SOURCE_CHECKS" in skill
-    assert "release cadence" in skill.lower()
+    assert ".agents/bin/agent-release bump" in skill
+    assert ".agents/bin/agent-release prepare" in skill
+    assert "validation or accepted provenance" in skill
+    assert "sole ordinary release PR" in skill
+    assert "Fetch `origin` immediately" in skill
+    assert "direct-push bypass" in skill
+    assert "metadata guard" in skill
 
     workflow = (root / ".github" / "workflows" / "master-merge-gate.yml").read_text()
     assert "REQUIRED_SOURCE_CHECKS" in workflow
 
-    adr = root / ".agents" / "adr" / "0003-release-promotion-efficiency.md"
+    adr = root / ".agents" / "adr" / "0005-single-pr-release-promotion.md"
     assert adr.exists()
+    assert "Amends" in adr.read_text()
 
     cicd = (
         root / ".agents" / "constraints" / "common" / "github-actions-cicd.md"
     ).read_text()
     assert "REQUIRED_SOURCE_CHECKS" in cicd
     assert "validation provenance" in cicd.lower()
+
+    release_guidance = (
+        root
+        / ".agents"
+        / "skills"
+        / "service-cicd"
+        / "references"
+        / "release-promotion.md"
+    ).read_text()
+    assert "false evidence" in release_guidance
 
 
 @pytest.mark.parametrize("profile", PROFILES)
@@ -116,11 +131,12 @@ def test_generated_contributing_documents_the_cheap_promotion_path(
 ) -> None:
     """The contributor guide must teach the efficient promotion habits."""
     text = (generated[profile] / "CONTRIBUTING.md").read_text()
-    assert "release trains" in text
-    assert "--rehearse" in text
-    assert "REQUIRED_SOURCE_CHECKS" in text
-    interpreter = "poetry run python" if profile in ("python", "hybrid") else "python3"
-    assert f"{interpreter} .github/scripts/master-merge-gate.py --rehearse" in text
+    assert ".agents/bin/agent-release bump" in text
+    assert ".agents/bin/agent-release prepare" in text
+    assert "sole" in text
+    assert "Release-Metadata-Parent-SHA" in text
+    assert "Fetch `origin` immediately" in text
+    assert "chore/release-v" not in text
 
 
 @pytest.mark.parametrize("profile", PROFILES)
@@ -133,17 +149,23 @@ def test_both_platform_entrypoints_still_bind_the_governance(
     text = entrypoint.read_text()
     assert "master-merge-gate" in text
     assert "release/v<MAJOR>.<MINOR>.<PATCH>" in text
+    assert "except through the bounded" in text
 
 
 @pytest.mark.parametrize("profile", PROFILES)
-def test_generated_gate_ships_provenance_rehearsal_and_staging(
+def test_generated_gate_ships_provenance_and_metadata_proof(
     generated, profile: str
 ) -> None:
-    """The gate each project receives must expose the new mechanisms."""
-    gate = _gate(generated[profile])
+    """The gate and wrapper each project receives expose the one-PR mechanisms."""
+    root = generated[profile]
+    gate = _gate(root)
     assert hasattr(gate, "validate_source_validation_provenance")
+    assert hasattr(gate, "validate_release_metadata_only")
     assert hasattr(gate, "rehearse")
-    assert hasattr(gate, "validate_staging_pull_request")
+    assert not hasattr(gate, "validate_staging_pull_request")
+    wrapper = root / ".agents" / "bin" / "agent-release"
+    assert wrapper.is_file()
+    assert wrapper.stat().st_mode & 0o111
 
     sha = "c" * 40
     payload = {
@@ -169,23 +191,10 @@ def test_generated_gate_ships_provenance_rehearsal_and_staging(
         required_workflows=["missing-workflow"],
         expected_head_sha=sha,
     )
-    assert not gate.validate_staging_pull_request(
-        base_ref="release/v1.2.3",
-        head_ref="chore/release-v1.2.3",
-        base_repository="example/project",
-        head_repository="example/project",
-    )
-    assert gate.validate_staging_pull_request(
-        base_ref="release/v1.2.3",
-        head_ref="feat/sneaky",
-        base_repository="example/project",
-        head_repository="example/project",
-    )
-
     workflow = (
         generated[profile] / ".github" / "workflows" / "master-merge-gate.yml"
     ).read_text()
-    assert "release/**" in workflow
+    assert "release/**" not in workflow
 
 
 def _git(repo: Path, *args: str) -> str:
@@ -268,7 +277,7 @@ def test_generated_project_rehearsal_end_to_end(
     )
     assert result.returncode == 0, result.stderr
     assert "release/v0.2.0" in result.stdout
-    assert "chore/release-v0.2.0" in result.stdout
+    assert "chore/release-v0.2.0" not in result.stdout
     assert "release-v0.2.0" in result.stdout
     assert "Develop-Source-SHA: " in result.stdout
     source_sha = _git(repo, "rev-parse", "develop")

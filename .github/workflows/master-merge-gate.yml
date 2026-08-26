@@ -4,7 +4,6 @@ on:
   pull_request_target:
     branches:
       - master
-      - 'release/**'
     types:
       - opened
       - edited
@@ -85,8 +84,10 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           # Validation provenance (master-merge-policy.md section 9.1): set the
           # repository variable REQUIRED_SOURCE_CHECKS to a comma-separated list
-          # of Actions WORKFLOW names, each of which must have a successful
-          # push-event run on develop at the recorded Develop-Source-SHA.
+          # of Actions WORKFLOW names. Each needs a successful push-event run
+          # on develop at the recorded Develop-Source-SHA, or at the independently
+          # proved Release-Metadata-Parent-SHA for a bounded version-only child.
+          # A skipped heavy workflow must not conclude success at that child.
           # Workflow names must not contain commas. Leave it unset to keep the
           # release-PR rebuild requirement unchanged.
           REQUIRED_SOURCE_CHECKS: ${{ vars.REQUIRED_SOURCE_CHECKS || '' }}

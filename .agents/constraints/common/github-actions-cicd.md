@@ -8,11 +8,12 @@ governed separately by `common/service-deployment.md`.
 
 - Every pull request MUST run the repository's authoritative format, lint,
   static-analysis, build, and test commands for its active project profile,
-  with two exceptions defined by `common/master-merge-policy.md` section 9: a
-  master-bound `release/*` PR MAY satisfy this through validation provenance
-  for the recorded develop source SHA instead of a rebuild, and a
-  `chore/release-v*` staging PR requires only the deletion-only projection
-  check. A `hotfix/*` PR never substitutes provenance for validation.
+  with the release exception defined by `common/master-merge-policy.md`
+  section 9: a master-bound `release/*` PR MAY satisfy this through validation
+  provenance for the structurally proved source SHA instead of a rebuild. A
+  bounded version-only push to `develop` runs focused manifest proof rather
+  than a full build; provenance remains bound to its validated parent. A
+  `hotfix/*` PR never substitutes provenance for validation.
 - Pure Python uses Poetry. Pure C++/CUDA uses direct CMake configure/build/test
   with Ninja and CPM where applicable. Hybrid projects validate direct CMake
   first, then use scikit-build-core only as the packaging bridge; Poetry owns
@@ -80,14 +81,20 @@ procedural and validation contract.
   `common/master-merge-policy.md`; permit only `docs/changelog/` below `docs/`.
 - For `release/*`, require the PR body to record `Develop-Source-SHA` and fail
   unless the source SHA is reachable from `develop`, the release descends from
-  it, and the release tree differs only by forbidden-path deletions.
+  it, and the release tree differs only by forbidden-path deletions. When the
+  source is the bounded version-only commit, also require
+  `Release-Metadata-Parent-SHA`; prove one-parent ancestry, complete-tree
+  equality outside the authoritative manifests, exact version-field-only
+  manifest changes, manifest agreement, and a strict semantic increase before
+  accepting validation provenance from that parent.
 - For `hotfix/*`, require the PR body to record the reduced local validation in
   `Hotfix-Validation-Tradeoff`; a missing record is a hard failure.
 - For `release/*`, the gate MAY additionally verify validation provenance:
   set the repository variable `REQUIRED_SOURCE_CHECKS` to a comma-separated
   list of Actions workflow names (names must not contain commas), and the gate
   requires each named workflow to have a successful, completed `push` run of
-  the `develop` branch at exactly the recorded develop source SHA, read
+  the `develop` branch at exactly the recorded develop source SHA, or at its
+  independently proved `Release-Metadata-Parent-SHA`, read
   through the read-only Actions workflow-runs API. Workflow-run bindings are
   forge-recorded and cannot be minted through the check-runs API, which is why
   the gate does not accept bare check-run names. The validation workflow must
@@ -98,11 +105,10 @@ procedural and validation contract.
   `hotfix/*` PRs and for any PR whose provenance cannot be verified, and the
   status itself is never removed from the branch rules. Leaving the variable
   empty keeps the rebuild requirement unchanged.
-- Configure `master-merge-gate` as a required check for `release/*` target
-  branches as well: on a PR targeting `release/v<x.y.z>` the gate enforces the
-  staging contract, accepting only the matching `chore/release-v<x.y.z>`
-  source and a tree that differs from the release base only by forbidden-path
-  deletions.
+- Configure `master-merge-gate` as a required check for `master`. The generic
+  promotion route opens no PR targeting `release/*`: `agent-release prepare`
+  creates the release ref once at its fully projected final commit, and the
+  gate independently proves that projection on the sole master-bound PR.
 - On GitHub, the gate may use `pull_request_target` only to execute trusted
   base-branch policy with read-only permissions. It MUST NOT check out, build,
   or execute PR code, and it MUST NOT receive production secrets.

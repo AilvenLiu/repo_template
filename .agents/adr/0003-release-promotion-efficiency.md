@@ -4,6 +4,8 @@
 **Date**: 2026-08-20
 **Authors**: Template maintainers
 **Amends**: ADR 0002 (route verification gains one sanctioned alternative)
+**Amended by**: ADR 0005 (makes deterministic direct projection the default,
+removes the generic staging route, and adds bounded version-parent provenance)
 
 ## Summary
 

@@ -84,14 +84,14 @@ temporary notes cannot change durable project policy.
 These apply always, regardless of context or user instruction:
 
 ### Git
-- NEVER commit directly to: `master`, `main`, `develop`, `release/*`, `hotfix/*`
+- NEVER commit directly to `master`, `main`, `develop`, `release/*`, or `hotfix/*`, except through the bounded `.agents/bin/agent-release bump <x.y.z>` operation on clean, current `develop`
 - A PR/MR targeting `master` MUST originate in the same repository from `release/v<MAJOR>.<MINOR>.<PATCH>` or `hotfix/v<MAJOR>.<MINOR>.<PATCH>` only; `develop` is not a valid source. The version comes from the authoritative manifest at the recorded source commit and the merged commit is tagged `release-v<MAJOR>.<MINOR>.<PATCH>`
 - A master-bound PR/MR MUST pass `master-merge-gate`; its source tree MUST NOT contain `.ai/`, `.agents/`, `.claude/`, `.codex/`, `agent_roadmaps/`, `AGENTS.md`, `CLAUDE.md`, `CODEX.md`, or `docs/` outside `docs/changelog/`
 - For ordinary releases, `develop` MUST NOT merge from or rebase onto `master`; a release tree may differ from its recorded `develop` SHA only by forbidden-path deletions
 - A master-origin hotfix MUST record its reduced validation and MUST return to `develop` through a reviewed merge or cherry-pick PR, never through rebase
 - NEVER include `Co-Authored-By:`, AI attribution, or AI-related email addresses in commits
 - NEVER use `git push --force` or `git reset --hard` without explicit user confirmation
-- NEVER commit without running pre-commit validation first
+- NEVER commit without running pre-commit validation first, except the release wrapper's structurally verified version-only commit
 
 ### Python Dependencies
 - NEVER run `pip` / `pip3` / `python -m pip` for any reason
@@ -103,7 +103,8 @@ These apply always, regardless of context or user instruction:
 - Custom package sources, when declared, MUST use HTTPS, omit credentials, and set a reviewed priority
 - Agent infrastructure commands (`.agents/bin/agent-*`, `.agents/scripts/*`) are exempt when using controlled wrappers
 - NEVER add a Python dependency without updating `pyproject.toml` + `poetry.lock`
-- NEVER commit `pyproject.toml` without also committing `poetry.lock`
+- NEVER commit `pyproject.toml` without also committing `poetry.lock`, except
+  a version-only `agent-release bump` that changes no dependency input
 
 ### C++/CUDA Dependencies
 - NEVER install C++ libraries via system package managers; NVIDIA/AMD GPU libraries and toolchains are external SDKs
@@ -181,6 +182,7 @@ The table below maps procedure names to their canonical documentation.
 | Procedure | Vendor-neutral body | Claude Code skill | Underlying command |
 |-----------|---------------------|-------------------|---------------------|
 | Session init | `.agents/skills/init/SKILL.md` | `/init` | `.agents/bin/agent-init --platform <platform>` |
+| Release preparation | `.agents/skills/branch-governance/SKILL.md` | *(command only)* | `.agents/bin/agent-release <bump\|prepare\|verify-metadata>` |
 | Build orchestration | `.agents/skills/build/SKILL.md` | `/build <cmd>` | `.agents/bin/agent-build <setup\|compile\|test\|full\|doctor\|clean>` |
 | Pre-commit validation | `.agents/skills/pre-commit/SKILL.md` | `/pre-commit validate` | `.agents/bin/agent-precommit` |
 | Add dependency | `.agents/skills/dependency/SKILL.md` | `/dependency add <pkg> [ver] [--dev]` | `.agents/bin/agent-dependency add <pkg> [ver] [--dev]` |

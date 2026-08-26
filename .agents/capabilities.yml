@@ -96,6 +96,11 @@ common_requirements:
       required: true
       executable: true
 
+    - id: agent-release
+      path: .agents/bin/agent-release
+      required: true
+      executable: true
+
     - id: agent-check-constraints
       path: .agents/bin/agent-check-constraints
       required: true

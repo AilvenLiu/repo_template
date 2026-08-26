@@ -135,7 +135,7 @@ change durable project policy.
 
 ## Absolute Prohibitions
 
-- NEVER commit directly to `master`, `main`, `develop`, `release/*`, `hotfix/*`
+- NEVER commit directly to `master`, `main`, `develop`, `release/*`, or `hotfix/*`, except through the bounded `.agents/bin/agent-release bump <x.y.z>` operation on clean, current `develop`
 - NEVER open or merge a master-bound PR/MR except from same-repository `release/v<MAJOR>.<MINOR>.<PATCH>` or `hotfix/v<MAJOR>.<MINOR>.<PATCH>`; `develop` is categorically invalid, and the source tree must pass the presence-based `master-merge-gate`. The version comes from the authoritative manifest at the recorded source commit and the merged commit is tagged `release-v<MAJOR>.<MINOR>.<PATCH>`
 - NEVER merge `master` into or rebase `develop` onto `master` for an ordinary release; release trees contain only forbidden-path deletions relative to their recorded `develop` SHA
 - A master-origin hotfix MUST record reduced validation and return to `develop` through a reviewed merge or cherry-pick PR, never through rebase
@@ -151,7 +151,7 @@ change durable project policy.
 - NEVER use raw `new`/`delete` -- use smart pointers and RAII
 - NEVER use C-style casts -- use `static_cast`/`dynamic_cast`/`reinterpret_cast`
 - NEVER ignore CUDA API error codes
-- NEVER commit without running `/pre-commit validate` first
+- NEVER commit without running `/pre-commit validate` first, except the release wrapper's structurally verified version-only commit
 - NEVER commit code with compiler warnings (`-Wall -Wextra -Wpedantic -Werror`)
 - NEVER hardcode secrets, credentials, or API keys
 - NEVER use bare `except:`, mutable default arguments, or `eval()`/`exec()`
@@ -181,6 +181,7 @@ When a slash command is unavailable or you need finer control, call the
 | Procedure | Skill | Underlying command |
 |-----------|-------|--------------------|
 | Session init | `/init` | `.agents/bin/agent-init --platform claude` |
+| Release preparation | *(command only)* | `.agents/bin/agent-release <bump|prepare|verify-metadata>` |
 | Build orchestration | `/build <cmd>` | `.agents/bin/agent-build <setup|compile|test|full|doctor|clean>` |
 | Pre-commit | `/pre-commit validate` | `.agents/bin/agent-precommit` |
 | Add dependency | `/dependency add <pkg> [ver] [--dev]` | `.agents/bin/agent-dependency add <pkg> [ver] [--dev]` |

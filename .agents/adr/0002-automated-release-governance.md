@@ -3,10 +3,11 @@
 **Status**: Active
 **Date**: 2026-08-19
 **Authors**: Template maintainers
-**Amended by**: ADR 0003 (adds an opt-in direct automation projection route and
-validation provenance for release-bound PRs); ADR 0004 (separates operational
-deployment identity from semantic tags, moves semantic publication after a
-successful deployment, and corrects the provenance claim below)
+**Amended by**: ADR 0003 (adds validation provenance and the first direct
+projection exception); ADR 0004 (separates operational deployment identity from
+semantic tags and moves semantic publication after successful deployment); ADR
+0005 (makes create-once deterministic projection the default and removes the
+generic staging branch)
 
 ## Summary
 

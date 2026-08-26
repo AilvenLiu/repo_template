@@ -1,9 +1,13 @@
 # C++/CUDA Project .gitignore
 
+# Python bytecode emitted by repository-owned agent tooling
+__pycache__/
+*.py[cod]
+
 # Build directories
 !.agents/skills/build/
 !.claude/skills/build/
-build/
+/build/
 cmake-build-*/
 out/
 lib/

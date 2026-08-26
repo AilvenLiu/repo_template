@@ -1,9 +1,12 @@
 """Tests for the deterministic master pull-request policy."""
 
+import base64
 import importlib.util
 import subprocess
 import sys
 from pathlib import Path
+
+import pytest
 
 _SCRIPT = Path(__file__).parent.parent / ".github" / "scripts" / "master-merge-gate.py"
 _SPEC = importlib.util.spec_from_file_location("master_merge_gate", _SCRIPT)
@@ -13,6 +16,8 @@ _SPEC.loader.exec_module(master_merge_gate)
 
 _DEVELOP_SHA = "a" * 40
 _HEAD_SHA = "b" * 40
+_SOURCE_SHA = "c" * 40
+_MASTER_SHA = "d" * 40
 
 
 def _violations(
@@ -36,6 +41,7 @@ def _event(*, head_ref: str, body: str | None) -> dict[str, object]:
             "body": body,
             "base": {
                 "ref": "master",
+                "sha": _MASTER_SHA,
                 "repo": {"full_name": "example/project"},
             },
             "head": {
@@ -126,6 +132,11 @@ def test_version_manifest_is_parsed_for_every_project_profile() -> None:
     )
 
 
+def test_malformed_pyproject_does_not_fall_back_on_modern_python() -> None:
+    malformed = '[project]\nversion = "1.2.3"\nbroken = [\n'
+    assert master_merge_gate.parse_pyproject_version(malformed) is None
+
+
 def test_branch_version_must_match_the_source_manifest() -> None:
     assert not _version_violations(
         source={"pyproject.toml": _PYPROJECT.format(version="1.2.3")}
@@ -182,6 +193,14 @@ def test_candidate_version_must_exceed_the_version_on_master() -> None:
     )
 
 
+def test_invalid_master_version_fails_closed() -> None:
+    violations = _version_violations(
+        source={"pyproject.toml": _PYPROJECT.format(version="1.2.3")},
+        master={"pyproject.toml": _PYPROJECT.format(version="1.2.2-rc1")},
+    )
+    assert any("master pyproject.toml" in violation for violation in violations)
+
+
 def test_first_release_is_allowed_when_master_declares_no_version() -> None:
     assert not _version_violations(
         head_ref="release/v0.1.0",
@@ -231,6 +250,145 @@ def test_release_projection_rejects_every_functional_tree_change() -> None:
         assert any(expected in violation for violation in violations), expected
 
 
+def _metadata_case(
+    *,
+    parent_manifests: dict[str, str],
+    source_manifests: dict[str, str],
+    source_parents: list[str] | None = None,
+    extra_source_tree: dict[str, tuple[str, str, str]] | None = None,
+    source_modes: dict[str, str] | None = None,
+) -> list[str]:
+    unchanged = ("100644", "blob", "f" * 40)
+    parent_tree = {"src/product.py": unchanged}
+    source_tree = {"src/product.py": unchanged}
+    for index, path in enumerate(parent_manifests):
+        parent_tree[path] = ("100644", "blob", str(index + 1) * 40)
+    for index, path in enumerate(source_manifests):
+        mode = (source_modes or {}).get(path, "100644")
+        source_tree[path] = (mode, "blob", str(index + 5) * 40)
+    source_tree.update(extra_source_tree or {})
+    return master_merge_gate.validate_release_metadata_only(
+        parent_sha=_SOURCE_SHA,
+        source_parent_shas=(
+            [_SOURCE_SHA] if source_parents is None else source_parents
+        ),
+        parent_tree=parent_tree,
+        source_tree=source_tree,
+        parent_manifests=parent_manifests,
+        source_manifests=source_manifests,
+    )
+
+
+def test_metadata_only_proof_accepts_python_and_hybrid_version_fields() -> None:
+    parent_python = '[project]\nname = "demo"\nversion = "1.2.2"  # release\n'
+    source_python = '[project]\nname = "demo"\nversion = "1.2.3"  # release\n'
+    assert not _metadata_case(
+        parent_manifests={"pyproject.toml": parent_python},
+        source_manifests={"pyproject.toml": source_python},
+    )
+
+    parent_cmake = (
+        "project(\n  # VERSION 9.9.9 is documentation\n"
+        "  demo VERSION 1.2.2 LANGUAGES CXX)\n"
+    )
+    source_cmake = parent_cmake.replace("1.2.2", "1.2.3")
+    assert not _metadata_case(
+        parent_manifests={
+            "CMakeLists.txt": parent_cmake,
+            "pyproject.toml": _PYPROJECT.format(version="1.2.2"),
+        },
+        source_manifests={
+            "CMakeLists.txt": source_cmake,
+            "pyproject.toml": _PYPROJECT.format(version="1.2.3"),
+        },
+    )
+
+
+@pytest.mark.parametrize(
+    ("case", "kwargs", "expected"),
+    [
+        (
+            "wrong parent",
+            {"source_parents": ["d" * 40]},
+            "exactly the recorded parent",
+        ),
+        (
+            "merge commit",
+            {"source_parents": [_SOURCE_SHA, "d" * 40]},
+            "exactly the recorded parent",
+        ),
+        (
+            "non-version path",
+            {"extra_source_tree": {"src/sneaky.py": ("100644", "blob", "e" * 40)}},
+            "non-version path",
+        ),
+        (
+            "manifest mode",
+            {"source_modes": {"pyproject.toml": "100755"}},
+            "mode or type",
+        ),
+    ],
+)
+def test_metadata_only_proof_rejects_structural_bypasses(
+    case: str, kwargs: dict[str, object], expected: str
+) -> None:
+    violations = _metadata_case(
+        parent_manifests={"pyproject.toml": _PYPROJECT.format(version="1.2.2")},
+        source_manifests={"pyproject.toml": _PYPROJECT.format(version="1.2.3")},
+        **kwargs,  # type: ignore[arg-type]
+    )
+    assert any(expected in violation for violation in violations), case
+
+
+def test_metadata_only_proof_rejects_manifest_content_and_version_bypasses() -> None:
+    parent = _PYPROJECT.format(version="1.2.2")
+    cases = {
+        "dependency": parent.replace(
+            'name = "demo"', 'name = "demo"\ndependencies = ["unsafe"]'
+        ).replace("1.2.2", "1.2.3"),
+        "comment": parent.replace('version = "1.2.2"', 'version = "1.2.3"  # changed'),
+        "unchanged": parent,
+        "decreased": parent.replace("1.2.2", "1.2.1"),
+        "invalid": parent.replace("1.2.2", "1.2.3-rc1"),
+    }
+    for case, source in cases.items():
+        violations = _metadata_case(
+            parent_manifests={"pyproject.toml": parent},
+            source_manifests={"pyproject.toml": source},
+        )
+        assert violations, case
+
+
+def test_metadata_only_proof_rejects_added_or_disagreeing_hybrid_manifest() -> None:
+    parent = {"CMakeLists.txt": _CMAKE.format(version="1.2.2")}
+    source = {
+        "CMakeLists.txt": _CMAKE.format(version="1.2.3"),
+        "pyproject.toml": _PYPROJECT.format(version="1.2.4"),
+    }
+    violations = _metadata_case(
+        parent_manifests=parent,
+        source_manifests=source,
+    )
+    assert any("adds or removes" in violation for violation in violations)
+    assert any("do not agree" in violation for violation in violations)
+
+
+def test_metadata_only_proof_rejects_disagreeing_parent_hybrid_versions() -> None:
+    parent = {
+        "CMakeLists.txt": _CMAKE.format(version="1.2.2"),
+        "pyproject.toml": _PYPROJECT.format(version="1.2.1"),
+    }
+    source = {
+        "CMakeLists.txt": _CMAKE.format(version="1.2.3"),
+        "pyproject.toml": _PYPROJECT.format(version="1.2.3"),
+    }
+    violations = _metadata_case(
+        parent_manifests=parent,
+        source_manifests=source,
+    )
+    assert any("parent versions do not agree" in violation for violation in violations)
+
+
 def test_release_event_requires_and_validates_recorded_develop_sha(monkeypatch) -> None:
     unchanged = ("100644", "blob", "c" * 40)
     trees = {
@@ -262,6 +420,12 @@ def test_release_event_requires_and_validates_recorded_develop_sha(monkeypatch) 
             "pyproject.toml": _PYPROJECT.format(version="1.2.3")
         },
     )
+    monkeypatch.setattr(
+        master_merge_gate,
+        "_fetch_commit_parent_shas",
+        lambda repository, sha, token: [_DEVELOP_SHA],
+    )
+    monkeypatch.setattr(master_merge_gate, "_master_manifests", lambda *args: {})
 
     missing = master_merge_gate.validate_event(
         _event(head_ref="release/v1.2.3", body=None), "token"
@@ -278,6 +442,20 @@ def test_release_event_requires_and_validates_recorded_develop_sha(monkeypatch) 
     assert not valid
     assert comparisons == [(_DEVELOP_SHA, "develop"), (_DEVELOP_SHA, _HEAD_SHA)]
 
+    monkeypatch.setattr(
+        master_merge_gate,
+        "_fetch_commit_parent_shas",
+        lambda repository, sha, token: [_DEVELOP_SHA, _SOURCE_SHA],
+    )
+    invalid_shape = master_merge_gate.validate_event(
+        _event(
+            head_ref="release/v1.2.3",
+            body=f"Develop-Source-SHA: {_DEVELOP_SHA}",
+        ),
+        "token",
+    )
+    assert any("only parent" in violation for violation in invalid_shape)
+
 
 def test_release_event_rejects_unrelated_recorded_source(monkeypatch) -> None:
     monkeypatch.setattr(
@@ -289,6 +467,12 @@ def test_release_event_rejects_unrelated_recorded_source(monkeypatch) -> None:
         lambda repository, ancestor, descendant, token: False,
     )
 
+    monkeypatch.setattr(
+        master_merge_gate,
+        "_fetch_commit_parent_shas",
+        lambda repository, sha, token: [_DEVELOP_SHA],
+    )
+    monkeypatch.setattr(master_merge_gate, "_master_manifests", lambda *args: {})
     violations = master_merge_gate.validate_event(
         _event(
             head_ref="release/v1.2.3",
@@ -315,6 +499,101 @@ def test_release_source_field_must_be_unique_and_exact() -> None:
     assert master_merge_gate._develop_source_sha("Develop-Source-SHA: short") is None
 
 
+def test_metadata_parent_field_is_optional_but_never_ambiguous() -> None:
+    label = "Release-Metadata-Parent-SHA"
+    assert master_merge_gate._release_metadata_parent_sha("") is None
+    assert (
+        master_merge_gate._release_metadata_parent_sha(f"{label}: {_SOURCE_SHA}")
+        == _SOURCE_SHA
+    )
+    assert master_merge_gate._release_metadata_parent_sha(f"{label}: short") == ""
+    assert (
+        master_merge_gate._release_metadata_parent_sha(
+            f"{label}: {_SOURCE_SHA}\n{label}: {_DEVELOP_SHA}"
+        )
+        == ""
+    )
+
+
+def test_metadata_parent_binds_validation_provenance_to_proved_parent(
+    monkeypatch,
+) -> None:
+    parent_tree = {
+        ".agents/config.yml": ("100644", "blob", "d" * 40),
+        "pyproject.toml": ("100644", "blob", "1" * 40),
+    }
+    develop_tree = {
+        ".agents/config.yml": ("100644", "blob", "d" * 40),
+        "pyproject.toml": ("100644", "blob", "2" * 40),
+    }
+    release_tree = {"pyproject.toml": ("100644", "blob", "2" * 40)}
+    trees = {
+        _SOURCE_SHA: parent_tree,
+        _DEVELOP_SHA: develop_tree,
+        _HEAD_SHA: release_tree,
+    }
+    manifests = {
+        id(parent_tree): {"pyproject.toml": _PYPROJECT.format(version="1.2.2")},
+        id(develop_tree): {"pyproject.toml": _PYPROJECT.format(version="1.2.3")},
+        id(release_tree): {"pyproject.toml": _PYPROJECT.format(version="1.2.3")},
+    }
+    provenance_shas: list[str] = []
+
+    monkeypatch.setattr(
+        master_merge_gate,
+        "_fetch_tree",
+        lambda repository, sha, token: trees[sha],
+    )
+    monkeypatch.setattr(
+        master_merge_gate,
+        "_fetch_manifest_texts",
+        lambda repository, tree, token: manifests[id(tree)],
+    )
+    monkeypatch.setattr(
+        master_merge_gate,
+        "_fetch_commit_parent_shas",
+        lambda repository, sha, token: (
+            [_DEVELOP_SHA] if sha == _HEAD_SHA else [_SOURCE_SHA]
+        ),
+    )
+    monkeypatch.setattr(
+        master_merge_gate,
+        "_is_ancestor",
+        lambda repository, ancestor, descendant, token: True,
+    )
+    monkeypatch.setattr(
+        master_merge_gate, "_required_source_checks", lambda: ["validation"]
+    )
+    monkeypatch.setattr(master_merge_gate, "_master_manifests", lambda *args: {})
+
+    def workflow_runs(repository: str, sha: str, token: str) -> dict[str, object]:
+        provenance_shas.append(sha)
+        return {
+            "total_count": 1,
+            "workflow_runs": [
+                {
+                    "name": "validation",
+                    "status": "completed",
+                    "conclusion": "success",
+                    "event": "push",
+                    "head_branch": "develop",
+                    "head_sha": sha,
+                }
+            ],
+        }
+
+    monkeypatch.setattr(master_merge_gate, "_fetch_workflow_runs", workflow_runs)
+    body = (
+        f"Develop-Source-SHA: {_DEVELOP_SHA}\n"
+        f"Release-Metadata-Parent-SHA: {_SOURCE_SHA}"
+    )
+    assert not master_merge_gate.validate_event(
+        _event(head_ref="release/v1.2.3", body=body),
+        "token",
+    )
+    assert provenance_shas == [_SOURCE_SHA]
+
+
 def test_hotfix_event_requires_explicit_validation_tradeoff(monkeypatch) -> None:
     monkeypatch.setattr(
         master_merge_gate, "_fetch_tree", lambda repository, sha, token: {}
@@ -327,6 +606,8 @@ def test_hotfix_event_requires_explicit_validation_tradeoff(monkeypatch) -> None
             "pyproject.toml": _PYPROJECT.format(version="1.2.4")
         },
     )
+
+    monkeypatch.setattr(master_merge_gate, "_master_manifests", lambda *args: {})
 
     missing = master_merge_gate.validate_event(
         _event(head_ref="hotfix/v1.2.4", body=""), "token"
@@ -375,6 +656,30 @@ def test_tree_fetch_preserves_blob_and_submodule_identity(monkeypatch) -> None:
         "src/product.py": ("100644", "blob", "2" * 40),
         "vendor/library": ("160000", "commit", "3" * 40),
     }
+
+
+def test_manifest_fetch_accepts_wrapped_base64_and_rejects_malformed_data(
+    monkeypatch,
+) -> None:
+    text = _PYPROJECT.format(version="1.2.3")
+    encoded = base64.b64encode(text.encode()).decode()
+    wrapped = "\n".join(
+        encoded[index : index + 12] for index in range(0, len(encoded), 12)
+    )
+    payload = {"encoding": "base64", "content": wrapped}
+    monkeypatch.setattr(
+        master_merge_gate,
+        "_request_json",
+        lambda url, token, label: payload,
+    )
+    tree = {"pyproject.toml": ("100644", "blob", "1" * 40)}
+    assert master_merge_gate._fetch_manifest_texts(
+        "example/project", tree, "token"
+    ) == {"pyproject.toml": text}
+
+    payload["content"] = "not!base64"
+    with pytest.raises(RuntimeError, match="valid UTF-8 base64"):
+        master_merge_gate._fetch_manifest_texts("example/project", tree, "token")
 
 
 def test_ancestry_requires_zero_behind_commits(monkeypatch) -> None:
@@ -456,11 +761,9 @@ def test_workflow_uses_trusted_policy_and_read_only_permissions() -> None:
     assert "contents: read" in workflow
     assert "pull-requests: read" in workflow
     assert "- edited" in workflow
+    assert "'release/**'" not in workflow
     assert "trusted-policy/.github/scripts/master-merge-gate.py" in workflow
     assert "actions/checkout" not in workflow
-
-
-_SOURCE_SHA = "c" * 40
 
 
 def _workflow_run(name: str = "validation", **overrides: object) -> dict[str, object]:
@@ -557,27 +860,15 @@ def test_provenance_fails_closed_on_malformed_or_partial_listings() -> None:
     assert violations and "incomplete" in violations[0]
 
 
-def test_staging_pull_request_accepts_only_the_matching_staging_branch() -> None:
-    def staging(head_ref: str, head_repository: str = "example/project") -> list[str]:
-        return master_merge_gate.validate_staging_pull_request(
-            base_ref="release/v1.2.3",
-            head_ref=head_ref,
-            base_repository="example/project",
-            head_repository=head_repository,
-        )
+def test_non_master_event_is_ignored_without_fetching_pr_content(monkeypatch) -> None:
+    event = _event(head_ref="feat/anything", body=None)
+    event["pull_request"]["base"]["ref"] = "release/v1.2.3"  # type: ignore[index]
 
-    assert not staging("chore/release-v1.2.3")
-    assert staging("chore/release-v1.2.4")
-    assert staging("feat/sneaky-change")
-    assert staging("develop")
-    assert staging("chore/release-v1.2.3", head_repository="fork/project")
-    # Non-release bases are outside this validator's scope.
-    assert not master_merge_gate.validate_staging_pull_request(
-        base_ref="develop",
-        head_ref="feat/anything",
-        base_repository="example/project",
-        head_repository="example/project",
-    )
+    def unexpected_fetch(*args: object) -> object:
+        raise AssertionError("non-master events must be out of scope")
+
+    monkeypatch.setattr(master_merge_gate, "_fetch_tree", unexpected_fetch)
+    assert not master_merge_gate.validate_event(event, "token")
 
 
 def test_required_source_checks_parses_the_environment_list(monkeypatch) -> None:
@@ -654,7 +945,7 @@ def test_rehearsal_passes_and_derives_names_for_a_promotable_develop(tmp_path) -
     result = _rehearse(repo)
     assert result.returncode == 0, result.stderr
     assert "release/v0.2.0" in result.stdout
-    assert "chore/release-v0.2.0" in result.stdout
+    assert "chore/release-v0.2.0" not in result.stdout
     assert "release-v0.2.0" in result.stdout
     assert "Develop-Source-SHA: " in result.stdout
 
@@ -708,6 +999,27 @@ def test_rehearsal_falls_back_to_the_origin_master_ref(tmp_path) -> None:
     result = _rehearse(repo)
     assert result.returncode == 1
     assert "strictly greater" in result.stderr
+
+
+def test_pyproject_normalisation_has_a_python_310_fallback(monkeypatch) -> None:
+    parent = '[project]\nname = "demo"\nversion = "1.2.2"  # release\n'
+    source = parent.replace("1.2.2", "1.2.3")
+    monkeypatch.setitem(sys.modules, "tomllib", None)
+
+    assert master_merge_gate.parse_pyproject_version(source) == "1.2.3"
+    assert master_merge_gate._normalise_pyproject_release_version(
+        parent
+    ) == master_merge_gate._normalise_pyproject_release_version(source)
+
+
+def test_master_manifest_lookup_requires_a_full_base_sha() -> None:
+    with pytest.raises(RuntimeError, match="full master SHA"):
+        master_merge_gate._master_manifests(
+            {},
+            "example/project",
+            "release/v1.2.3",
+            "token",
+        )
 
 
 def test_rehearsal_fails_cleanly_on_a_missing_source_ref(tmp_path) -> None:

@@ -8,11 +8,13 @@
 
 This document establishes the protected branch policy and mandatory branch-based workflow
 that MUST be followed for all code changes. Direct commits to protected branches are
-absolutely forbidden.
+forbidden except for the mechanically bounded release-version operation defined below.
 
 ## 1. Protected Branch Policy
 
-**CRITICAL REQUIREMENT**: The agent MUST NEVER commit directly to protected branches.
+**CRITICAL REQUIREMENT**: The agent MUST NEVER commit directly to protected branches,
+apart from `.agents/bin/agent-release bump <x.y.z>` on `develop` under its full
+preconditions.
 
 **Protected branches include:**
 - `master`
@@ -20,7 +22,7 @@ absolutely forbidden.
 - `develop`
 - Any branch matching `release/*` or `hotfix/*`
 
-**This prohibition is absolute and applies to:**
+**Outside that named exception, this prohibition applies to:**
 - All code changes (features, fixes, refactors, documentation)
 - Configuration file updates
 - Dependency updates
@@ -36,8 +38,12 @@ version is read from the project's authoritative manifest at the recorded
 source commit, never typed by hand, and the merged `master` commit is tagged
 `release-v<major>.<minor>.<patch>`. Because a release tree is deletion-only,
 the version bump MUST already be on `develop` before the source SHA is
-selected. Read `master-merge-policy.md` section 8 for the full version
-contract. The master merge gate uses a **presence-based** check:
+selected. Prefer including it in the functional PR. If the reviewed train needs
+only version selection, `.agents/bin/agent-release bump <x.y.z>` may create one
+strictly increasing, manifest-only commit directly on clean, current
+`develop`; no other direct commit is permitted. Read `master-merge-policy.md`
+section 8 for the full version contract. The master merge gate uses a
+**presence-based** check:
 it enumerates every file in the source branch's tree via the Git Trees API
 and rejects the PR if any development-stage path exists — regardless of
 which commit introduced it. `docs/changelog/` is the sole allowed `docs/`
@@ -63,13 +69,14 @@ required in hosted branch rules; both stay required for every master-bound
 PR/MR. `master-merge-policy.md` section 9 defines the promotion efficiency
 provisions -- validation provenance (which changes how an identity-proved
 release PR satisfies the validation status, never whether it is required),
-per-step required checks, release-train cadence, and the local `--rehearse`
-pre-flight -- and section 8.4 makes bumping the version in the same pull
-request as the change it describes the recommended default.
+per-step required checks, release-train cadence, and the local release
+pre-flight -- and section 8.4 defines the bounded version-only fallback.
 
 ## 2. Mandatory Branch-Based Workflow
 
-**REQUIRED WORKFLOW**: All changes MUST follow this process:
+**REQUIRED WORKFLOW**: All ordinary changes MUST follow this process. The sole
+version-only exception uses `.agents/bin/agent-release bump` end to end; do not
+reproduce its commit with ordinary Git commands.
 
 ### 2.1 Check Current Branch
 
@@ -78,7 +85,9 @@ Before making any changes:
 git branch --show-current
 ```
 
-If on a protected branch, STOP immediately and create a feature branch.
+If on a protected branch, STOP immediately and create a feature branch unless
+the requested operation is exactly the bounded release-version command on
+clean, current `develop`.
 
 ### 2.2 Create a Feature Branch
 
@@ -97,7 +106,9 @@ git checkout -b <type>/<description>
 
 ### 2.3 Make Changes on the Feature Branch
 
-All modifications MUST be made on the feature branch, never on protected branches.
+All ordinary modifications MUST be made on the feature branch, never on
+protected branches. Release projection is constructed without checking out or
+editing `release/*`; the release ref is created once at its final commit.
 
 ### 2.4 Commit Changes
 
@@ -136,8 +147,9 @@ gh pr create --title "..." --body "..."
 
 Before EVERY commit operation, the agent MUST:
 
-1. Verify current branch is NOT a protected branch
-2. If on protected branch:
+1. Verify current branch is NOT a protected branch, or that the operation is
+   exactly `.agents/bin/agent-release bump <x.y.z>` on `develop`
+2. If on a protected branch and not executing that exact wrapper operation:
    - STOP immediately
    - Inform user of the violation
    - Ask user to confirm creation of feature branch
@@ -155,9 +167,14 @@ if [[ "$CURRENT_BRANCH" == "master" ]] || \
 fi
 ```
 
+This illustrative guard covers ordinary commits. Do not weaken it with a broad
+`develop` bypass; the release wrapper performs and proves its own exact
+exception.
+
 ## 4. Enforcement and Violations
 
-**If the agent detects it is on a protected branch:**
+**If the agent detects it is on a protected branch outside the bounded
+version-only operation:**
 - MUST refuse to make any commits
 - MUST inform the user immediately
 - MUST offer to create a feature branch
@@ -168,8 +185,11 @@ fi
 - All changes should be reverted
 - User should be notified of the policy violation
 
-**The ONLY exception:**
+**The ONLY exceptions:**
 - Merge commits created by pull request merges (handled by GitHub/GitLab, not by the agent)
+- A commit created by `.agents/bin/agent-release bump <x.y.z>` on clean,
+  current `develop`. The wrapper itself enforces the exact manifest paths,
+  semantic increase, content normalisation, and committed-tree proof.
 
 ## 5. Branch Lifecycle
 
@@ -298,12 +318,13 @@ This allows higher occupancy on devices with limited shared memory.
 ## 7. Summary
 
 **Key Rules:**
-1. NEVER commit directly to protected branches (master, main, develop, release/*, hotfix/*)
-2. ALWAYS create a feature branch for changes
+1. NEVER commit directly to protected branches except through the exact
+   `agent-release bump` operation on `develop`
+2. ALWAYS create a feature branch for ordinary changes
 3. ALWAYS verify current branch before committing
 4. ALWAYS use conventional commit message format
-5. ALWAYS push feature branch and create PR for review
-6. ALWAYS delete feature branch after merge
+5. ALWAYS use a PR for ordinary changes and the sole release-to-master promotion
+6. ALWAYS delete merged feature branches; never recycle release refs
 
 **Enforcement:**
 - These rules are mandatory and non-negotiable
