@@ -9,6 +9,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 from diagnose import EnvironmentDiagnostics, parent_virtual_env
 
+_caller_virtual_env = parent_virtual_env
+
 
 class EnvironmentFixer:
     """Fix Python environment configuration issues."""

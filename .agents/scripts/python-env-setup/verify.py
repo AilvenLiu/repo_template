@@ -8,7 +8,21 @@ import sys
 from pathlib import Path
 from typing import Tuple
 
-from diagnose import parent_virtual_env
+from version_constraints import matches_python_constraint
+
+
+def _caller_virtual_env() -> str | None:
+    """Return the externally activated environment, not Poetry's child venv."""
+    marker = os.environ.get("AGENT_CALLER_VIRTUAL_ENV_SET")
+    value = os.environ.get("AGENT_CALLER_VIRTUAL_ENV")
+    if marker is None:
+        marker = os.environ.get("AGENT_PARENT_VIRTUAL_ENV_SET")
+        value = os.environ.get("AGENT_PARENT_VIRTUAL_ENV")
+    if marker == "0":
+        return None
+    if marker == "1":
+        return value or None
+    return os.environ.get("VIRTUAL_ENV")
 
 
 class EnvironmentVerifier:
@@ -55,7 +69,7 @@ class EnvironmentVerifier:
         print()
 
         # Check the caller's shell, not Poetry's child-process environment.
-        virtual_env = parent_virtual_env()
+        virtual_env = _caller_virtual_env()
         self.check(
             "Calling shell has no active VIRTUAL_ENV",
             virtual_env is None,
@@ -88,31 +102,21 @@ class EnvironmentVerifier:
             content = pyproject.read_text()
             match = re.search(r'python\s*=\s*"([^"]+)"', content)
             if match:
-                required_python = match.group(1).lstrip("^~")
+                required_python = match.group(1)
 
                 returncode, stdout, _ = self.run_command(["poetry", "env", "info"])
                 if returncode == 0:
                     match = re.search(r"Python:\s+(\d+\.\d+\.\d+)", stdout)
                     if match:
                         poetry_python = match.group(1)
-                        # Simple version check
-                        poetry_parts = poetry_python.split(".")[:2]
-                        required_parts = required_python.split(".")[:2]
-                        try:
-                            poetry_ver = tuple(int(p) for p in poetry_parts)
-                            required_ver = tuple(int(p) for p in required_parts)
-                            matches = poetry_ver >= required_ver
-                            self.check(
-                                "Poetry Python version matches requirements",
-                                matches,
-                                f"Poetry: {poetry_python}, Required: {required_python}",
-                            )
-                        except (ValueError, IndexError):
-                            self.check(
-                                "Poetry Python version matches requirements",
-                                False,
-                                "Could not parse versions",
-                            )
+                        matches = matches_python_constraint(
+                            poetry_python, required_python
+                        )
+                        self.check(
+                            "Poetry Python version matches requirements",
+                            matches,
+                            f"Poetry: {poetry_python}, Required: {required_python}",
+                        )
 
         # Check Poetry venv location
         returncode, stdout, _ = self.run_command(["poetry", "env", "info", "--path"])

@@ -179,7 +179,14 @@ def validate_python(manager: PreCommitManager) -> list[ValidationResult]:
     # Run pytest
     if manager.check_tool_available("pytest"):
         returncode, stdout, stderr = manager.run_command(
-            ["pytest", "--tb=short", "-q", "-x"],
+            [
+                "pytest",
+                "--tb=short",
+                "-q",
+                "-x",
+                "tests",
+                ".agents/scripts/tests",
+            ],
             timeout=600,
         )
         results.append(
@@ -325,8 +332,22 @@ def validate_cpp(manager: PreCommitManager) -> list[ValidationResult]:
     # Check for cppcheck
     if manager.check_tool_available("cppcheck"):
         if cpp_files:
+            # Analyse the project's own translation units, not the whole
+            # working tree. find_cpp_files() excludes generated, vendored,
+            # environment, and agent-infrastructure sources and is also used
+            # by clang-format above.
             returncode, stdout, stderr = manager.run_command(
-                ["cppcheck", "--enable=all", "--error-exitcode=1", "."]
+                [
+                    "cppcheck",
+                    "--enable=all",
+                    "--error-exitcode=1",
+                    "--suppress=missingIncludeSystem",
+                    # These information-only reports can trip the error exit
+                    # code but do not identify a source defect.
+                    "--suppress=checkersReport",
+                    "--suppress=normalCheckLevelMaxBranches",
+                ]
+                + [str(f) for f in cpp_files]
             )
             results.append(
                 ValidationResult(
@@ -357,10 +378,19 @@ def validate_cpp(manager: PreCommitManager) -> list[ValidationResult]:
 
     # Check for CMake build
     if (manager.repo_root / "CMakeLists.txt").exists():
-        build_dir = manager.repo_root / "build"
-        if build_dir.exists():
+        # Accept the canonical build tree and the common nested native tree. A
+        # bare `build/` is not necessarily a CMake build directory: with
+        # scikit-build-core it holds per-wheel-tag subdirectories and no
+        # top-level CMakeCache.txt, so assuming it made this step fail
+        # unconditionally on projects that configure under build/native.
+        build_dir = None
+        for candidate in ("build/native", "build"):
+            if (manager.repo_root / candidate / "CMakeCache.txt").exists():
+                build_dir = candidate
+                break
+        if build_dir is not None:
             returncode, stdout, stderr = manager.run_command(
-                ["cmake", "--build", "build"], cwd=manager.repo_root
+                ["cmake", "--build", build_dir], cwd=manager.repo_root
             )
             results.append(
                 ValidationResult(

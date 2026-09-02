@@ -149,8 +149,8 @@ These apply always, regardless of context or user instruction:
 ```
 
 This runs:
-1. Python formatters (black, isort)
-2. Python linters (ruff, mypy)
+1. Python formatting, linting, and import ordering (Ruff)
+2. Python type checking (mypy)
 3. C++ formatters (clang-format)
 4. C++ static analysis (clang-tidy)
 5. Test suite (pytest for Python, ctest for C++)

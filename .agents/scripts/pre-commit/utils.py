@@ -261,10 +261,29 @@ class PreCommitManager:
             cpp_files.extend(self.repo_root.glob(pattern))
 
         # Filter out common exclusions
-        exclusions = {".git", "build", "cmake-build-*"}
+        exclusions = {
+            ".agents",
+            ".claude",
+            ".codex",
+            ".git",
+            ".venv",
+            "_deps",
+            "3rdparty",
+            "__pycache__",
+            "agent_roadmaps",
+            "build",
+            "dist",
+            "site-packages",
+            "third_party",
+            "vendor",
+            "venv",
+        }
         filtered: list[Path] = []
-        for file in cpp_files:
-            if not any(excl in file.parts for excl in exclusions):
+        for file in sorted(set(cpp_files)):
+            if not any(
+                part in exclusions or part.startswith("cmake-build-")
+                for part in file.parts
+            ):
                 filtered.append(file)
 
         return filtered

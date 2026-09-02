@@ -13,7 +13,7 @@ Quick checklist for dependency-aware roadmap files.
 - [ ] Task dependencies reference valid task IDs
 - [ ] Dependency graph has no cycles
 - [ ] Active phase has exactly one active task and matching `focus.current_task`
-- [ ] Validation passes: `python3 .agents/scripts/roadmap/validate_schema.py <phase-folder>`
+- [ ] Validation passes: `.agents/bin/agent-roadmap validate <phase-folder>`
 - [ ] Durable files outside `agent_roadmaps/` do not mention roadmap-phase identifiers
 - [ ] Full roadmap series is deleted once every phase is completed
 

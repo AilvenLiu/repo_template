@@ -129,7 +129,9 @@ platform_requirements:
         check: mcp
         notes: >
           Primary method: claude plugin install context7@claude-plugins-official
-          Fallback: claude mcp add --transport http context7 https://mcp.context7.com/mcp --header "CONTEXT7_API_KEY: <key>"
+          Fallback uses an exported secret with `claude mcp add --transport http
+          context7 https://mcp.context7.com/mcp --header
+          "CONTEXT7_API_KEY: ${CONTEXT7_API_KEY}"`.
 
   codex:
     # Codex natively scans .agents/skills from the working directory to the

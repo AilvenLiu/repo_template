@@ -65,16 +65,16 @@ sudo dnf install python3.10
 
 ```bash
 # Production dependency
-python3 .agents/scripts/dependency/add.py requests 2.31.0
+.agents/bin/agent-dependency add requests 2.31.0
 
 # Development dependency
-python3 .agents/scripts/dependency/add.py pytest 7.3.0 --dev
+.agents/bin/agent-dependency add pytest 7.3.0 --dev
 ```
 
 ### Add a C++/CUDA Dependency
 
 ```bash
-python3 .agents/scripts/dependency/add.py fmtlib/fmt 10.2.1
+.agents/bin/agent-dependency add fmtlib/fmt 10.2.1
 ```
 
 ## Features
@@ -83,6 +83,7 @@ python3 .agents/scripts/dependency/add.py fmtlib/fmt 10.2.1
 - **In-Project Virtual Environments**: Automatically configures Poetry to create `.venv` inside the project directory
 - **Automatic Project Detection**: Detects Python, C++/CUDA, and hybrid projects
 - **Manifest File Updates**: Updates pyproject.toml, poetry.lock, and cmake/Dependencies.cmake
+- **Transactional Hybrid Edits**: Restores manifest and lock state if parsing or locking fails
 - **Package Installation**: Installs via Poetry or CMake/CPM configure/build
 - **Documentation Reminders**: Prompts to update README.md
 - **Version Management**: Supports version constraints (caret ^ for Poetry)
@@ -93,9 +94,6 @@ python3 .agents/scripts/dependency/add.py fmtlib/fmt 10.2.1
 ### Python (Poetry - Default)
 - pyproject.toml (dependency declarations)
 - poetry.lock (locked versions - MUST be committed)
-
-### Python (Trivial Projects Only)
-- requirements.txt (for single-file scripts with 1-2 deps)
 
 ### C++/CUDA
 - CMakeLists.txt
@@ -117,7 +115,7 @@ See [SKILL.md](SKILL.md) for comprehensive documentation including:
 
 ## Version
 
-2.1.0 (2026-06-18) - CMake/CPM-first native dependency policy
+2.2.0 (2026-09-01) - Transactional hybrid manifest and lock-file updates
 
 ## Licence
 

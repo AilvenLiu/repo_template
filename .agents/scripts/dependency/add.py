@@ -4,6 +4,11 @@
 import sys
 from pathlib import Path
 
+try:
+    import tomllib
+except ModuleNotFoundError:  # Python 3.10; the template's declared floor
+    tomllib = None  # type: ignore[assignment]
+
 # Add scripts directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent))
 
@@ -423,6 +428,43 @@ def _insert_array_entry(lines: list[str], start: int, dep_string: str) -> bool:
     return False
 
 
+def _append_to_inline_array(lines: list[str], index: int, dep_string: str) -> bool:
+    """Append an entry to a single-line TOML array, e.g. `dev = ["a", "b"]`.
+
+    A multi-line array is extended by `_insert_array_entry`; this is the other
+    shape the same key can take. Getting it wrong is not cosmetic: appending a
+    SECOND `dev = [...]` table entry instead produces a duplicate key, which
+    every TOML parser rejects, so the file becomes unreadable to the very tool
+    that just claimed to have edited it.
+    """
+    stripped = lines[index].rstrip("\n")
+    body, bracket, trailing = stripped.rpartition("]")
+    if not bracket:
+        return False
+    body = body.rstrip()
+    separator = "" if body.endswith("[") else ", "
+    lines[index] = f'{body}{separator}"{dep_string}"]{trailing}\n'
+    return True
+
+
+def _find_array_key(
+    lines: list[str], start: int, end: int, key: str
+) -> tuple[int, bool]:
+    """Locate `key = [` within [start, end).
+
+    Returns `(index, inline)`; index is -1 when the key is absent. `inline` is
+    True when the whole array sits on one line.
+    """
+    prefix = f"{key} = ["
+    for index in range(start, end):
+        stripped = lines[index].strip()
+        if stripped == prefix:
+            return index, False
+        if stripped.startswith(prefix):
+            return index, True
+    return -1, False
+
+
 def add_dependency_scikit_build(
     manager: DependencyManager, package: str, version: str | None, dev: bool
 ) -> None:
@@ -442,9 +484,13 @@ def add_dependency_scikit_build(
         print("scikit-build-core projects require pyproject.toml")
         sys.exit(1)
 
+    original_pyproject = pyproject_path.read_bytes()
+    lock_path = manager.repo_root / "poetry.lock"
+    original_lock = lock_path.read_bytes() if lock_path.exists() else None
+
     dep_string = _format_python_dependency(package, version)
 
-    with open(pyproject_path, "r") as f:
+    with open(pyproject_path, encoding="utf-8") as f:
         lines = f.readlines()
 
     if any(f'"{dep_string}"' in line or f"'{dep_string}'" in line for line in lines):
@@ -453,21 +499,23 @@ def add_dependency_scikit_build(
 
     modified = False
     if not dev:
-        dependencies_line = next(
-            (
-                index
-                for index, line in enumerate(lines)
-                if line.strip() == "dependencies = ["
-            ),
-            -1,
+        project_start, project_end = _find_section(lines, "[project]")
+        if project_start < 0:
+            print("[ERROR] Could not find [project] in pyproject.toml")
+            sys.exit(1)
+        dependencies_line, inline = _find_array_key(
+            lines, project_start + 1, project_end, "dependencies"
         )
         if dependencies_line >= 0:
-            modified = _insert_array_entry(lines, dependencies_line, dep_string)
-        else:
-            project_start, project_end = _find_section(lines, "[project]")
-            if project_start < 0:
-                print("[ERROR] Could not find [project] in pyproject.toml")
+            if inline:
+                modified = _append_to_inline_array(lines, dependencies_line, dep_string)
+            else:
+                modified = _insert_array_entry(lines, dependencies_line, dep_string)
+            if not modified:
+                print("[ERROR] Found `dependencies` in [project] but could not")
+                print("        extend it safely. pyproject.toml is UNCHANGED.")
                 sys.exit(1)
+        else:
             insertion = [
                 "dependencies = [\n",
                 f'  "{dep_string}",\n',
@@ -499,13 +547,19 @@ def add_dependency_scikit_build(
             )
             modified = True
         else:
-            dev_line = -1
-            for index in range(optional_start + 1, optional_end):
-                if lines[index].strip() == "dev = [":
-                    dev_line = index
-                    break
+            dev_line, inline = _find_array_key(
+                lines, optional_start + 1, optional_end, "dev"
+            )
             if dev_line >= 0:
-                modified = _insert_array_entry(lines, dev_line, dep_string)
+                if inline:
+                    modified = _append_to_inline_array(lines, dev_line, dep_string)
+                else:
+                    modified = _insert_array_entry(lines, dev_line, dep_string)
+                if not modified:
+                    print("[ERROR] Found `dev` in [project.optional-dependencies]")
+                    print("        but could not extend it safely.")
+                    print("        pyproject.toml is UNCHANGED.")
+                    sys.exit(1)
             else:
                 lines[optional_end:optional_end] = [
                     "dev = [\n",
@@ -517,17 +571,71 @@ def add_dependency_scikit_build(
             print(f"[OK] Added {dep_string} to [project.optional-dependencies.dev]")
 
     if modified:
-        with open(pyproject_path, "w") as f:
-            f.writelines(lines)
+        candidate = "".join(lines)
+
+        # Validate BEFORE writing. Every corruption this function can produce
+        # -- a duplicate key, an unbalanced array -- is a parse error, so one
+        # parse turns "reported success and left the file unreadable" into a
+        # refusal with the file untouched. It is the last line of defence, not
+        # a substitute for the insertion logic being right.
+        if tomllib is not None:
+            try:
+                tomllib.loads(candidate)
+            except tomllib.TOMLDecodeError as error:
+                print("[ERROR] Refusing to write: the edit would make")
+                print(f"        pyproject.toml invalid -- {error}")
+                print()
+                print("        pyproject.toml is UNCHANGED and nothing was added.")
+                print("        This is a defect in this tool; report it.")
+                sys.exit(1)
+        else:
+            print("[WARNING] tomllib unavailable (Python 3.10); Poetry will")
+            print("          validate the candidate before the edit is retained.")
+
+        pyproject_path.write_text(candidate, encoding="utf-8")
 
         print()
         print("Updated pyproject.toml")
         print()
-        print("IMPORTANT: Commit the file:")
-        print("  git add pyproject.toml")
+
+        # The manifest and the lock file move together, or neither is
+        # trustworthy. Leaving the lock stale is how a dependency reaches a
+        # commit without ever being resolved.
+        print("Locking...")
+        returncode, _, stderr = manager.run_command(["poetry", "lock"])
+        if returncode != 0 or not lock_path.exists():
+            pyproject_path.write_bytes(original_pyproject)
+            if original_lock is None:
+                lock_path.unlink(missing_ok=True)
+            else:
+                lock_path.write_bytes(original_lock)
+
+            print("[ERROR] `poetry lock` did not produce a valid lock update.")
+            print("        Restored pyproject.toml and poetry.lock to their")
+            print("        original state; nothing was added.")
+            print()
+            if stderr.strip():
+                print(stderr.strip()[:800])
+                print()
+            elif returncode == 0:
+                print("        Poetry returned success without creating poetry.lock.")
+                print()
+            print(
+                f"        Resolve the locking failure, then retry adding {dep_string}."
+            )
+            print()
+            sys.exit(1)
+        print("[OK] poetry.lock updated")
+
         print()
-        print("To install the dependency:")
-        print("  poetry run pip install -e . --no-build-isolation")
+        print("IMPORTANT: Commit BOTH files:")
+        print("  git add pyproject.toml poetry.lock")
+        print()
+        print("To install it into the environment:")
+        if dev:
+            print("  poetry install --no-root --extras dev")
+        else:
+            print("  poetry install --no-root")
     else:
         print(f"[INFO] {package} may already be present or section not found")
         sys.exit(1)

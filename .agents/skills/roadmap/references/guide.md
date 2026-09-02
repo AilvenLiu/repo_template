@@ -15,13 +15,13 @@ This skill manages roadmap phases under `agent_roadmaps/phase-*/` with:
 ### Session-start check
 
 ```bash
-python3 .agents/scripts/roadmap/check.py
+.agents/bin/agent-roadmap check
 ```
 
 ### Create a roadmap phase series
 
 ```bash
-python3 .agents/scripts/roadmap/create.py strategy-upgrade \
+.agents/bin/agent-roadmap create strategy-upgrade \
   --phases 3 \
   --phase-names foundation execution hardening
 ```
@@ -29,22 +29,22 @@ python3 .agents/scripts/roadmap/create.py strategy-upgrade \
 ### Validate schema
 
 ```bash
-python3 .agents/scripts/roadmap/validate_schema.py <roadmap-folder>
+.agents/bin/agent-roadmap validate <roadmap-folder>
 ```
 
 ### View status
 
 ```bash
-python3 .agents/scripts/roadmap/status.py
+.agents/bin/agent-roadmap status
 ```
 
 ### Progress work
 
 ```bash
-python3 .agents/scripts/roadmap/update.py complete-task
-python3 .agents/scripts/roadmap/update.py set-focus task-0-2
-python3 .agents/scripts/roadmap/handoff.py
-python3 .agents/scripts/roadmap/complete.py
+.agents/bin/agent-roadmap update complete-task
+.agents/bin/agent-roadmap update set-focus task-0-2
+.agents/bin/agent-roadmap handoff
+.agents/bin/agent-roadmap complete
 ```
 
 ## Core Guarantees
@@ -53,6 +53,7 @@ python3 .agents/scripts/roadmap/complete.py
 - Dependency-safe task transitions
 - Dependency graph visibility at phase and task levels
 - Structured session handoff generation
+- Every command uses the repository's Poetry-aware Python dispatcher
 - Branch protocol support (`roadmap/<phase-folder-name>`)
 - Roadmap identifiers remain confined to `agent_roadmaps/`
 - Completed roadmap series must be deleted wholesale instead of lingering in the repo

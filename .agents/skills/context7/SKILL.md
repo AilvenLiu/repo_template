@@ -41,8 +41,9 @@ claude plugin install context7@claude-plugins-official
 
 **Claude Code, manual MCP server registration (fallback):**
 ```bash
+# CONTEXT7_API_KEY must already be exported from an approved secret source.
 claude mcp add --transport http context7 https://mcp.context7.com/mcp \
-  --header "CONTEXT7_API_KEY: <your-key>"
+  --header "CONTEXT7_API_KEY: ${CONTEXT7_API_KEY}"
 ```
 
 The plugin-backed method is preferred and appears in `claude mcp list` as:

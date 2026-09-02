@@ -117,3 +117,30 @@ def test_scikit_build_constraints_do_not_require_poetry_lock(monkeypatch) -> Non
         violations = check_python_dependency_constraints(profile)
 
         assert violations == []
+
+
+def test_find_cpp_files_excludes_non_first_party_trees() -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        sources = {
+            "src/app.cpp": "int main() { return 0; }\n",
+            "include/app.hpp": "#pragma once\n",
+            ".agents/tool.cpp": "// agent infrastructure\n",
+            ".venv/pkg.cpp": "// environment\n",
+            "3rdparty/lib.cpp": "// vendored\n",
+            "build/generated.cpp": "// generated\n",
+            "_deps/lib-src/upstream.cpp": "// fetched dependency\n",
+            "cmake-build-debug/generated.cpp": "// IDE build\n",
+        }
+        for relative, content in sources.items():
+            path = root / relative
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(content)
+
+        manager = PreCommitManager(root)
+        files = {str(path.relative_to(root)) for path in manager.find_cpp_files()}
+
+        assert files == {
+            "include/app.hpp",
+            "src/app.cpp",
+        }

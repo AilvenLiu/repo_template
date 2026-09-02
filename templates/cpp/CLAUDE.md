@@ -47,8 +47,9 @@ Required Claude Code bootstrap commands for this repository:
 # Primary method (plugin-backed MCP):
 claude plugin install context7@claude-plugins-official
 # Fallback method (manual MCP server):
+# CONTEXT7_API_KEY must already be exported from an approved secret source.
 claude mcp add --transport http context7 https://mcp.context7.com/mcp \
-  --header "CONTEXT7_API_KEY: <your-context7-api-key>"
+  --header "CONTEXT7_API_KEY: ${CONTEXT7_API_KEY}"
 ```
 
 If Context7 still fails after installation, run this generic repair sequence:

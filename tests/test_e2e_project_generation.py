@@ -2,6 +2,7 @@
 """End-to-end tests for project generation and Codex parity assets."""
 
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -293,11 +294,25 @@ def test_e2e_hybrid_dependency_add_routes_python_and_cpp(template_root):
         )
         assert cpp_dep.returncode == 0, cpp_dep.stdout + "\n" + cpp_dep.stderr
 
+        fake_bin = target / "fake-bin"
+        fake_bin.mkdir()
+        fake_poetry = fake_bin / "poetry"
+        fake_poetry.write_text(
+            "#!/bin/sh\n"
+            "set -eu\n"
+            'test "${1:-}" = "lock"\n'
+            "printf '%s\\n' '# offline e2e lock' > poetry.lock\n"
+        )
+        fake_poetry.chmod(0o755)
+        dependency_env = os.environ.copy()
+        dependency_env["PATH"] = f"{fake_bin}{os.pathsep}{dependency_env['PATH']}"
+
         py_dep = subprocess.run(
             ["bash", ".agents/bin/agent-dependency", "add", "numpy", ">=1.24.0"],
             cwd=target,
             capture_output=True,
             text=True,
+            env=dependency_env,
         )
         assert py_dep.returncode == 0, py_dep.stdout + "\n" + py_dep.stderr
 
@@ -310,3 +325,4 @@ def test_e2e_hybrid_dependency_add_routes_python_and_cpp(template_root):
 
         assert '"numpy>=1.24.0"' in pyproject
         assert "numpy" not in deps_cmake
+        assert (target / "poetry.lock").read_text() == "# offline e2e lock\n"
