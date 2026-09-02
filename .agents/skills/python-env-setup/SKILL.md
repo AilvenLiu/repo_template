@@ -34,7 +34,8 @@ enforcing the mandatory Poetry environment policy:
 2. **Check 2**: `poetry.toml` exists and contains `in-project = true`
 3. **Check 3**: declared package sources use HTTPS, contain no embedded credentials, and set an approved priority
 4. **Check 4**: caller `VIRTUAL_ENV`, captured before Poetry starts, does not shadow pyenv
-5. **Check 5**: Python version in Poetry venv matches `pyproject.toml` requirement
+5. **Check 5**: Python version in Poetry venv satisfies the complete supported
+   `pyproject.toml` constraint; bounded, caret, and tilde ranges fail closed
 6. **Check 6**: pyenv installed and shims on PATH
 7. **Check 7**: `~/.local/bin` on PATH before system directories
 

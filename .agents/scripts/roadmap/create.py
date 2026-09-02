@@ -248,9 +248,7 @@ def create_roadmap(
     print("1. Edit each phase's INVARIANTS.md, ROADMAP.md, roadmap.yml, and prompt.md")
     print("2. Confirm or adjust depends_on_phases and task-level depends_on values")
     print(f"3. Create branch: git checkout -b roadmap/{first_folder}")
-    print(
-        f"4. Validate: python3 .agents/scripts/roadmap/validate_schema.py {first_folder}"
-    )
+    print(f"4. Validate: .agents/bin/agent-roadmap validate {first_folder}")
 
 
 def _parse_args(argv=None):

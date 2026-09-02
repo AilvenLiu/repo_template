@@ -144,6 +144,16 @@ cppcheck --enable=all --xml --xml-version=2 src/ 2> cppcheck-report.xml
 ```
 
 ### 4.2 cppcheck Suppressions
+
+The repository gate must pass an explicit list of discovered first-party C++,
+header, and CUDA files to cppcheck; scanning `.` is forbidden. Discovery must
+exclude generated build trees, dependency caches, vendored sources, virtual
+environments, roadmaps, and agent-infrastructure directories. Keep
+`--enable=all` in the universal gate. A project may add a narrowly scoped
+suppression for a demonstrated parser limitation, but the personal hub must not
+carry framework-specific suppressions or weaken categories for every generated
+project.
+
 Create `.cppcheck-suppressions` file:
 ```
 missingIncludeSystem

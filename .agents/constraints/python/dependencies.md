@@ -63,6 +63,12 @@ files for unexpected transitive changes, source changes, Python-version changes,
 and platform-specific markers. Commit the manifest, lock file, code, tests, and
 documentation for one dependency change together.
 
+For a hybrid PEP 621 manifest, the wrapper must support both inline and
+multi-line dependency arrays, validate the candidate TOML before retaining it,
+and refresh `poetry.lock`. If validation or resolution fails, it must restore
+both the manifest and lock file to their original bytes; reporting failure
+while leaving either file half-updated is forbidden.
+
 For hybrid projects:
 
 - Python packages still use the guarded Poetry workflow.

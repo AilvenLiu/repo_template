@@ -8,15 +8,26 @@ import sys
 from pathlib import Path
 from typing import List, Optional, Tuple
 
+from version_constraints import matches_python_constraint
 
-def parent_virtual_env() -> Optional[str]:
+
+def _caller_virtual_env() -> Optional[str]:
     """Return the externally activated environment, not Poetry's child venv."""
-    marker = os.environ.get("AGENT_PARENT_VIRTUAL_ENV_SET")
+    marker = os.environ.get("AGENT_CALLER_VIRTUAL_ENV_SET")
+    value = os.environ.get("AGENT_CALLER_VIRTUAL_ENV")
+    if marker is None:
+        marker = os.environ.get("AGENT_PARENT_VIRTUAL_ENV_SET")
+        value = os.environ.get("AGENT_PARENT_VIRTUAL_ENV")
     if marker == "0":
         return None
     if marker == "1":
-        return os.environ.get("AGENT_PARENT_VIRTUAL_ENV")
+        return value or None
     return os.environ.get("VIRTUAL_ENV")
+
+
+def parent_virtual_env() -> Optional[str]:
+    """Return the caller's virtual environment for legacy script consumers."""
+    return _caller_virtual_env()
 
 
 class Issue:
@@ -361,7 +372,7 @@ class EnvironmentDiagnostics:
                 pyenv_python = match.group(1)
 
         if poetry_python and required_python:
-            if not self._version_matches_constraint(poetry_python, required_python):
+            if not matches_python_constraint(poetry_python, required_python):
                 self.issues.append(
                     Issue(
                         severity=Issue.WARNING,
@@ -381,18 +392,6 @@ class EnvironmentDiagnostics:
                         message=f"Poetry Python version matches requirements ({poetry_python})",
                     )
                 )
-
-    def _version_matches_constraint(self, version: str, constraint: str) -> bool:
-        """Check if version matches constraint (simplified)."""
-        constraint = constraint.lstrip("^~")
-        version_parts = version.split(".")[:2]
-        constraint_parts = constraint.split(".")[:2]
-        try:
-            version_major_minor = tuple(int(p) for p in version_parts)
-            constraint_major_minor = tuple(int(p) for p in constraint_parts)
-            return version_major_minor >= constraint_major_minor
-        except (ValueError, IndexError):
-            return False
 
     def check_pyenv(self) -> None:
         """Check pyenv installation and configuration."""

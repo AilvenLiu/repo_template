@@ -38,8 +38,9 @@ project artefacts.
 1. Enforces single-active-phase rule.
 2. Enforces dependency-safe task progression (`depends_on`).
 3. Validates dependency-aware roadmap schema.
-4. Generates session handoff files under `sessions/`.
-5. Treats roadmap files as temporary workspace that must be removed after full completion.
+4. Dispatches every roadmap script through the repository's Poetry-aware Python runner.
+5. Generates session handoff files under `sessions/`.
+6. Treats roadmap files as temporary workspace that must be removed after full completion.
 
 ## Critical rules
 

@@ -283,6 +283,12 @@ addopts = [
 
 ## 7. Pre-Commit Testing Requirements
 
+The authoritative `.agents/bin/agent-precommit` wrapper must invoke pytest with
+both `tests/` and `.agents/scripts/tests/` explicitly. Pytest commonly ignores
+hidden directories during implicit discovery; application tests and the tests
+that protect the shipped agent infrastructure are separate ownership trees and
+both are mandatory.
+
 ### 7.1 Mandatory Pre-Commit Checks
 Before EVERY commit, the agent MUST run:
 

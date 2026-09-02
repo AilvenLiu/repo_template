@@ -17,25 +17,25 @@ shift || true
 
 case "$command" in
   check)
-    exec python3 "$ROADMAP_SCRIPTS/check.py" "$@"
+    run_agent_python "$REPO_ROOT" "$ROADMAP_SCRIPTS/check.py" "$@"
     ;;
   create)
-    exec python3 "$ROADMAP_SCRIPTS/create.py" "$@"
+    run_agent_python "$REPO_ROOT" "$ROADMAP_SCRIPTS/create.py" "$@"
     ;;
   status)
-    exec python3 "$ROADMAP_SCRIPTS/status.py" "$@"
+    run_agent_python "$REPO_ROOT" "$ROADMAP_SCRIPTS/status.py" "$@"
     ;;
   update)
-    exec python3 "$ROADMAP_SCRIPTS/update.py" "$@"
+    run_agent_python "$REPO_ROOT" "$ROADMAP_SCRIPTS/update.py" "$@"
     ;;
   handoff)
-    exec python3 "$ROADMAP_SCRIPTS/handoff.py" "$@"
+    run_agent_python "$REPO_ROOT" "$ROADMAP_SCRIPTS/handoff.py" "$@"
     ;;
   complete)
-    exec python3 "$ROADMAP_SCRIPTS/complete.py" "$@"
+    run_agent_python "$REPO_ROOT" "$ROADMAP_SCRIPTS/complete.py" "$@"
     ;;
   validate)
-    exec python3 "$ROADMAP_SCRIPTS/validate_schema.py" "$@"
+    run_agent_python "$REPO_ROOT" "$ROADMAP_SCRIPTS/validate_schema.py" "$@"
     ;;
   *)
     echo "Unknown roadmap command: $command" >&2

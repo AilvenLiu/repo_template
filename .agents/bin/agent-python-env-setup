@@ -6,6 +6,20 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/_agent_common.sh"
 REPO_ROOT="$(agent_repo_root)"
 
+# Poetry's own venv must not be mistaken for a shell-configuration fault.
+# Capture the caller state before any Poetry-aware Python dispatch occurs.
+if [[ -n "${VIRTUAL_ENV:-}" ]]; then
+  export AGENT_CALLER_VIRTUAL_ENV_SET=1
+  export AGENT_CALLER_VIRTUAL_ENV="$VIRTUAL_ENV"
+  export AGENT_PARENT_VIRTUAL_ENV_SET=1
+  export AGENT_PARENT_VIRTUAL_ENV="$VIRTUAL_ENV"
+else
+  export AGENT_CALLER_VIRTUAL_ENV_SET=0
+  export AGENT_PARENT_VIRTUAL_ENV_SET=0
+  unset AGENT_CALLER_VIRTUAL_ENV
+  unset AGENT_PARENT_VIRTUAL_ENV
+fi
+
 usage() {
   cat <<'EOF'
 Usage: .agents/bin/agent-python-env-setup <diagnose|fix|verify> [extra args]
@@ -15,17 +29,6 @@ EOF
 main() {
   local command="${1:-}"
   shift || true
-
-  # Poetry sets VIRTUAL_ENV for its child process. Preserve whether the caller
-  # had an externally activated environment so Python checks do not mistake
-  # Poetry's own venv for a shell-configuration fault.
-  if [[ -n "${VIRTUAL_ENV:-}" ]]; then
-    export AGENT_PARENT_VIRTUAL_ENV_SET=1
-    export AGENT_PARENT_VIRTUAL_ENV="$VIRTUAL_ENV"
-  else
-    export AGENT_PARENT_VIRTUAL_ENV_SET=0
-    unset AGENT_PARENT_VIRTUAL_ENV
-  fi
 
   case "$command" in
     diagnose)
